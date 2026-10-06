@@ -16,6 +16,10 @@
     <SolidColorBrush x:Key="Pouch.TileHover" Color="#22FFFFFF"/>
     <SolidColorBrush x:Key="Pouch.TileBorder" Color="#24FFFFFF"/>
 
+    <!-- WPF fades menus in and out using this system key. A menu caught mid-fade (for example when
+         a screenshot tool takes focus) looks washed out, so Pouchy's menus pop in themselves instead. -->
+    <PopupAnimation x:Key="{x:Static SystemParameters.MenuPopupAnimationKey}">None</PopupAnimation>
+
     <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
     <helpers:InverseBooleanToVisibilityConverter x:Key="InverseBoolToVisibility" />
     <helpers:NullToVisibilityConverter x:Key="NullToVisibility" />
@@ -37,7 +41,10 @@
                 <ControlTemplate TargetType="ContextMenu">
                     <!-- Margin leaves room for the shadow inside the popup. The shadow is a separate
                          layer so the text isn't rendered through an Effect (which blurs it). -->
-                    <Grid Margin="12" MinWidth="220">
+                    <Grid x:Name="MenuRoot" Margin="12" MinWidth="220" RenderTransformOrigin="0.5,0">
+                        <Grid.RenderTransform>
+                            <ScaleTransform x:Name="MenuScale" ScaleX="1" ScaleY="1"/>
+                        </Grid.RenderTransform>
                         <Border CornerRadius="10" Background="{TemplateBinding Background}">
                             <Border.Effect>
                                 <DropShadowEffect BlurRadius="20" ShadowDepth="5" Direction="270" Opacity="0.4"/>
@@ -47,6 +54,18 @@
                             <ItemsPresenter KeyboardNavigation.DirectionalNavigation="Cycle"/>
                         </Border>
                     </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsOpen" Value="True">
+                            <Trigger.EnterActions>
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetName="MenuScale" Storyboard.TargetProperty="ScaleX" From="0.96" To="1" Duration="0:0:0.12"/>
+                                        <DoubleAnimation Storyboard.TargetName="MenuScale" Storyboard.TargetProperty="ScaleY" From="0.92" To="1" Duration="0:0:0.12"/>
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </Trigger.EnterActions>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
@@ -88,7 +107,7 @@
                             </Grid>
                         </Border>
                         <Popup x:Name="PART_Popup" Placement="Right" HorizontalOffset="-8" VerticalOffset="-14" AllowsTransparency="True"
-                               Focusable="False" PopupAnimation="Fade"
+                               Focusable="False" PopupAnimation="None"
                                IsOpen="{Binding IsSubmenuOpen, RelativeSource={RelativeSource TemplatedParent}}">
                             <Grid Margin="12" MinWidth="180" UseLayoutRounding="True" TextOptions.TextFormattingMode="Display">
                                 <Border CornerRadius="10" Background="{DynamicResource Pouch.MenuBackground}">

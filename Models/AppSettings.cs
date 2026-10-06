@@ -88,6 +88,8 @@ namespace Pouchy.Models
         public bool ReduceMotion { get; set; }
         /// <summary>Show Pouchy the mascot in the pouch.</summary>
         public bool ShowMascot { get; set; } = true;
+        /// <summary>Shelf tabs other than the active one show only their icon.</summary>
+        public bool CompactShelfTabs { get; set; } = true;
 
         // Shake trigger
         public bool ShakeEnabled { get; set; } = true;

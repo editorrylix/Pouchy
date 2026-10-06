@@ -576,8 +576,9 @@
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-                    <ScrollViewer HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Disabled" PreviewMouseWheel="ShelfTabs_PreviewMouseWheel">
-                        <ItemsControl ItemsSource="{Binding Shelves}">
+                    <ScrollViewer x:Name="ShelfTabsScroller" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Disabled"
+                                  PreviewMouseWheel="ShelfTabs_PreviewMouseWheel">
+                        <ItemsControl x:Name="ShelfTabs" ItemsSource="{Binding Shelves}">
                             <ItemsControl.ItemsPanel>
                                 <ItemsPanelTemplate>
                                     <StackPanel Orientation="Horizontal"/>
@@ -585,18 +586,21 @@
                             </ItemsControl.ItemsPanel>
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate DataType="{x:Type models:Shelf}">
-                                    <Border x:Name="Chip" Tag="ShelfChip" Margin="0,0,6,0" Padding="9,4,10,5" CornerRadius="12" Cursor="Hand"
+                                    <Border x:Name="Chip" Tag="ShelfChip" Margin="0,0,6,0" Padding="8,4,9,5" CornerRadius="12" Cursor="Hand"
                                             BorderThickness="1" Background="{DynamicResource Pouch.Tile}" BorderBrush="{DynamicResource Pouch.TileBorder}"
-                                            AllowDrop="True" ToolTip="Drop here to add to this shelf. Right-click for options."
+                                            AllowDrop="True" ToolTip="{Binding Name}"
                                             MouseLeftButtonUp="ShelfChip_MouseLeftButtonUp"
                                             DragEnter="ShelfChip_DragEnter" DragOver="ShelfChip_DragOver" DragLeave="ShelfChip_DragLeave" Drop="ShelfChip_Drop">
                                         <StackPanel Orientation="Horizontal">
                                             <ui:SymbolIcon Symbol="{Binding Icon, Converter={StaticResource SymbolName}}" Filled="True" FontSize="14"
-                                                           Foreground="{Binding ColorBrush}" Margin="0,0,5,0" VerticalAlignment="Center"/>
-                                            <TextBlock x:Name="ChipName" Text="{Binding Name}" FontSize="11.5" FontWeight="Medium" MaxWidth="120"
-                                                       TextTrimming="CharacterEllipsis" Foreground="{DynamicResource Pouch.TextSecondary}"/>
-                                            <TextBlock Text="{Binding Items.Count}" FontSize="10.5" Margin="6,1,0,0"
-                                                       Foreground="{DynamicResource Pouch.TextMuted}"/>
+                                                           Foreground="{Binding ColorBrush}" VerticalAlignment="Center"/>
+                                            <!-- Name and count; in compact mode only the active shelf shows them, sliding open. -->
+                                            <StackPanel x:Name="ChipLabel" Orientation="Horizontal" MaxWidth="160" ClipToBounds="True">
+                                                <TextBlock x:Name="ChipName" Text="{Binding Name}" FontSize="11.5" FontWeight="Medium" MaxWidth="110"
+                                                           Margin="5,0,0,0" TextTrimming="CharacterEllipsis" Foreground="{DynamicResource Pouch.TextSecondary}"/>
+                                                <TextBlock Text="{Binding Items.Count}" FontSize="10.5" Margin="6,1,0,0"
+                                                           Foreground="{DynamicResource Pouch.TextMuted}"/>
+                                            </StackPanel>
                                         </StackPanel>
                                     </Border>
                                     <DataTemplate.Triggers>
@@ -605,6 +609,36 @@
                                             <Setter TargetName="Chip" Property="BorderBrush" Value="{DynamicResource Pouch.Accent}"/>
                                             <Setter TargetName="ChipName" Property="Foreground" Value="{DynamicResource Pouch.Text}"/>
                                         </DataTrigger>
+                                        <MultiDataTrigger>
+                                            <MultiDataTrigger.Conditions>
+                                                <Condition Binding="{Binding IsActive}" Value="False"/>
+                                                <Condition Binding="{Binding DataContext.CompactShelfTabs, RelativeSource={RelativeSource AncestorType=ItemsControl}}" Value="True"/>
+                                            </MultiDataTrigger.Conditions>
+                                            <MultiDataTrigger.EnterActions>
+                                                <BeginStoryboard>
+                                                    <Storyboard>
+                                                        <DoubleAnimation Storyboard.TargetName="ChipLabel" Storyboard.TargetProperty="MaxWidth" To="0" Duration="0:0:0.18">
+                                                            <DoubleAnimation.EasingFunction>
+                                                                <CubicEase EasingMode="EaseIn"/>
+                                                            </DoubleAnimation.EasingFunction>
+                                                        </DoubleAnimation>
+                                                        <DoubleAnimation Storyboard.TargetName="ChipLabel" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.12"/>
+                                                    </Storyboard>
+                                                </BeginStoryboard>
+                                            </MultiDataTrigger.EnterActions>
+                                            <MultiDataTrigger.ExitActions>
+                                                <BeginStoryboard>
+                                                    <Storyboard>
+                                                        <DoubleAnimation Storyboard.TargetName="ChipLabel" Storyboard.TargetProperty="MaxWidth" To="160" Duration="0:0:0.28">
+                                                            <DoubleAnimation.EasingFunction>
+                                                                <CubicEase EasingMode="EaseOut"/>
+                                                            </DoubleAnimation.EasingFunction>
+                                                        </DoubleAnimation>
+                                                        <DoubleAnimation Storyboard.TargetName="ChipLabel" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.28"/>
+                                                    </Storyboard>
+                                                </BeginStoryboard>
+                                            </MultiDataTrigger.ExitActions>
+                                        </MultiDataTrigger>
                                     </DataTemplate.Triggers>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
@@ -760,11 +794,13 @@
                 </ListBox>
 
                 <!-- Shown while something is dragged over the pouch -->
-                <Border x:Name="DropOverlay" Grid.Row="3" Margin="-4" Opacity="0" IsHitTestVisible="False" BorderThickness="2"
-                        CornerRadius="{DynamicResource Pouch.InnerCornerRadius}"
-                        BorderBrush="{DynamicResource Pouch.Accent}" Background="{DynamicResource Pouch.AccentSoft}">
+                <!-- Solid, so whatever is underneath (the empty state's own mascot, tiles) doesn't show through. -->
+                <Grid x:Name="DropOverlay" Grid.Row="3" Margin="-4" Opacity="0" IsHitTestVisible="False">
+                    <Border CornerRadius="{DynamicResource Pouch.InnerCornerRadius}" Background="{DynamicResource Pouch.MenuBackground}"/>
+                    <Border CornerRadius="{DynamicResource Pouch.InnerCornerRadius}" Background="{DynamicResource Pouch.AccentSoft}"
+                            BorderBrush="{DynamicResource Pouch.Accent}" BorderThickness="2"/>
                     <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                        <views:Mascot Mood="Excited" Width="60" Height="60"
+                        <views:Mascot x:Name="OverlayMascot" Mood="Excited" Width="72" Height="72"
                                       Visibility="{Binding ShowMascot, Converter={StaticResource BoolToVisibility}}"/>
                         <ui:SymbolIcon Symbol="ArrowDownload24" FontSize="24" Foreground="{DynamicResource Pouch.Accent}" HorizontalAlignment="Center"
                                        Visibility="{Binding ShowMascot, Converter={StaticResource InverseBoolToVisibility}}"/>
@@ -782,7 +818,7 @@
                             </TextBlock.Style>
                         </TextBlock>
                     </StackPanel>
-                </Border>
+                </Grid>
 
                 <!-- Undo -->
                 <Border Grid.Row="4" Margin="0,10,0,0" Padding="12,0,4,0" Height="34" CornerRadius="{DynamicResource Pouch.TileCornerRadius}"

@@ -47,8 +47,11 @@
             <Ellipse Canvas.Left="22" Canvas.Top="63" Width="13" Height="7" Fill="#8CFF7AA8"/>
             <Ellipse Canvas.Left="65" Canvas.Top="63" Width="13" Height="7" Fill="#8CFF7AA8"/>
 
-            <!-- Eyes: open (idle/excited) -->
+            <!-- Eyes: open (idle/excited). The group shifts sideways for a glance. -->
             <Canvas x:Name="OpenEyes">
+                <Canvas.RenderTransform>
+                    <TranslateTransform x:Name="Glance" X="0" Y="0"/>
+                </Canvas.RenderTransform>
                 <Canvas x:Name="LeftEye" Canvas.Left="33" Canvas.Top="51" Width="10" Height="12" RenderTransformOrigin="0.5,0.5">
                     <Canvas.RenderTransform>
                         <ScaleTransform x:Name="LeftBlink" ScaleX="1" ScaleY="1"/>
@@ -83,6 +86,14 @@
             <!-- Puzzled: a little question mark -->
             <TextBlock x:Name="QuestionMark" Canvas.Left="82" Canvas.Top="4" Text="?" FontSize="22" FontWeight="Bold"
                        Foreground="{DynamicResource Pouch.Accent}" Visibility="Collapsed"/>
+
+            <!-- Happy: a little heart that floats up -->
+            <Path x:Name="Heart" Canvas.Left="70" Canvas.Top="14" Opacity="0" Fill="#FF6B9D"
+                  Data="M8,14 C8,14 0,9 0,4.5 C0,2 2,0 4.3,0 C6,0 7.3,1 8,2.3 C8.7,1 10,0 11.7,0 C14,0 16,2 16,4.5 C16,9 8,14 8,14 Z">
+                <Path.RenderTransform>
+                    <TranslateTransform x:Name="HeartFloat" Y="0"/>
+                </Path.RenderTransform>
+            </Path>
 
             <!-- Excited: sparkles -->
             <Canvas x:Name="Sparkles" Visibility="Collapsed">

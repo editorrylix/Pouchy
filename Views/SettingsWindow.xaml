@@ -141,6 +141,15 @@
                 </ui:CardControl>
                 <ui:CardControl>
                     <ui:CardControl.Header>
+                        <StackPanel>
+                            <TextBlock Text="Compact shelf tabs" Style="{StaticResource CardTitle}"/>
+                            <TextBlock Text="Only the open shelf shows its name; the others show just their icon." Style="{StaticResource CardDescription}"/>
+                        </StackPanel>
+                    </ui:CardControl.Header>
+                    <ui:ToggleSwitch IsChecked="{Binding CompactShelfTabs}"/>
+                </ui:CardControl>
+                <ui:CardControl>
+                    <ui:CardControl.Header>
                         <TextBlock Text="Tile size" Style="{StaticResource CardTitle}"/>
                     </ui:CardControl.Header>
                     <ComboBox Width="130" ItemsSource="{Binding TileSizeOptions}" SelectedItem="{Binding TileSize}"/>

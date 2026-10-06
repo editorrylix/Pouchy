@@ -56,6 +56,7 @@ namespace Pouchy.ViewModels
         [ObservableProperty] private double _animationSpeed;
         [ObservableProperty] private bool _reduceMotion;
         [ObservableProperty] private bool _showMascot;
+        [ObservableProperty] private bool _compactShelfTabs;
 
         [ObservableProperty] private bool _runAtStartup;
         [ObservableProperty] private bool _clearOnStartup;
@@ -103,6 +104,7 @@ namespace Pouchy.ViewModels
             AnimationSpeed = s.AnimationSpeed;
             ReduceMotion = s.ReduceMotion;
             ShowMascot = s.ShowMascot;
+            CompactShelfTabs = s.CompactShelfTabs;
 
             RunAtStartup = startup.IsEnabled;
             ClearOnStartup = s.ClearOnStartup;
@@ -262,6 +264,7 @@ namespace Pouchy.ViewModels
         partial void OnAnimationSpeedChanged(double value) => Apply(s => s.AnimationSpeed = Math.Round(value, 2));
         partial void OnReduceMotionChanged(bool value) => Apply(s => s.ReduceMotion = value);
         partial void OnShowMascotChanged(bool value) => Apply(s => s.ShowMascot = value);
+        partial void OnCompactShelfTabsChanged(bool value) => Apply(s => s.CompactShelfTabs = value);
 
         partial void OnClearOnStartupChanged(bool value) => Apply(s => s.ClearOnStartup = value);
         partial void OnFetchLinkPreviewsChanged(bool value) => Apply(s => s.FetchLinkPreviews = value);

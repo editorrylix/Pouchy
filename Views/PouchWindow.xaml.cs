@@ -281,6 +281,7 @@ namespace Pouchy.Views
         private void ShowDropOverlay(bool show)
         {
             if (HeaderMascot.Mood != MascotMood.Happy || show) SetMascotMood(show ? MascotMood.Excited : MascotMood.Idle);
+            if (show) OverlayMascot.PopIn();
             var animation = new DoubleAnimation(show ? 1 : 0, Motion.Enabled ? Motion.Duration(show ? 120 : 180) : TimeSpan.Zero);
             DropOverlay.BeginAnimation(OpacityProperty, animation);
         }

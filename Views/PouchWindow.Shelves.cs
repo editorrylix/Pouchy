@@ -26,6 +26,15 @@ namespace Pouchy.Views
 
         private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
+            if (e.PropertyName == nameof(PouchViewModel.ActiveShelf))
+            {
+                // Keep the active tab visible when there are more tabs than fit.
+                Dispatcher.BeginInvoke(() =>
+                {
+                    if (ShelfTabs.ItemContainerGenerator.ContainerFromItem(_vm.ActiveShelf) is FrameworkElement tab) tab.BringIntoView();
+                }, DispatcherPriority.Loaded);
+            }
+
             if (e.PropertyName == nameof(PouchViewModel.UndoMessage) && _vm.UndoMessage != null)
             {
                 // Hide the undo bar after a few seconds; Ctrl+Z keeps working after that.

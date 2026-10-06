@@ -282,6 +282,7 @@ namespace Pouchy.ViewModels
         public bool ShowDetails => ViewMode == PouchViewMode.Grid && _settings.Current.ShowItemDetails;
         public bool ShowTileActions => ViewMode == PouchViewMode.Grid;
         public bool ShowMascot => _settings.Current.ShowMascot;
+        public bool CompactShelfTabs => _settings.Current.CompactShelfTabs;
         public SpawnAnimation SpawnAnimation => _settings.Current.ReduceMotion ? SpawnAnimation.None : _settings.Current.SpawnAnimation;
 
         /// <summary>Set by the app to open the settings window.</summary>
