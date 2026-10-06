@@ -6,7 +6,8 @@
 
 <p align="center">
   <strong>The cute, lightning-fast drop shelf for Windows 10 & 11.</strong><br />
-  A temporary parking spot for your files, photos, links, and snippets — summoned with a flick of your mouse.
+  A temporary parking spot for your files, photos, links, and snippets — summoned with a flick of your mouse.<br />
+  <em>The modern, open-source Dropover & Yoink alternative built natively for Windows.</em>
 </p>
 
 <p align="center">
@@ -14,37 +15,54 @@
   <a href="https://learn.microsoft.com/windows/"><img src="https://img.shields.io/badge/Platform-Windows%2010%20%7C%2011-0078D4?style=flat&logo=windows&logoColor=white" alt="Windows 10 / 11" /></a>
   <a href="#-test-suite"><img src="https://img.shields.io/badge/Tests-129%20Passing-10B981?style=flat" alt="129 Tests Passing" /></a>
   <a href="#-license"><img src="https://img.shields.io/badge/License-PolyForm%20Noncommercial-8B7CFF?style=flat" alt="PolyForm Noncommercial" /></a>
-  <a href="#-privacy--architecture"><img src="https://img.shields.io/badge/Telemetry-Zero-black?style=flat" alt="Zero Telemetry" /></a>
+  <a href="https://buymeacoffee.com/notrishi"><img src="https://img.shields.io/badge/Buy%20Me%20a%20Coffee-Support-FFDD00?style=flat&logo=buy-me-a-coffee&logoColor=black" alt="Support on Buy Me a Coffee" /></a>
+  <a href="#-technical-architecture-built-the-right-way"><img src="https://img.shields.io/badge/Telemetry-Zero-black?style=flat" alt="Zero Telemetry" /></a>
 </p>
 
 <p align="center">
-  <img src="docs/media/demo.gif" alt="Pouchy in Action" width="860" />
+  <img src="docs/media/demo.gif" alt="Pouchy in Action - Windows Drop Shelf" width="860" />
 </p>
 
 ---
 
-## 💡 Why Pouchy?
+## 💡 Why Pouchy? (Dropover for Windows)
 
-Moving files around on Windows has always felt clumsy. You grab a file in Explorer, awkwardly alt-tab across three windows, accidentally drop it in the wrong folder, or open WhatsApp Web just to send a photo to yourself.
+Moving files around on Windows has always been painful. You pick up a file in File Explorer, awkwardly Alt-Tab across four windows, accidentally drop it into the wrong folder, or email photos to yourself just to move them between workspaces.
 
-Mac has had apps like *Yoink* and *Dropover* for years. Windows never had an equivalent that felt lightweight, modern, and fun.
+macOS users have had **Dropover** and **Yoink** for a decade. Windows users were left with clunky clipboard managers or nothing at all.
 
-**Pouchy fixes this:**
-1. **Grab any file, image, text snippet, or link.**
+**Pouchy brings the effortless drop shelf to Windows:**
+1. **Grab any file, image, URL, or text snippet.**
 2. **Give your mouse a little shake** (or tap your global hotkey).
-3. **Drop it into Pouchy.** Your files stay safely parked in a sleek floating shelf while you navigate anywhere.
-4. **Drag them out** whenever and wherever you need them.
+3. **Drop it into Pouchy.** Your files stay safely parked in an unobtrusive, floating shelf while you navigate anywhere.
+4. **Drag them out** whenever and wherever you need them — into Discord, Slack, Photoshop, Premiere, or another folder.
 
 ---
 
-## ✨ Features That Actually Matter
+## 🍏 Comparing Pouchy to macOS Yoink & Dropover
+
+| Feature | **Pouchy** (Windows) | **Dropover** (macOS) | **Yoink** (macOS) | Default Windows |
+| :--- | :---: | :---: | :---: | :---: |
+| **Shake Mouse to Summon** | ✅ Yes | ✅ Yes | ❌ No | ❌ No |
+| **Multiple Work Shelves** | ✅ Yes (with 40+ icons) | ❌ Single shelf | ❌ Single shelf | ❌ No |
+| **Living Reactive Mascot** | ✅ Yes (4 Moods) | ❌ No | ❌ No | ❌ No |
+| **20-Step Undo (<kbd>Ctrl</kbd>+<kbd>Z</kbd>)** | ✅ Yes | ❌ No | ❌ No | ❌ No |
+| **Global Search (<kbd>Ctrl</kbd>+<kbd>F</kbd>)** | ✅ Yes | ❌ No | ❌ No | ❌ No |
+| **Custom Theme Engine** | ✅ Yes (6 themes + JSON) | ❌ Limited | ❌ Dark/Light only | ❌ No |
+| **Native Drag Image & Safe Copy**| ✅ Yes (OLE `IDragSourceHelper`) | ✅ Yes | ✅ Yes | ❌ Destructive move |
+| **Memory Footprint** | ⚡ **~35 MB** (Native .NET 8) | ~50 MB | ~40 MB | N/A |
+| **Price** | 🟢 **Free for Personal Use** | $4.99+ | $8.99 | N/A |
+
+---
+
+## ✨ Features That Make Pouchy Different
 
 ### 🦘 Meet Pouchy the Mascot
-Pouchy isn’t a sterile utility widget — it has personality. Built with clean vector animations, Pouchy reacts to what you're doing in real time:
+Pouchy isn’t a sterile utility widget — it’s a living desktop companion. Crafted with vector animations, Pouchy reacts to your actions live:
 * **Idle:** Breathes, blinks, glances around, and wiggles every now and then.
-* **Excited:** Mouth wide open and bouncing with sparkles the second you drag a file near it.
+* **Excited:** Mouth wide open and bouncing with sparkles the second you drag a file near it!
 * **Happy:** Chomps down on dropped items, hops with joy, and floats a little heart.
-* **Puzzled:** Tilts its head with a question mark when your search finds no items.
+* **Puzzled:** Tilts its head with a question mark when search returns zero matches.
 
 <p align="center">
   <img src="docs/media/mascot.png" alt="Pouchy Mascot Moods" width="840" />
@@ -102,7 +120,7 @@ Right-click any tile for instant micro-actions tailored to the file type:
 * **Windows Shell "More Options":** Directly opens the native Explorer shell menu (`7-Zip`, `Git`, `Send To`, etc.) with full owner-drawn submenu support.
 
 <p align="center">
-  <img src="docs/media/menus.png" alt="Context Menus" width="840" />
+  <img src="docs/media/menus.png" alt="Pouchy Context Menus" width="840" />
 </p>
 
 ---
@@ -110,6 +128,15 @@ Right-click any tile for instant micro-actions tailored to the file type:
 ### 🛡️ Real Windows Drag Integration (No Destroyed Files)
 * **Native Drag Images:** When dragging files out of Pouchy, Windows displays high-res thumbnail cards with item count badges under your cursor using COM `IDragSourceHelper`.
 * **Safe Same-Drive Drops:** Pouchy sets `Preferred DropEffect` on outgoing drags. When you drop files onto the same drive in Explorer, it **copies** by default instead of Windows' default destructive move.
+
+---
+
+## 🎯 Real-World Workflows
+
+* 🎨 **Designers & Video Editors:** Drag 15 raw footage files and brand assets into Pouchy, open Premiere / Photoshop, and drag them in one by one without cluttering your desktop.
+* 💻 **Developers:** Park GitHub PR links, snippets, API response JSONs, and test images while switching branches.
+* ✍️ **Writers & Students:** Collect reference PDFs, quotes, and research URLs on a dedicated `Research` shelf while drafting your paper.
+* 📸 **Screenshots & Memes:** Snap screenshots directly into Pouchy, use right-click OCR to grab text, or drag straight into Discord and Slack.
 
 ---
 
@@ -173,14 +200,20 @@ dotnet run --project Pouchy.csproj
 
 ---
 
-## ☕ Support the Project
+## ☕ Support the Creator
 
 Pouchy is an independent passion project made with love for the Windows community.
 
 If Pouchy saves you time every day, consider supporting its development:
-* ⭐ **Star this repository** on GitHub — it helps more people find it!
+* ⭐ **Star this repository** on GitHub — it helps more people discover Pouchy!
 * 💬 **Share it** on Twitter/X, Reddit, or with your friends.
-* ☕ **[Buy Me a Coffee](https://buymeacoffee.com/editorrylix)** to support future updates and features!
+* ☕ **[Buy Me a Coffee](https://buymeacoffee.com/notrishi)** to support future updates and features!
+
+<p align="center">
+  <a href="https://buymeacoffee.com/notrishi">
+    <img src="https://img.buymeacoffee.com/button-api/?text=Buy%20me%20a%20coffee&emoji=☕&slug=notrishi&button_colour=5F7FFF&font_colour=ffffff&font_family=Inter&outline_colour=000000&coffee_colour=FFDD00" alt="Buy Me a Coffee" />
+  </a>
+</p>
 
 ---
 
