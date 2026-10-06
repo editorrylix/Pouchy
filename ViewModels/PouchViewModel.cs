@@ -340,7 +340,7 @@ namespace Pouchy.ViewModels
                 var restored = await Task.Run(() => state.Shelves.Select(saved => (
                         Shelf: saved,
                         Items: saved.Items
-                            .Select(i => _factory.Restore(i, i.ImageFile != null ? _persistence.LoadImage(i.ImageFile) : null))
+                            .Select(i => _factory.Restore(i, i.ImageFile != null ? _persistence.ImagePath(i.ImageFile) : null))
                             .OfType<PouchItem>()
                             .ToList()))
                     .ToList());

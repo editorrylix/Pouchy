@@ -52,7 +52,31 @@ namespace Pouchy.Models
         public string? TextContent { get; init; }
 
         /// <summary>Set for <see cref="PouchItemKind.Image"/>. Always frozen.</summary>
-        public BitmapSource? ImageContent { get; init; }
+        public BitmapSource? ImageContent
+        {
+            // Image items keep their full-resolution picture on disk and only a small thumbnail
+            // in memory; a 4K screenshot would otherwise hold ~33 MB for as long as it sits in the pouch.
+            get => InMemoryImage ?? LoadImageFile();
+            init => InMemoryImage = value;
+        }
+
+        /// <summary>Full-resolution PNG backing an image item (in Pouchy's image cache).</summary>
+        public string? ImageFilePath { get; init; }
+
+        /// <summary>A picture held in memory instead of a file (only when no cache folder is available).</summary>
+        public BitmapSource? InMemoryImage { get; private init; }
+
+        private BitmapSource? LoadImageFile()
+        {
+            if (string.IsNullOrEmpty(ImageFilePath) || !System.IO.File.Exists(ImageFilePath)) return null;
+            var bitmap = new BitmapImage();
+            bitmap.BeginInit();
+            bitmap.CacheOption = BitmapCacheOption.OnLoad;
+            bitmap.UriSource = new Uri(ImageFilePath);
+            bitmap.EndInit();
+            bitmap.Freeze();
+            return bitmap;
+        }
 
         /// <summary>Upper-case extension badge, e.g. "PNG", "STACK", "TXT".</summary>
         public string FileExtension { get; init; } = "";

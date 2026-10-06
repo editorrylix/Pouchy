@@ -58,7 +58,9 @@ namespace Pouchy.Views
             };
             IsVisibleChanged += (_, _) =>
             {
+                // Looping animations keep WPF's render loop running, so stop them while hidden.
                 if (IsVisible) ApplyMood(pop: false);
+                else StopMotion();
             };
         }
 

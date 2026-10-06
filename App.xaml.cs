@@ -78,7 +78,7 @@ namespace Pouchy
 
             var persistence = new PersistenceService();
             _thumbnails = new ShellThumbnailProvider();
-            var factory = new ItemFactory(_thumbnails);
+            var factory = new ItemFactory(_thumbnails, persistence.ImageFolder);
             _linkPreviews = new LinkPreviewService();
             _pouchViewModel = new PouchViewModel(factory, persistence, _settings, _linkPreviews)
             {
@@ -86,6 +86,8 @@ namespace Pouchy
                 ThemeListProvider = () => _themes.Themes.Select(t => (t.Id, t.Name)).ToList(),
             };
             _pouchWindow = new PouchWindow(_pouchViewModel);
+            _pouchWindow.IsVisibleChanged += (_, _) => ScheduleMemoryTrim();
+            _pouchViewModel.Items.CollectionChanged += (_, _) => ScheduleMemoryTrim();
             _ = _pouchViewModel.LoadAsync(clearUnpinned: _settings.Current.ClearOnStartup);
             MenuFactory.ErrorHandler = ex => PouchDialog.Alert(_pouchWindow, "That didn't work", ex.Message);
 
@@ -105,9 +107,45 @@ namespace Pouchy
             _settings.Changed += (_, _) => UpdateTrayTooltip();
 
             StartUpdateChecks();
+            ScheduleMemoryTrim(); // Startup leaves garbage behind; Pouchy usually starts hidden.
 
             if (options.ShowPouch) Dispatcher.BeginInvoke(ShowPouchAtScreenCenter, System.Windows.Threading.DispatcherPriority.ApplicationIdle);
             if (options.ShowTrayMenu) Dispatcher.BeginInvoke(() => ShowTrayMenu(atScreenCenter: true), System.Windows.Threading.DispatcherPriority.ApplicationIdle);
+        }
+
+        // ---------------------------------------------------------------- Memory
+
+        private System.Windows.Threading.DispatcherTimer? _trimTimer;
+
+        /// <summary>
+        /// A few seconds after the pouch hides, compact the heap and give unused pages back to
+        /// Windows, so an idle Pouchy stays small in Task Manager.
+        /// </summary>
+        private void ScheduleMemoryTrim()
+        {
+            _trimTimer ??= CreateTrimTimer();
+            _trimTimer.Stop();
+            _trimTimer.Start();
+        }
+
+        private System.Windows.Threading.DispatcherTimer CreateTrimTimer()
+        {
+            var timer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(4) };
+            timer.Tick += (_, _) =>
+            {
+                timer.Stop();
+                // Thumbnail decoding leaves a lot of short-lived garbage that the GC is in no hurry to return.
+                System.Runtime.GCSettings.LargeObjectHeapCompactionMode = System.Runtime.GCLargeObjectHeapCompactionMode.CompactOnce;
+                GC.Collect(2, GCCollectionMode.Forced, blocking: true, compacting: true);
+                GC.WaitForPendingFinalizers();
+
+                // Only hand pages back to Windows while hidden; while in use that would just cause page faults.
+                if (_pouchWindow?.IsVisible == false)
+                {
+                    NativeMethods.SetProcessWorkingSetSize(NativeMethods.GetCurrentProcess(), -1, -1);
+                }
+            };
+            return timer;
         }
 
         // ---------------------------------------------------------------- Updates

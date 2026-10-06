@@ -240,10 +240,10 @@ namespace Pouchy.Views
                     Item("Extract text (OCR)", Symbol.ScanText24, () => RunAsync(() => ExtractText(() => OcrService.RecognizeFileAsync(path)))),
                     Item("Set as wallpaper", Symbol.Desktop24, () => FileActions.SetWallpaper(path))));
             }
-            if (single && item.Kind == PouchItemKind.Image && item.ImageContent != null)
+            if (single && item.Kind == PouchItemKind.Image)
             {
-                var image = item.ImageContent;
-                files.Add(Item("Extract text (OCR)", Symbol.ScanText24, () => RunAsync(() => ExtractText(() => OcrService.RecognizeImageAsync(image)))));
+                // The full picture is loaded only when an action actually needs it.
+                files.Add(Item("Extract text (OCR)", Symbol.ScanText24, () => RunAsync(() => ExtractText(() => OcrService.RecognizeImageAsync(item.ImageContent!)))));
                 files.Add(Item("Save as image file…", Symbol.Save24, () => SaveImageAs(item)));
             }
 

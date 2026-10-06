@@ -24,7 +24,7 @@ A native **Dropover / Yoink alternative for Windows 10 & 11**.
   <img src="https://img.shields.io/badge/Download%20for%20Windows-free-8B7CFF?style=for-the-badge&logo=windows&logoColor=white" alt="Download Pouchy for Windows" height="44" />
 </a>
 
-<sub>Single .exe · no installer · no .NET needed · x64 &amp; ARM64</sub>
+<sub>One .exe in a zip · no installer · no .NET needed · ~3 MB of memory when idle · x64 &amp; ARM64</sub>
 
 <br />
 <br />
@@ -168,7 +168,7 @@ Pouchy is a small native C#/WPF app, with no Electron and no bundled browser.
 ## Get started
 
 1. **[Download Pouchy](https://github.com/editorrylix/Pouchy/releases/latest).** Get `win-x64` for most PCs, or `win-arm64` for Snapdragon and other ARM laptops.
-2. **Run `Pouchy.exe`.** There's no installer. Pouchy appears in the system tray.
+2. **Unzip it and run `Pouchy.exe`** from any folder. There's no installer. Pouchy appears in the system tray.
 3. **Drag a file and shake the mouse.** That's it! Turn on **Settings → Run at Windows startup** to always have it around.
 
 > [!NOTE]
@@ -213,7 +213,7 @@ It only reacts while you're actually dragging something. Moving windows, opening
 <details>
 <summary><b>Does it slow down my PC?</b></summary>
 
-No. Pouchy sits idle in the tray. It only looks at mouse movement while a mouse button is held down, and it does nothing while you're in a fullscreen game.
+No. In the tray Pouchy uses about 3–5 MB of memory (as shown in Task Manager), and around 60 MB while the pouch is open. It only looks at mouse movement while a mouse button is held down, and it does nothing while you're in a fullscreen game.
 </details>
 
 <details>

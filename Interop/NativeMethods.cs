@@ -116,6 +116,13 @@ namespace Pouchy.Interop
         public static extern bool UnregisterHotKey(IntPtr hWnd, int id);
 
         // Windows, processes and threads
+        [DllImport("kernel32.dll")]
+        public static extern IntPtr GetCurrentProcess();
+
+        [DllImport("kernel32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        public static extern bool SetProcessWorkingSetSize(IntPtr process, IntPtr minimum, IntPtr maximum);
+
         [DllImport("user32.dll")]
         public static extern IntPtr GetForegroundWindow();
 

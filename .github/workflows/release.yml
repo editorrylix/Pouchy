@@ -44,11 +44,12 @@ jobs:
           foreach ($rid in 'win-x64', 'win-arm64') {
             dotnet publish Pouchy.csproj -c Release -r $rid --self-contained true `
               -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true `
-              -p:EnableCompressionInSingleFile=true -p:DebugType=none `
+              -p:DebugType=none `
               -p:Version=$v -o "publish/$rid"
             if ($LASTEXITCODE -ne 0) { throw "Publish failed for $rid" }
-            Copy-Item "publish/$rid/Pouchy.exe" "dist/Pouchy-$v-$rid.exe"
-            Compress-Archive -Path "publish/$rid/Pouchy.exe" -DestinationPath "dist/Pouchy-$v-$rid.zip"
+            # Not compressed inside the .exe on purpose: a compressed single-file app unpacks ~80 MB into
+            # memory on every launch. The zip keeps the download small instead.
+            Compress-Archive -Path "publish/$rid/Pouchy.exe" -DestinationPath "dist/Pouchy-$v-$rid.zip" -CompressionLevel Optimal
           }
           Get-ChildItem dist | Sort-Object Name | ForEach-Object {
             "$((Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLower())  $($_.Name)"
@@ -78,10 +79,10 @@ jobs:
 
           | Your PC | Download |
           | --- | --- |
-          | Most Windows PCs (Intel / AMD) | [**Pouchy-$v-win-x64.exe**](https://github.com/$repo/releases/download/v$v/Pouchy-$v-win-x64.exe) |
-          | Windows on ARM (Snapdragon, Surface Pro X) | [**Pouchy-$v-win-arm64.exe**](https://github.com/$repo/releases/download/v$v/Pouchy-$v-win-arm64.exe) |
+          | Most Windows PCs (Intel / AMD) | [**Pouchy-$v-win-x64.zip**](https://github.com/$repo/releases/download/v$v/Pouchy-$v-win-x64.zip) |
+          | Windows on ARM (Snapdragon, Surface Pro X) | [**Pouchy-$v-win-arm64.zip**](https://github.com/$repo/releases/download/v$v/Pouchy-$v-win-arm64.zip) |
 
-          No installer and no .NET needed: download it and run it. Pouchy lives in the system tray. Turn on **Settings → Run at Windows startup** to keep it around.
+          No installer and no .NET needed: unzip it and run **Pouchy.exe** from wherever you like. Pouchy lives in the system tray. Turn on **Settings → Run at Windows startup** to keep it around.
 
           > **"Windows protected your PC"?** Pouchy isn't code-signed yet, so SmartScreen warns about new downloads. Click **More info → Run anyway**. You can check the download against **SHA256SUMS.txt** below.
 

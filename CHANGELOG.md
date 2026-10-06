@@ -10,6 +10,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-10-06
+
+### Fixed
+
+- **Much lower memory use.** Pouchy now uses about **3–5 MB** in Task Manager while it waits in the tray (it was over 100 MB), and around 60 MB with the pouch open (it was 130–250 MB).
+  - The release `.exe` is no longer internally compressed. A compressed single-file app unpacks about 80 MB of its own code into memory on every launch. Downloads are now a zip instead (about 70 MB).
+  - Pasted and dropped pictures stay on disk at full resolution. Only a small thumbnail is kept in memory, and the full picture loads only when you copy, drag, preview, share or OCR it. A 4K screenshot used to hold about 33 MB for as long as it sat in the pouch.
+  - After the pouch hides, Pouchy compacts its memory and returns unused pages to Windows.
+  - The mascot's looping animations stop while the pouch is hidden.
+
 ## [1.0.0] - 2026-10-06
 
 The first public release. 🎉
@@ -50,5 +60,6 @@ The first public release. 🎉
 - **Update notifications:** Pouchy checks GitHub for a new release about once a day. You can turn this off in Settings → About.
 - **Start with Windows**, single instance, and items saved between sessions.
 
-[Unreleased]: https://github.com/editorrylix/Pouchy/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/editorrylix/Pouchy/compare/v1.0.1...HEAD
+[1.0.1]: https://github.com/editorrylix/Pouchy/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/editorrylix/Pouchy/releases/tag/v1.0.0

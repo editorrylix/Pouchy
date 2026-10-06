@@ -16,11 +16,18 @@ namespace Pouchy.Services
         private const int TextNameLength = 25;
         private const int StackPreviewCount = 3;
 
-        private readonly IThumbnailProvider _thumbnails;
+        private const int ImageThumbnailWidth = 360;
 
-        public ItemFactory(IThumbnailProvider thumbnails)
+        private readonly IThumbnailProvider _thumbnails;
+        private readonly string? _imageFolder;
+
+        /// <param name="imageFolder">
+        /// Where image items keep their full-resolution PNG. Without one, pictures stay in memory.
+        /// </param>
+        public ItemFactory(IThumbnailProvider thumbnails, string? imageFolder = null)
         {
             _thumbnails = thumbnails;
+            _imageFolder = imageFolder;
         }
 
         public PouchItem CreateFromPath(string path, Guid? id = null, DateTime? addedAt = null)
@@ -133,24 +140,76 @@ namespace Pouchy.Services
 
         public PouchItem CreateImage(BitmapSource image, Guid? id = null, DateTime? addedAt = null)
         {
-            var frozen = EnsureFrozen(image);
-            return new PouchItem
+            var itemId = id ?? Guid.NewGuid();
+            if (_imageFolder == null)
             {
-                Id = id ?? Guid.NewGuid(),
-                AddedAt = addedAt ?? DateTime.Now,
-                Kind = PouchItemKind.Image,
-                ImageContent = frozen,
-                FileExtension = "IMG",
-                DisplayName = "Image",
-                Metadata = $"Image · {frozen.PixelWidth}×{frozen.PixelHeight}",
-                Icon = frozen,
-                ThumbnailStyle = ThumbnailStyle.Fill,
-            };
+                var frozen = EnsureFrozen(image);
+                return new PouchItem
+                {
+                    Id = itemId,
+                    AddedAt = addedAt ?? DateTime.Now,
+                    Kind = PouchItemKind.Image,
+                    ImageContent = frozen,
+                    FileExtension = "IMG",
+                    DisplayName = "Image",
+                    Metadata = $"Image · {frozen.PixelWidth}×{frozen.PixelHeight}",
+                    Icon = frozen,
+                    ThumbnailStyle = ThumbnailStyle.Fill,
+                };
+            }
+
+            // Write the picture to the cache and keep only a thumbnail in memory.
+            Directory.CreateDirectory(_imageFolder);
+            string path = Path.Combine(_imageFolder, $"{itemId}.png");
+            var encoder = new PngBitmapEncoder();
+            encoder.Frames.Add(BitmapFrame.Create(image));
+            using (var stream = File.Create(path)) encoder.Save(stream);
+
+            return CreateImageFromFile(path, itemId, addedAt) ?? throw new IOException("Could not read back the saved image.");
+        }
+
+        /// <summary>An image item backed by a PNG in the image cache.</summary>
+        public PouchItem? CreateImageFromFile(string path, Guid id, DateTime? addedAt = null)
+        {
+            try
+            {
+                using var stream = File.OpenRead(path);
+                var decoder = BitmapDecoder.Create(stream, BitmapCreateOptions.DelayCreation, BitmapCacheOption.None);
+                int width = decoder.Frames[0].PixelWidth, height = decoder.Frames[0].PixelHeight;
+
+                var thumbnail = new BitmapImage();
+                thumbnail.BeginInit();
+                thumbnail.CacheOption = BitmapCacheOption.OnLoad;
+                thumbnail.DecodePixelWidth = Math.Min(width, ImageThumbnailWidth);
+                thumbnail.UriSource = new Uri(path);
+                thumbnail.EndInit();
+                thumbnail.Freeze();
+
+                return new PouchItem
+                {
+                    Id = id,
+                    AddedAt = addedAt ?? DateTime.Now,
+                    Kind = PouchItemKind.Image,
+                    ImageFilePath = path,
+                    FileExtension = "IMG",
+                    DisplayName = "Image",
+                    Metadata = $"Image · {width}×{height}",
+                    Icon = thumbnail,
+                    ThumbnailStyle = ThumbnailStyle.Fill,
+                };
+            }
+            catch (Exception ex) when (ex is IOException or NotSupportedException or FileFormatException or UnauthorizedAccessException)
+            {
+                Logger.Log($"Could not load image {path}: {ex.Message}");
+                return null;
+            }
         }
 
         /// <summary>Recreates an item from saved state. Returns null if it can't be restored.</summary>
-        public PouchItem? Restore(PersistedItem saved, BitmapSource? image)
+        /// <param name="imagePath">The saved image file (picture of an image item, or a link's icon), if any.</param>
+        public PouchItem? Restore(PersistedItem saved, string? imagePath)
         {
+            bool hasImage = imagePath != null && File.Exists(imagePath);
             var kind = saved.Kind ?? InferKind(saved);
             var id = saved.Id == Guid.Empty ? Guid.NewGuid() : saved.Id;
             PouchItem? item = kind switch
@@ -161,10 +220,10 @@ namespace Pouchy.Services
                     => CreateStack(saved.StackFiles, id, saved.AddedAt),
                 PouchItemKind.Text when saved.TextContent != null
                     => CreateText(saved.TextContent, id, saved.AddedAt),
-                PouchItemKind.Image when image != null
-                    => CreateImage(image, id, saved.AddedAt),
+                PouchItemKind.Image when hasImage
+                    => CreateImageFromFile(imagePath!, id, saved.AddedAt),
                 PouchItemKind.Link when saved.TextContent != null
-                    => CreateLink(saved.TextContent, id, saved.AddedAt, image),
+                    => CreateLink(saved.TextContent, id, saved.AddedAt, hasImage ? LoadSmallImage(imagePath!) : null),
                 PouchItemKind.Color when saved.TextContent != null && TextTools.TryParseColor(saved.TextContent, out _)
                     => CreateColor(saved.TextContent, id, saved.AddedAt),
                 _ => null,
@@ -297,6 +356,25 @@ namespace Pouchy.Services
             catch (Exception)
             {
                 return 0;
+            }
+        }
+
+        private static BitmapSource? LoadSmallImage(string path)
+        {
+            try
+            {
+                var bitmap = new BitmapImage();
+                bitmap.BeginInit();
+                bitmap.CacheOption = BitmapCacheOption.OnLoad;
+                bitmap.DecodePixelWidth = 96;
+                bitmap.UriSource = new Uri(path);
+                bitmap.EndInit();
+                bitmap.Freeze();
+                return bitmap;
+            }
+            catch (Exception ex) when (ex is IOException or NotSupportedException or FileFormatException)
+            {
+                return null;
             }
         }
 

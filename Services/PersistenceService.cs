@@ -92,6 +92,11 @@ namespace Pouchy.Services
             }
         }
 
+        /// <summary>Folder holding image items' pictures and link icons.</summary>
+        public string ImageFolder => _imageFolder;
+
+        public string ImagePath(string imageFile) => Path.Combine(_imageFolder, imageFile);
+
         /// <summary>Loads a saved image item's bitmap. Safe to call off the UI thread.</summary>
         public BitmapSource? LoadImage(string imageFile)
         {
@@ -123,8 +128,9 @@ namespace Pouchy.Services
             var cts = new CancellationTokenSource();
             _pendingSave = cts;
 
+            // No pruning here: a removed image item may still come back through Undo.
             Task.Delay(SaveDelayMs, cts.Token).ContinueWith(
-                _ => Write(snapshot),
+                _ => Write(snapshot, prune: false),
                 CancellationToken.None,
                 TaskContinuationOptions.OnlyOnRanToCompletion,
                 TaskScheduler.Default);
@@ -134,15 +140,16 @@ namespace Pouchy.Services
         public void SaveNow(IEnumerable<Shelf> shelves, Guid? activeShelfId)
         {
             _pendingSave?.Cancel();
-            Write(Snapshot(shelves, activeShelfId));
+            Write(Snapshot(shelves, activeShelfId), prune: true);
         }
 
-        private sealed record Snapshotted(PersistedState State, List<(string File, BitmapSource Image)> Images);
+        private sealed record Snapshotted(PersistedState State, List<(string File, BitmapSource Image)> Images, List<string> KeepFiles);
 
         private static Snapshotted Snapshot(IEnumerable<Shelf> shelves, Guid? activeShelfId)
         {
             var state = new PersistedState { ActiveShelfId = activeShelfId };
             var images = new List<(string, BitmapSource)>();
+            var keep = new List<string>();
 
             foreach (var shelf in shelves)
             {
@@ -162,26 +169,34 @@ namespace Pouchy.Services
                         Label = item.Label,
                     };
 
+                    // Image items normally already live in the image folder; only write what isn't on disk yet.
                     BitmapSource? image = item.Kind switch
                     {
-                        PouchItemKind.Image => item.ImageContent,
+                        PouchItemKind.Image => item.InMemoryImage,
                         PouchItemKind.Link => item.Icon as BitmapSource,
                         _ => null,
                     };
-                    if (item.Kind == PouchItemKind.Image && image == null) continue;
-                    if (image != null)
+                    bool hasFile = item.Kind == PouchItemKind.Image && item.ImageFilePath != null && File.Exists(item.ImageFilePath);
+                    if (item.Kind == PouchItemKind.Image && image == null && !hasFile) continue;
+                    if (hasFile)
+                    {
+                        persisted.ImageFile = Path.GetFileName(item.ImageFilePath);
+                        keep.Add(persisted.ImageFile!);
+                    }
+                    else if (image != null)
                     {
                         persisted.ImageFile = $"{item.Id}.png";
                         images.Add((persisted.ImageFile, image));
+                        keep.Add(persisted.ImageFile);
                     }
                     saved.Items.Add(persisted);
                 }
                 state.Shelves.Add(saved);
             }
-            return new Snapshotted(state, images);
+            return new Snapshotted(state, images, keep);
         }
 
-        private void Write(Snapshotted snapshot)
+        private void Write(Snapshotted snapshot, bool prune)
         {
             lock (_writeLock)
             {
@@ -195,7 +210,7 @@ namespace Pouchy.Services
                     File.WriteAllText(temp, json);
                     File.Move(temp, _stateFile, overwrite: true);
 
-                    PruneImages(snapshot.Images.Select(i => i.File));
+                    if (prune) PruneImages(snapshot.KeepFiles);
                 }
                 catch (Exception ex)
                 {
