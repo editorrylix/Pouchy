@@ -1,0 +1,200 @@
+<ui:FluentWindow x:Class="Pouchy.Views.SettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+        xmlns:vm="clr-namespace:Pouchy.ViewModels"
+        mc:Ignorable="d"
+        d:DataContext="{d:DesignInstance Type=vm:SettingsViewModel}"
+        Title="Pouchy Settings" Height="720" Width="560" MinWidth="460" MinHeight="400"
+        WindowBackdropType="Mica"
+        ExtendsContentIntoTitleBar="True"
+        WindowCornerPreference="Round"
+        WindowStartupLocation="CenterScreen"
+        Closing="Window_Closing">
+
+    <ui:FluentWindow.Resources>
+        <Style x:Key="SectionHeader" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Margin" Value="2,18,0,8"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}"/>
+        </Style>
+        <Style x:Key="CardTitle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}"/>
+        </Style>
+        <Style x:Key="CardDescription" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="11.5"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+            <Setter Property="Margin" Value="0,2,0,0"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}"/>
+        </Style>
+        <Style TargetType="ui:CardControl" BasedOn="{StaticResource {x:Type ui:CardControl}}">
+            <Setter Property="Margin" Value="0,0,0,4"/>
+        </Style>
+    </ui:FluentWindow.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <ui:TitleBar Grid.Row="0" Title="Pouchy Settings"/>
+
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <StackPanel Margin="20,0,20,20">
+
+                <!-- General -->
+                <TextBlock Text="General" Style="{StaticResource SectionHeader}"/>
+                <ui:CardControl>
+                    <ui:CardControl.Header>
+                        <StackPanel>
+                            <TextBlock Text="Run at Windows startup" Style="{StaticResource CardTitle}"/>
+                            <TextBlock Text="Start Pouchy in the tray when you sign in." Style="{StaticResource CardDescription}"/>
+                        </StackPanel>
+                    </ui:CardControl.Header>
+                    <ui:ToggleSwitch IsChecked="{Binding RunAtStartup}"/>
+                </ui:CardControl>
+                <ui:CardControl>
+                    <ui:CardControl.Header>
+                        <StackPanel>
+                            <TextBlock Text="Clear pouch on startup" Style="{StaticResource CardTitle}"/>
+                            <TextBlock Text="Start with an empty pouch instead of restoring the last session." Style="{StaticResource CardDescription}"/>
+                        </StackPanel>
+                    </ui:CardControl.Header>
+                    <ui:ToggleSwitch IsChecked="{Binding ClearOnStartup}"/>
+                </ui:CardControl>
+
+                <!-- Triggers -->
+                <TextBlock Text="Triggers" Style="{StaticResource SectionHeader}"/>
+                <ui:CardControl>
+                    <ui:CardControl.Header>
+                        <StackPanel>
+                            <TextBlock Text="Shake to open" Style="{StaticResource CardTitle}"/>
+                            <TextBlock Text="Wiggle the mouse left and right while dragging." Style="{StaticResource CardDescription}"/>
+                        </StackPanel>
+                    </ui:CardControl.Header>
+                    <ui:ToggleSwitch IsChecked="{Binding ShakeEnabled}"/>
+                </ui:CardControl>
+                <ui:CardControl IsEnabled="{Binding ShakeEnabled}">
+                    <ui:CardControl.Header>
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource CardTitle}">
+                                <Run Text="Shake distance:"/>
+                                <Run Text="{Binding ShakeMinDistance, Mode=OneWay}"/><Run Text=" px"/>
+                            </TextBlock>
+                            <TextBlock Text="Lower is more sensitive. Raise it if the pouch opens by accident." Style="{StaticResource CardDescription}"/>
+                        </StackPanel>
+                    </ui:CardControl.Header>
+                    <Slider Width="180" Minimum="10" Maximum="80" TickFrequency="5" IsSnapToTickEnabled="True"
+                            Value="{Binding ShakeMinDistance}"/>
+                </ui:CardControl>
+                <ui:CardControl IsEnabled="{Binding ShakeEnabled}">
+                    <ui:CardControl.Header>
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource CardTitle}">
+                                <Run Text="Direction changes:"/>
+                                <Run Text="{Binding ShakeReversals, Mode=OneWay}"/>
+                            </TextBlock>
+                            <TextBlock Text="How many back-and-forth movements count as a shake." Style="{StaticResource CardDescription}"/>
+                        </StackPanel>
+                    </ui:CardControl.Header>
+                    <Slider Width="180" Minimum="2" Maximum="8" TickFrequency="1" IsSnapToTickEnabled="True"
+                            Value="{Binding ShakeReversals}"/>
+                </ui:CardControl>
+                <ui:CardControl>
+                    <ui:CardControl.Header>
+                        <StackPanel>
+                            <TextBlock Text="Bump the screen edge" Style="{StaticResource CardTitle}"/>
+                            <TextBlock Text="Hit the left or right edge of the screen twice while dragging." Style="{StaticResource CardDescription}"/>
+                        </StackPanel>
+                    </ui:CardControl.Header>
+                    <ui:ToggleSwitch IsChecked="{Binding EdgeBumpEnabled}"/>
+                </ui:CardControl>
+                <ui:CardControl>
+                    <ui:CardControl.Header>
+                        <StackPanel>
+                            <TextBlock Text="Hold a key while dragging" Style="{StaticResource CardTitle}"/>
+                            <TextBlock Text="Note: Ctrl, Shift and Alt also change copy/move/link in Explorer." Style="{StaticResource CardDescription}"/>
+                        </StackPanel>
+                    </ui:CardControl.Header>
+                    <StackPanel Orientation="Horizontal">
+                        <ComboBox Width="110" Margin="0,0,12,0" ItemsSource="{Binding ModifierOptions}" SelectedItem="{Binding ModifierDragKey}"
+                                  IsEnabled="{Binding ModifierDragEnabled}"/>
+                        <ui:ToggleSwitch IsChecked="{Binding ModifierDragEnabled}"/>
+                    </StackPanel>
+                </ui:CardControl>
+                <ui:CardControl>
+                    <ui:CardControl.Header>
+                        <StackPanel>
+                            <TextBlock Text="Drag detection" Style="{StaticResource CardTitle}"/>
+                            <TextBlock Text="{Binding DragDetectionDescription}" Style="{StaticResource CardDescription}"/>
+                        </StackPanel>
+                    </ui:CardControl.Header>
+                    <ComboBox Width="130" ItemsSource="{Binding DragDetectionOptions}" SelectedItem="{Binding DragDetection}"/>
+                </ui:CardControl>
+
+                <!-- Hotkey -->
+                <TextBlock Text="Hotkey" Style="{StaticResource SectionHeader}"/>
+                <ui:CardControl>
+                    <ui:CardControl.Header>
+                        <StackPanel>
+                            <TextBlock Text="Show / hide pouch" Style="{StaticResource CardTitle}"/>
+                            <TextBlock Text="Click the box and press a new key combination." Style="{StaticResource CardDescription}"/>
+                            <TextBlock Text="{Binding HotkeyError}" Foreground="#FF6B6B" FontSize="11.5" TextWrapping="Wrap" Margin="0,4,0,0">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding HotkeyError}" Value="{x:Null}">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </StackPanel>
+                    </ui:CardControl.Header>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBox Width="150" Margin="0,0,12,0" IsReadOnly="True" IsReadOnlyCaretVisible="False"
+                                 Text="{Binding HotkeyText, Mode=OneWay}" IsEnabled="{Binding HotkeyEnabled}"
+                                 PreviewKeyDown="HotkeyBox_PreviewKeyDown" ToolTip="Click, then press a key combination"/>
+                        <ui:ToggleSwitch IsChecked="{Binding HotkeyEnabled}"/>
+                    </StackPanel>
+                </ui:CardControl>
+
+                <!-- Suppression -->
+                <TextBlock Text="When not to open" Style="{StaticResource SectionHeader}"/>
+                <ui:CardControl>
+                    <ui:CardControl.Header>
+                        <StackPanel>
+                            <TextBlock Text="Ignore fullscreen apps" Style="{StaticResource CardTitle}"/>
+                            <TextBlock Text="Don't open over games, videos or presentations." Style="{StaticResource CardDescription}"/>
+                        </StackPanel>
+                    </ui:CardControl.Header>
+                    <ui:ToggleSwitch IsChecked="{Binding SuppressInFullscreen}"/>
+                </ui:CardControl>
+                <Border Padding="16" CornerRadius="6" Margin="0,0,0,4"
+                        Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                        BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="1">
+                    <StackPanel>
+                        <TextBlock Text="Ignored apps" Style="{StaticResource CardTitle}"/>
+                        <TextBlock Text="One program name per line, e.g. photoshop.exe. Saved when you leave the box."
+                                   Style="{StaticResource CardDescription}" Margin="0,2,0,8"/>
+                        <TextBox Text="{Binding BlacklistText}" AcceptsReturn="True" TextWrapping="NoWrap"
+                                 MinHeight="90" MaxHeight="180" VerticalScrollBarVisibility="Auto" FontFamily="Consolas"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Advanced -->
+                <TextBlock Text="Advanced" Style="{StaticResource SectionHeader}"/>
+                <StackPanel Orientation="Horizontal">
+                    <ui:Button Content="Open data folder" Icon="{ui:SymbolIcon Folder24}" Margin="0,0,8,0" Command="{Binding OpenDataFolderCommand}"/>
+                    <ui:Button Content="Open log" Icon="{ui:SymbolIcon DocumentText24}" Command="{Binding OpenLogCommand}"/>
+                </StackPanel>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</ui:FluentWindow>

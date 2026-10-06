@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
+    <!-- H.NotifyIcon.Wpf 2.4.1 only ships net462/net10 builds; the net462 one works fine on net8. -->
+    <NoWarn>NU1701</NoWarn>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <RootNamespace>Pouchy</RootNamespace>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+    <PackageReference Include="H.NotifyIcon.Wpf" Version="2.4.1" />
+    <PackageReference Include="WPF-UI" Version="4.3.0" />
+  </ItemGroup>
+
+  <!-- The test project lives in a subfolder; keep its files out of the app build. -->
+  <ItemGroup>
+    <Compile Remove="Pouchy.Tests\**" />
+    <Page Remove="Pouchy.Tests\**" />
+    <None Remove="Pouchy.Tests\**" />
+    <EmbeddedResource Remove="Pouchy.Tests\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Pouchy.Tests" />
+  </ItemGroup>
+
+</Project>

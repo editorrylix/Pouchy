@@ -1,0 +1,80 @@
+<ui:FluentWindow x:Class="Pouchy.Views.QuickLookWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+        Title="Quick Look" 
+        Height="600" Width="800"
+        WindowBackdropType="Mica"
+        ExtendsContentIntoTitleBar="True"
+        WindowCornerPreference="Round"
+        WindowStartupLocation="CenterScreen"
+        WindowStyle="None"
+        PreviewKeyDown="Window_PreviewKeyDown"
+        Closed="Window_Closed">
+
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        
+        <ui:TitleBar Grid.Row="0" Title="Quick Look" />
+        
+        <!-- Preview Content -->
+        <Border Grid.Row="1" Background="#660A0A0C" CornerRadius="12" Margin="10" BorderThickness="1">
+            <Border.BorderBrush>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                    <GradientStop Color="#40FFFFFF" Offset="0"/>
+                    <GradientStop Color="#10FFFFFF" Offset="1"/>
+                </LinearGradientBrush>
+            </Border.BorderBrush>
+            <Grid x:Name="PreviewContainer" Margin="10">
+                <!-- Image Preview -->
+                <Image x:Name="PreviewImage" Stretch="Uniform" Visibility="Collapsed"/>
+                
+                <!-- Video Preview -->
+                <MediaElement x:Name="PreviewVideo" Stretch="Uniform" LoadedBehavior="Play" UnloadedBehavior="Stop" Visibility="Collapsed"/>
+                
+                <!-- Text Preview -->
+                <ScrollViewer x:Name="PreviewTextScroll" Visibility="Collapsed" Margin="10">
+                    <TextBlock x:Name="PreviewText" Foreground="#E0E0E0" FontFamily="Consolas" TextWrapping="Wrap" />
+                </ScrollViewer>
+                
+                <!-- Stack/Folder Preview (List of items) -->
+                <ListBox x:Name="PreviewList" Visibility="Collapsed" Background="Transparent" BorderThickness="0" Foreground="#E0E0E0">
+                    <ListBox.ItemContainerStyle>
+                        <Style TargetType="ListBoxItem">
+                            <Setter Property="Padding" Value="8,4"/>
+                            <Setter Property="Background" Value="Transparent"/>
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="ListBoxItem">
+                                        <Border Background="{TemplateBinding Background}" CornerRadius="6">
+                                            <ContentPresenter/>
+                                        </Border>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                            <Style.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter Property="Background" Value="#1AFFFFFF"/>
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </ListBox.ItemContainerStyle>
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel Orientation="Horizontal" Margin="2">
+                                <ui:SymbolIcon Symbol="Document24" FontSize="16" Foreground="#AAAAAA" Margin="0,0,10,0"/>
+                                <TextBlock Text="{Binding}" FontSize="14" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+
+                <!-- Empty/No Preview State -->
+                <TextBlock x:Name="NoPreviewText" Text="No preview available." Foreground="#888888" HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="Collapsed"/>
+            </Grid>
+        </Border>
+    </Grid>
+</ui:FluentWindow>
