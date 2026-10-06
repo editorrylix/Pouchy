@@ -42,6 +42,7 @@ namespace Pouchy.ViewModels
         public IReadOnlyList<PouchViewMode> ViewModeOptions { get; } = Enum.GetValues<PouchViewMode>();
         public IReadOnlyList<TileSize> TileSizeOptions { get; } = Enum.GetValues<TileSize>();
         public IReadOnlyList<SpawnAnimation> SpawnAnimationOptions { get; } = Enum.GetValues<SpawnAnimation>();
+        public IReadOnlyList<DragOutAction> DragOutOptions { get; } = Enum.GetValues<DragOutAction>();
 
         public ObservableCollection<ThemeOption> Themes { get; } = new();
 
@@ -57,6 +58,8 @@ namespace Pouchy.ViewModels
         [ObservableProperty] private bool _reduceMotion;
         [ObservableProperty] private bool _showMascot;
         [ObservableProperty] private bool _compactShelfTabs;
+        [ObservableProperty] private DragOutAction _dragOutAction;
+        [ObservableProperty] private bool _removeAfterDragOut;
 
         [ObservableProperty] private bool _runAtStartup;
         [ObservableProperty] private bool _clearOnStartup;
@@ -105,6 +108,8 @@ namespace Pouchy.ViewModels
             ReduceMotion = s.ReduceMotion;
             ShowMascot = s.ShowMascot;
             CompactShelfTabs = s.CompactShelfTabs;
+            DragOutAction = s.DragOutAction;
+            RemoveAfterDragOut = s.RemoveAfterDragOut;
 
             RunAtStartup = startup.IsEnabled;
             ClearOnStartup = s.ClearOnStartup;
@@ -265,6 +270,8 @@ namespace Pouchy.ViewModels
         partial void OnReduceMotionChanged(bool value) => Apply(s => s.ReduceMotion = value);
         partial void OnShowMascotChanged(bool value) => Apply(s => s.ShowMascot = value);
         partial void OnCompactShelfTabsChanged(bool value) => Apply(s => s.CompactShelfTabs = value);
+        partial void OnDragOutActionChanged(DragOutAction value) => Apply(s => s.DragOutAction = value);
+        partial void OnRemoveAfterDragOutChanged(bool value) => Apply(s => s.RemoveAfterDragOut = value);
 
         partial void OnClearOnStartupChanged(bool value) => Apply(s => s.ClearOnStartup = value);
         partial void OnFetchLinkPreviewsChanged(bool value) => Apply(s => s.FetchLinkPreviews = value);

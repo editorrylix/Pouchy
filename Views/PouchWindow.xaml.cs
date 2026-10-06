@@ -438,6 +438,15 @@ namespace Pouchy.Views
             {
                 var accent = TryFindResource("Pouch.Accent") as Brush ?? Brushes.SlateBlue;
                 DragImage.Attach(shellData, element, items.Count, accent, Mouse.GetPosition(element));
+                try
+                {
+                    OleDrag.SetPreferredEffect(shellData,
+                        _vm.DragOutAction == DragOutAction.Move ? DragDropEffects.Move : DragDropEffects.Copy);
+                }
+                catch (Exception ex)
+                {
+                    Logger.Log("Could not set the preferred drop effect: " + ex.Message);
+                }
                 data = shellData;
             }
             data ??= DataObjectBuilder.Build(items);
@@ -456,8 +465,8 @@ namespace Pouchy.Views
                     ? OleDrag.Run(comData, allowed)
                     : DragDrop.DoDragDrop(element, data, allowed); // The drag source must be a UIElement.
                 Logger.Log($"Dragged {items.Count} item(s) out: {result}.");
-                // Explorer moves files itself and reports "None" (an optimised move), so always re-check.
-                _vm.RefreshMissingState();
+                // Explorer moves files itself and reports "None" (an optimised move), so re-check the files.
+                _vm.AfterDragOut(items, dropped: result != DragDropEffects.None);
             }
             catch (Exception ex)
             {
@@ -468,6 +477,8 @@ namespace Pouchy.Views
                 Topmost = wasTopmost;
                 _vm.IsDraggingOut = false;
                 _draggedItems = null;
+                // No mouse events reach the window during a drag, so the tile still thinks it's hovered.
+                Mouse.Synchronize();
                 element.Opacity = 1.0;
             }
         }

@@ -26,6 +26,42 @@ namespace Pouchy.Interop
         private const int MK_LBUTTON = 0x0001;
         private const int MK_RBUTTON = 0x0002;
 
+        private const int DVASPECT_CONTENT = 1;
+
+        [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+        private static extern int RegisterClipboardFormat(string format);
+
+        /// <summary>
+        /// Tells the drop target which effect to use when the user doesn't hold a modifier key
+        /// ("Preferred DropEffect"). Explorer otherwise moves files dropped on the same drive.
+        /// </summary>
+        public static void SetPreferredEffect(ComIDataObject data, DragDropEffects effect)
+        {
+            var format = new System.Runtime.InteropServices.ComTypes.FORMATETC
+            {
+                cfFormat = (short)RegisterClipboardFormat("Preferred DropEffect"),
+                dwAspect = (System.Runtime.InteropServices.ComTypes.DVASPECT)DVASPECT_CONTENT,
+                lindex = -1,
+                tymed = System.Runtime.InteropServices.ComTypes.TYMED.TYMED_HGLOBAL,
+            };
+            IntPtr memory = Marshal.AllocHGlobal(sizeof(int));
+            Marshal.WriteInt32(memory, (int)effect);
+            var medium = new System.Runtime.InteropServices.ComTypes.STGMEDIUM
+            {
+                tymed = System.Runtime.InteropServices.ComTypes.TYMED.TYMED_HGLOBAL,
+                unionmember = memory,
+            };
+            try
+            {
+                data.SetData(ref format, ref medium, true); // The data object owns the memory now.
+            }
+            catch (Exception)
+            {
+                Marshal.FreeHGlobal(memory);
+                throw;
+            }
+        }
+
         [DllImport("ole32.dll")]
         private static extern int DoDragDrop(ComIDataObject pDataObj, IDropSource pDropSource, int dwOKEffects, out int pdwEffect);
 

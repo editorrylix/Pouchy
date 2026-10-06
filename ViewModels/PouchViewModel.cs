@@ -283,6 +283,19 @@ namespace Pouchy.ViewModels
         public bool ShowTileActions => ViewMode == PouchViewMode.Grid;
         public bool ShowMascot => _settings.Current.ShowMascot;
         public bool CompactShelfTabs => _settings.Current.CompactShelfTabs;
+        public DragOutAction DragOutAction => _settings.Current.DragOutAction;
+
+        /// <summary>
+        /// After items were dropped somewhere: drop the ones whose files were moved away (they'd only
+        /// show as missing), and all of them if the user wants delivered items removed.
+        /// </summary>
+        public void AfterDragOut(IReadOnlyCollection<PouchItem> items, bool dropped)
+        {
+            foreach (var item in items) _factory.Refresh(item);
+            var gone = items.Where(i => i.IsFileSystemItem && i.IsMissing).ToList();
+            var remove = dropped && _settings.Current.RemoveAfterDragOut ? items.ToList() : gone;
+            if (remove.Count > 0) RemoveItems(remove, undoable: false);
+        }
         public SpawnAnimation SpawnAnimation => _settings.Current.ReduceMotion ? SpawnAnimation.None : _settings.Current.SpawnAnimation;
 
         /// <summary>Set by the app to open the settings window.</summary>

@@ -37,6 +37,15 @@ namespace Pouchy.Models
         None,
     }
 
+    public enum DragOutAction
+    {
+        /// <summary>Dropping files somewhere copies them; the originals stay put (Shift moves).</summary>
+        Copy,
+
+        /// <summary>Dropping files somewhere moves them, like Explorer on the same drive (Ctrl copies).</summary>
+        Move,
+    }
+
     public enum DragModifier
     {
         Control,
@@ -90,6 +99,11 @@ namespace Pouchy.Models
         public bool ShowMascot { get; set; } = true;
         /// <summary>Shelf tabs other than the active one show only their icon.</summary>
         public bool CompactShelfTabs { get; set; } = true;
+
+        // Dragging out
+        public DragOutAction DragOutAction { get; set; } = DragOutAction.Copy;
+        /// <summary>Remove items from the pouch once they've been dropped somewhere.</summary>
+        public bool RemoveAfterDragOut { get; set; }
 
         // Shake trigger
         public bool ShakeEnabled { get; set; } = true;

@@ -214,6 +214,28 @@
                     <ui:ToggleSwitch IsChecked="{Binding ReduceMotion}"/>
                 </ui:CardControl>
 
+                <!-- Dragging out -->
+                <TextBlock Text="Dragging out" Style="{StaticResource SectionHeader}"/>
+                <ui:CardControl>
+                    <ui:CardControl.Header>
+                        <StackPanel>
+                            <TextBlock Text="When you drop files somewhere" Style="{StaticResource CardTitle}"/>
+                            <TextBlock Text="Copy keeps the originals where they are (hold Shift to move). Move works like Explorer (hold Ctrl to copy)."
+                                       Style="{StaticResource CardDescription}"/>
+                        </StackPanel>
+                    </ui:CardControl.Header>
+                    <ComboBox Width="130" ItemsSource="{Binding DragOutOptions}" SelectedItem="{Binding DragOutAction}"/>
+                </ui:CardControl>
+                <ui:CardControl>
+                    <ui:CardControl.Header>
+                        <StackPanel>
+                            <TextBlock Text="Remove items after dragging them out" Style="{StaticResource CardTitle}"/>
+                            <TextBlock Text="Pinned or not, an item leaves the pouch once you've dropped it somewhere." Style="{StaticResource CardDescription}"/>
+                        </StackPanel>
+                    </ui:CardControl.Header>
+                    <ui:ToggleSwitch IsChecked="{Binding RemoveAfterDragOut}"/>
+                </ui:CardControl>
+
                 <!-- General -->
                 <TextBlock Text="General" Style="{StaticResource SectionHeader}"/>
                 <ui:CardControl>
