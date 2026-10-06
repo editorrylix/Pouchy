@@ -225,6 +225,28 @@ Settings apply live, without a restart.
 
 ---
 
+## Phase 2 status ✅
+
+Done:
+- ✅ **Thumbnail grid** using real Windows Shell thumbnails (photos, videos, PDFs, Office docs). Stacks show a fanned pile of their first three files, and text snippets show a text preview.
+- ✅ **View modes:** Grid (default), List and Compact; toggle from the header or in Settings.
+- ✅ **Theme engine:** design tokens through DynamicResource; JSON themes in `%AppData%\Pouchy\themes\` that reload live; gradients; `system` accent; light/dark variants. See [docs/THEMES.md](docs/THEMES.md).
+- ✅ **Built-in themes:** Midnight Glass, Follow Windows, Frost, Paper, Sunset, Terminal (with scanlines and glow).
+- ✅ **Appearance settings:**
+  - Theme gallery with previews and "Customize this theme"
+  - Tile size, columns, labels and details
+  - Background opacity
+  - Open animation (Pop / Slide / Fade / None), animation speed, reduce motion
+- ✅ **Redesigned pouch:** header with item count, drop highlight while dragging in, accent "Drag all" button, themed edge tabs, tiles animate in when added.
+- ✅ App icon (exe, tray, windows).
+
+Deferred:
+- Real acrylic blur behind the pouch. Needs a non-layered DWM window, which rules out custom shapes, so it would be an optional "system backdrop" mode.
+- Visual theme editor (Phase 6). Themes are edited as JSON for now.
+- "Fanned stack" whole-pouch view, capsule-style minimal pouch, sound packs, per-shelf themes, time-of-day switching.
+
+---
+
 ## 13. Technical foundation ✅ (Phase 1 complete)
 
 Done:
@@ -259,7 +281,7 @@ Deferred to later phases:
 | Phase | Focus | Contents |
 |---|---|---|
 | **1. Foundation** ✅ | Stability | Git, MVVM, services, bug fixes, settings model, start with Windows |
-| **2. Look** | Identity | Theme engine, 4–5 built-in themes, redesigned pouch, view modes, animations |
+| **2. Look** ✅ | Identity | Theme engine, 4–5 built-in themes, redesigned pouch, view modes, animations |
 | **3. Interaction** | UX | Right-click menus, multi-select, keyboard support, Shell thumbnails, smart triggers |
 | **4. Organisation** | Power | Multiple shelves, pins, tags, search, full persistence, link and colour content types |
 | **5. Actions** | Pro | Drop actions, plugin interface, Explorer integration, clipboard history |

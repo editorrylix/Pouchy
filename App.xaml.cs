@@ -1,11 +1,13 @@
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Threading;
 using H.NotifyIcon;
+using Pouchy.Helpers;
 using Pouchy.Interop;
 using Pouchy.Services;
+using Pouchy.Services.Theming;
 using Pouchy.ViewModels;
 using Pouchy.Views;
+using Wpf.Ui.Appearance;
 
 namespace Pouchy
 {
@@ -13,6 +15,7 @@ namespace Pouchy
     public partial class App : Application
     {
         private const string SingleInstanceMutexName = @"Local\Pouchy.SingleInstance";
+        public const string IconUri = "pack://application:,,,/Pouchy;component/Assets/pouchy.ico";
         private static readonly TimeSpan SpawnCooldown = TimeSpan.FromMilliseconds(500);
 
         private Mutex? _singleInstanceMutex;
@@ -20,6 +23,8 @@ namespace Pouchy
         private StartupService? _startup;
         private HotkeyService? _hotkeys;
         private TriggerService? _triggers;
+        private ThemeService? _themes;
+        private ShellThumbnailProvider? _thumbnails;
         private PouchViewModel? _pouchViewModel;
         private PouchWindow? _pouchWindow;
         private SettingsWindow? _settingsWindow;
@@ -47,9 +52,17 @@ namespace Pouchy
             _startup = new StartupService();
             _startup.RefreshPathIfEnabled();
 
+            // Themes first: every window binds to the theme's resources.
+            _themes = new ThemeService(_settings, Resources, AppPaths.ThemesFolder, Dispatcher);
+            _themes.ThemeApplied += (_, _) => SyncFluentTheme();
+            _themes.Start();
+            ApplyMotionSettings();
+            _settings.Changed += (_, _) => ApplyMotionSettings();
+
             var persistence = new PersistenceService();
-            var factory = new ItemFactory(new ShellIconProvider());
-            _pouchViewModel = new PouchViewModel(factory, persistence);
+            _thumbnails = new ShellThumbnailProvider();
+            var factory = new ItemFactory(_thumbnails);
+            _pouchViewModel = new PouchViewModel(factory, persistence, _settings) { OpenSettingsAction = ShowSettings };
             _pouchWindow = new PouchWindow(_pouchViewModel);
             _ = _pouchViewModel.LoadAsync(clearInstead: _settings.Current.ClearOnStartup);
 
@@ -82,6 +95,22 @@ namespace Pouchy
             };
         }
 
+        /// <summary>Keeps WPF-UI windows (settings, Quick Look) in step with the pouch theme.</summary>
+        private void SyncFluentTheme()
+        {
+            if (_themes == null) return;
+            var theme = _themes.IsLight ? ApplicationTheme.Light : ApplicationTheme.Dark;
+            ApplicationThemeManager.Apply(theme, Wpf.Ui.Controls.WindowBackdropType.Mica, updateAccent: false);
+            ApplicationAccentColorManager.Apply(_themes.AccentColor, theme);
+        }
+
+        private void ApplyMotionSettings()
+        {
+            var s = _settings!.Current;
+            Motion.Enabled = !s.ReduceMotion && s.SpawnAnimation != Models.SpawnAnimation.None;
+            Motion.Speed = s.AnimationSpeed;
+        }
+
         private void SetupTrayIcon()
         {
             var menu = new ContextMenu();
@@ -93,7 +122,7 @@ namespace Pouchy
 
             _trayIcon = new TaskbarIcon
             {
-                Icon = System.Drawing.SystemIcons.Application,
+                Icon = LoadTrayIcon(),
                 ToolTipText = "Pouchy",
                 ContextMenu = menu,
                 NoLeftClickDelay = true,
@@ -102,6 +131,20 @@ namespace Pouchy
 
             // Icons created in code (not in XAML) must be created explicitly to appear.
             _trayIcon.ForceCreate(enablesEfficiencyMode: false);
+
+            static System.Drawing.Icon LoadTrayIcon()
+            {
+                try
+                {
+                    using var stream = GetResourceStream(new Uri(IconUri)).Stream;
+                    return new System.Drawing.Icon(stream, 16, 16);
+                }
+                catch (Exception ex)
+                {
+                    Logger.Log("Could not load tray icon: " + ex.Message);
+                    return System.Drawing.SystemIcons.Application;
+                }
+            }
 
             static MenuItem MenuItem(string header, RoutedEventHandler onClick)
             {
@@ -140,9 +183,13 @@ namespace Pouchy
                 return;
             }
 
-            var viewModel = new SettingsViewModel(_settings!, _startup!, _hotkeys!);
+            var viewModel = new SettingsViewModel(_settings!, _startup!, _hotkeys!, _themes!);
             _settingsWindow = new SettingsWindow(viewModel);
-            _settingsWindow.Closed += (_, _) => _settingsWindow = null;
+            _settingsWindow.Closed += (_, _) =>
+            {
+                viewModel.Detach();
+                _settingsWindow = null;
+            };
             _settingsWindow.Show();
             _settingsWindow.Activate();
         }
@@ -163,6 +210,8 @@ namespace Pouchy
             _trayIcon?.Dispose();
             _hotkeys?.Dispose();
             _triggers?.Dispose();
+            _themes?.Dispose();
+            _thumbnails?.Dispose();
 
             _singleInstanceMutex?.ReleaseMutex();
             _singleInstanceMutex?.Dispose();

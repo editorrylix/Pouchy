@@ -8,9 +8,9 @@ namespace Pouchy.Tests
 {
     public class ItemFactoryTests : IDisposable
     {
-        private sealed class NoIcons : IIconProvider
+        private sealed class NoIcons : IThumbnailProvider
         {
-            public ImageSource? GetFileIcon(string path) => null;
+            public Thumbnail? GetThumbnail(string path) => null;
             public ImageSource? GetStackIcon() => null;
         }
 

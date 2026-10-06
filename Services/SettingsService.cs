@@ -14,6 +14,7 @@ namespace Pouchy.Services
         internal static readonly JsonSerializerOptions JsonOptions = new()
         {
             WriteIndented = true,
+            PropertyNameCaseInsensitive = true,
             Converters = { new JsonStringEnumConverter() },
         };
 
@@ -77,6 +78,10 @@ namespace Pouchy.Services
         {
             s.Hotkey ??= new HotkeySetting();
             s.Blacklist ??= new List<string>();
+            if (string.IsNullOrWhiteSpace(s.ThemeId)) s.ThemeId = "midnight";
+            s.GridColumns = Math.Clamp(s.GridColumns, 2, 6);
+            s.BackgroundOpacity = Math.Clamp(s.BackgroundOpacity, 0.4, 1.0);
+            s.AnimationSpeed = Math.Clamp(s.AnimationSpeed, 0.5, 2.0);
             s.ShakeMinDistance = Math.Clamp(s.ShakeMinDistance, 5, 200);
             s.ShakeReversals = Math.Clamp(s.ShakeReversals, 2, 10);
             s.ShakeWindowMs = Math.Clamp(s.ShakeWindowMs, 200, 3000);

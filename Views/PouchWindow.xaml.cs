@@ -24,7 +24,7 @@ namespace Pouchy.Views
         private const double CursorOffset = 40;
         private const double DockThreshold = 30;
         private const double UndockNudge = 20;
-        private static readonly Duration AnimationDuration = TimeSpan.FromMilliseconds(200);
+        private const double SlideDistance = 28;
 
         private readonly PouchViewModel _vm;
         private Point _dragStartPoint;
@@ -72,9 +72,11 @@ namespace Pouchy.Views
             var work = monitor.WorkArea;
 
             int left = x + offset;
+            bool opensRightOfCursor = true;
             if (left + width - shadow > work.Right)
             {
                 left = x - width - offset; // Not enough room on the right: open to the left.
+                opensRightOfCursor = false;
             }
             int top = y - height / 2;
 
@@ -85,7 +87,7 @@ namespace Pouchy.Views
             NativeMethods.SetWindowPos(hwnd, IntPtr.Zero, left, top, 0, 0,
                 NativeMethods.SWP_NOSIZE | NativeMethods.SWP_NOZORDER | NativeMethods.SWP_NOACTIVATE);
 
-            AnimateIn();
+            AnimateIn(opensRightOfCursor);
         }
 
         /// <summary>Shows the pouch if hidden, hides it if shown.</summary>
@@ -105,26 +107,66 @@ namespace Pouchy.Views
         public void Despawn()
         {
             int version = ++_animationVersion;
-            var fadeOut = Animation(1, 0, EasingMode.EaseIn);
+            if (_vm.SpawnAnimation == SpawnAnimation.None)
+            {
+                Hide();
+                return;
+            }
+
+            var fadeOut = Animation(1, 0, 160, new CubicEase { EasingMode = EasingMode.EaseIn });
             fadeOut.Completed += (_, _) =>
             {
                 if (version == _animationVersion) Hide();
             };
-
             MainContainer.BeginAnimation(OpacityProperty, fadeOut);
-            WindowScale.BeginAnimation(ScaleTransform.ScaleXProperty, Animation(1.0, 0.9, EasingMode.EaseIn));
-            WindowScale.BeginAnimation(ScaleTransform.ScaleYProperty, Animation(1.0, 0.9, EasingMode.EaseIn));
+
+            if (_vm.SpawnAnimation == SpawnAnimation.Pop)
+            {
+                var ease = new CubicEase { EasingMode = EasingMode.EaseIn };
+                WindowScale.BeginAnimation(ScaleTransform.ScaleXProperty, Animation(1.0, 0.94, 160, ease));
+                WindowScale.BeginAnimation(ScaleTransform.ScaleYProperty, Animation(1.0, 0.94, 160, ease));
+            }
         }
 
-        private void AnimateIn()
+        private void AnimateIn(bool fromLeft)
         {
-            MainContainer.BeginAnimation(OpacityProperty, Animation(0, 1, EasingMode.EaseOut));
-            WindowScale.BeginAnimation(ScaleTransform.ScaleXProperty, Animation(0.85, 1.0, EasingMode.EaseOut));
-            WindowScale.BeginAnimation(ScaleTransform.ScaleYProperty, Animation(0.85, 1.0, EasingMode.EaseOut));
+            ResetTransforms();
+            var style = _vm.SpawnAnimation;
+            if (style == SpawnAnimation.None)
+            {
+                MainContainer.Opacity = 1;
+                return;
+            }
+
+            var easeOut = new CubicEase { EasingMode = EasingMode.EaseOut };
+            MainContainer.BeginAnimation(OpacityProperty, Animation(0, 1, 180, easeOut));
+
+            switch (style)
+            {
+                case SpawnAnimation.Pop:
+                    var pop = new BackEase { EasingMode = EasingMode.EaseOut, Amplitude = 0.35 };
+                    WindowScale.BeginAnimation(ScaleTransform.ScaleXProperty, Animation(0.86, 1.0, 260, pop));
+                    WindowScale.BeginAnimation(ScaleTransform.ScaleYProperty, Animation(0.86, 1.0, 260, pop));
+                    break;
+                case SpawnAnimation.Slide:
+                    double distance = fromLeft ? -SlideDistance : SlideDistance;
+                    WindowSlide.BeginAnimation(TranslateTransform.XProperty, Animation(distance, 0, 260, new QuinticEase { EasingMode = EasingMode.EaseOut }));
+                    break;
+            }
         }
 
-        private static DoubleAnimation Animation(double from, double to, EasingMode easing) =>
-            new(from, to, AnimationDuration) { EasingFunction = new CubicEase { EasingMode = easing } };
+        private void ResetTransforms()
+        {
+            MainContainer.BeginAnimation(OpacityProperty, null);
+            WindowScale.BeginAnimation(ScaleTransform.ScaleXProperty, null);
+            WindowScale.BeginAnimation(ScaleTransform.ScaleYProperty, null);
+            WindowSlide.BeginAnimation(TranslateTransform.XProperty, null);
+            WindowScale.ScaleX = WindowScale.ScaleY = 1;
+            WindowSlide.X = 0;
+        }
+
+        private static DoubleAnimation Animation(double from, double to, double milliseconds, IEasingFunction easing) =>
+            new(from, to, Motion.Duration(milliseconds)) { EasingFunction = easing };
 
         private void Window_Closing(object? sender, CancelEventArgs e)
         {
@@ -173,8 +215,11 @@ namespace Pouchy.Views
             MainContainer.Visibility = Visibility.Collapsed;
             (left ? EdgeTabLeft : EdgeTabRight).Visibility = Visibility.Visible;
 
+            // The window shrinks to the tab, so measure it again before placing it.
+            UpdateLayout();
+            NativeMethods.GetWindowRect(Handle, out var tabRect);
             int shadow = ToPx(ShadowMargin);
-            int x = left ? screen.Left - shadow : screen.Right - windowRect.Width + shadow;
+            int x = left ? screen.Left - shadow : screen.Right - tabRect.Width + shadow;
             NativeMethods.SetWindowPos(Handle, IntPtr.Zero, x, windowRect.Top, 0, 0,
                 NativeMethods.SWP_NOSIZE | NativeMethods.SWP_NOZORDER | NativeMethods.SWP_NOACTIVATE);
         }
@@ -203,7 +248,11 @@ namespace Pouchy.Views
 
         private void Window_DragEnter(object sender, DragEventArgs e)
         {
-            _isDraggingIn = true;
+            if (!_vm.IsDraggingOut && !_isDraggingIn)
+            {
+                _isDraggingIn = true;
+                ShowDropOverlay(true);
+            }
             e.Effects = GetDragEffect(e);
             e.Handled = true;
         }
@@ -216,12 +265,26 @@ namespace Pouchy.Views
 
         private void Window_DragLeave(object sender, DragEventArgs e)
         {
+            // DragLeave also fires when moving between child elements; only react when really leaving.
+            var position = e.GetPosition(MainContainer);
+            bool inside = position.X >= 0 && position.Y >= 0 &&
+                          position.X < MainContainer.ActualWidth && position.Y < MainContainer.ActualHeight;
+            if (inside) return;
+
             _isDraggingIn = false;
+            ShowDropOverlay(false);
+        }
+
+        private void ShowDropOverlay(bool show)
+        {
+            var animation = new DoubleAnimation(show ? 1 : 0, Motion.Enabled ? Motion.Duration(show ? 120 : 180) : TimeSpan.Zero);
+            DropOverlay.BeginAnimation(OpacityProperty, animation);
         }
 
         private async void Window_Drop(object sender, DragEventArgs e)
         {
             _isDraggingIn = false;
+            ShowDropOverlay(false);
             if (_vm.IsDraggingOut) return; // Dropped back onto ourselves.
 
             e.Effects = GetDragEffect(e);

@@ -12,25 +12,62 @@ namespace Pouchy.ViewModels
 {
     public partial class PouchViewModel : ObservableObject
     {
+        private const double ListWidth = 300;
+        private const double CompactTileSize = 56;
+        private const double TileMargin = 8;
+
         private readonly ItemFactory _factory;
         private readonly PersistenceService _persistence;
+        private readonly SettingsService _settings;
         private bool _isLoading;
 
         public ObservableCollection<PouchItem> Items { get; } = new();
 
         public bool IsEmpty => Items.Count == 0;
         public bool HasMultipleItems => Items.Count > 1;
-        public string DragAllText => $"Drag All ({Items.Count} items)";
+        public string DragAllText => $"Drag all {Items.Count} items";
+        public string ItemCountText => Items.Count.ToString();
+
+        // Appearance, mirrored from settings so the view can bind to it.
+        public PouchViewMode ViewMode => _settings.Current.ViewMode;
+        public bool IsListMode => ViewMode == PouchViewMode.List;
+
+        public double TileSize => ViewMode == PouchViewMode.Compact
+            ? CompactTileSize
+            : _settings.Current.TileSize switch
+            {
+                Models.TileSize.Small => 76,
+                Models.TileSize.Large => 120,
+                _ => 96,
+            };
+
+        public int Columns => ViewMode == PouchViewMode.Compact ? _settings.Current.GridColumns + 2 : _settings.Current.GridColumns;
+
+        /// <summary>Width of the item area; the window sizes itself around it.</summary>
+        public double ContentWidth => IsListMode ? ListWidth : Columns * (TileSize + TileMargin);
+
+        /// <summary>Item list width: content plus the tile margins it overhangs on both sides.</summary>
+        public double ItemsAreaWidth => ContentWidth + TileMargin;
+
+        public bool ShowNames => ViewMode == PouchViewMode.Grid && _settings.Current.ShowItemNames;
+        public bool ShowDetails => ViewMode == PouchViewMode.Grid && _settings.Current.ShowItemDetails;
+        public bool ShowTileActions => ViewMode == PouchViewMode.Grid;
+        public SpawnAnimation SpawnAnimation => _settings.Current.ReduceMotion ? SpawnAnimation.None : _settings.Current.SpawnAnimation;
+
+        /// <summary>Set by the app to open the settings window.</summary>
+        public Action? OpenSettingsAction { get; set; }
 
         /// <summary>True while items are being dragged out of the pouch. Read from the trigger thread.</summary>
         [ObservableProperty]
         private bool _isDraggingOut;
 
-        public PouchViewModel(ItemFactory factory, PersistenceService persistence)
+        public PouchViewModel(ItemFactory factory, PersistenceService persistence, SettingsService settings)
         {
             _factory = factory;
             _persistence = persistence;
+            _settings = settings;
             Items.CollectionChanged += OnItemsChanged;
+            _settings.Changed += (_, _) => OnPropertyChanged(string.Empty); // Refresh every appearance binding.
         }
 
         public async Task LoadAsync(bool clearInstead)
@@ -110,6 +147,21 @@ namespace Pouchy.ViewModels
         private void Clear() => Items.Clear();
 
         [RelayCommand]
+        private void CycleViewMode()
+        {
+            var next = ViewMode switch
+            {
+                PouchViewMode.Grid => PouchViewMode.List,
+                PouchViewMode.List => PouchViewMode.Compact,
+                _ => PouchViewMode.Grid,
+            };
+            _settings.Update(s => s.ViewMode = next);
+        }
+
+        [RelayCommand]
+        private void OpenSettings() => OpenSettingsAction?.Invoke();
+
+        [RelayCommand]
         private void Remove(PouchItem? item)
         {
             if (item != null) Items.Remove(item);
@@ -141,6 +193,7 @@ namespace Pouchy.ViewModels
             OnPropertyChanged(nameof(IsEmpty));
             OnPropertyChanged(nameof(HasMultipleItems));
             OnPropertyChanged(nameof(DragAllText));
+            OnPropertyChanged(nameof(ItemCountText));
 
             if (!_isLoading) _persistence.ScheduleSave(Items);
         }

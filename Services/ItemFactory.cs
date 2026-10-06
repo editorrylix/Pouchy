@@ -14,16 +14,19 @@ namespace Pouchy.Services
     {
         private const int MaxFolderEntriesCounted = 10_000;
         private const int TextNameLength = 25;
+        private const int StackPreviewCount = 3;
 
-        private readonly IIconProvider _icons;
+        private readonly IThumbnailProvider _thumbnails;
 
-        public ItemFactory(IIconProvider icons)
+        public ItemFactory(IThumbnailProvider thumbnails)
         {
-            _icons = icons;
+            _thumbnails = thumbnails;
         }
 
         public PouchItem CreateFromPath(string path, Guid? id = null, DateTime? addedAt = null)
         {
+            var thumbnail = _thumbnails.GetThumbnail(path);
+
             if (Directory.Exists(path))
             {
                 return new PouchItem
@@ -34,7 +37,8 @@ namespace Pouchy.Services
                     FilePath = path,
                     DisplayName = GetName(path),
                     Metadata = $"Folder · {DescribeFolderContents(path)}",
-                    Icon = _icons.GetFileIcon(path),
+                    Icon = thumbnail?.Image,
+                    ThumbnailStyle = thumbnail?.Style ?? ThumbnailStyle.Icon,
                 };
             }
 
@@ -47,7 +51,8 @@ namespace Pouchy.Services
                 FilePath = path,
                 FileExtension = ext,
                 DisplayName = Path.GetFileNameWithoutExtension(path) is { Length: > 0 } name ? name : GetName(path),
-                Icon = _icons.GetFileIcon(path),
+                Icon = thumbnail?.Image,
+                ThumbnailStyle = thumbnail?.Style ?? ThumbnailStyle.Icon,
             };
             Refresh(item);
             return item;
@@ -63,7 +68,8 @@ namespace Pouchy.Services
                 StackFiles = paths.ToList(),
                 FileExtension = "STACK",
                 DisplayName = $"Stack of {Format.Plural(paths.Count, "item")}",
-                Icon = _icons.GetStackIcon(),
+                Icon = _thumbnails.GetStackIcon(),
+                StackPreviews = CreateStackCards(paths),
             };
             Refresh(item);
             return item;
@@ -97,6 +103,7 @@ namespace Pouchy.Services
                 DisplayName = "Image",
                 Metadata = $"Image · {frozen.PixelWidth}×{frozen.PixelHeight}",
                 Icon = frozen,
+                ThumbnailStyle = ThumbnailStyle.Fill,
             };
         }
 
@@ -175,6 +182,32 @@ namespace Pouchy.Services
                         + (missing > 0 ? $" · {missing} missing" : "");
                     break;
             }
+        }
+
+        /// <summary>Fans the first few files out like a pile of cards, first file on top.</summary>
+        private IReadOnlyList<StackCard> CreateStackCards(IReadOnlyList<string> paths)
+        {
+            var images = paths
+                .Take(StackPreviewCount)
+                .Select(p => _thumbnails.GetThumbnail(p)?.Image)
+                .OfType<ImageSource>()
+                .ToList();
+
+            // (angle, x, y) per card, bottom to top.
+            (double, double, double)[] layout = images.Count switch
+            {
+                1 => new[] { (0.0, 0.0, 0.0) },
+                2 => new[] { (-10.0, -7.0, 2.0), (6.0, 4.0, -1.0) },
+                _ => new[] { (-15.0, -11.0, 4.0), (12.0, 11.0, 2.0), (0.0, 0.0, -3.0) },
+            };
+
+            var cards = new List<StackCard>();
+            for (int i = 0; i < images.Count; i++)
+            {
+                var (angle, x, y) = layout[i];
+                cards.Add(new StackCard(images[images.Count - 1 - i], angle, x, y));
+            }
+            return cards;
         }
 
         private static PouchItemKind? InferKind(PersistedItem saved)

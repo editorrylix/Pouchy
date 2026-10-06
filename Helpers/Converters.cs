@@ -23,4 +23,17 @@ namespace Pouchy.Helpers
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) =>
             throw new NotSupportedException();
     }
+
+    /// <summary>Multiplies a number by the converter parameter, e.g. tile size × 0.45 for icon size.</summary>
+    public sealed class MultiplyConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            double factor = double.TryParse(parameter?.ToString(), NumberStyles.Float, CultureInfo.InvariantCulture, out var f) ? f : 1;
+            return value is double d ? d * factor : value;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) =>
+            throw new NotSupportedException();
+    }
 }

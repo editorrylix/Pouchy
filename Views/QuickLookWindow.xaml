@@ -8,6 +8,7 @@
         ExtendsContentIntoTitleBar="True"
         WindowCornerPreference="Round"
         WindowStartupLocation="CenterScreen"
+        Icon="pack://application:,,,/Pouchy;component/Assets/pouchy.ico"
         WindowStyle="None"
         PreviewKeyDown="Window_PreviewKeyDown"
         Closed="Window_Closed">

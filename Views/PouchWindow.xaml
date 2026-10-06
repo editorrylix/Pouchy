@@ -5,11 +5,12 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
         xmlns:vm="clr-namespace:Pouchy.ViewModels"
+        xmlns:models="clr-namespace:Pouchy.Models"
+        xmlns:helpers="clr-namespace:Pouchy.Helpers"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Type=vm:PouchViewModel}"
         Title="Pouchy"
-        Width="360"
-        SizeToContent="Height"
+        SizeToContent="WidthAndHeight"
         WindowStyle="None"
         AllowsTransparency="True"
         Background="Transparent"
@@ -23,43 +24,52 @@
         PreviewKeyDown="Window_PreviewKeyDown"
         Closing="Window_Closing"
         Focusable="True"
-        ResizeMode="NoResize">
+        ResizeMode="NoResize"
+        FontFamily="{DynamicResource Pouch.FontFamily}"
+        TextOptions.TextFormattingMode="Display">
 
+    <!--
+        Every colour, radius, font and shadow below comes from a DynamicResource set by
+        ThemeService (see Services/Theming/ThemeResourceBuilder.cs for the keys).
+    -->
     <Window.Resources>
+        <helpers:MultiplyConverter x:Key="Multiply"/>
+
         <Style TargetType="ScrollBar">
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="Width" Value="6"/>
+            <Setter Property="MinWidth" Value="6"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="ScrollBar">
-                        <Grid>
-                            <Border Background="Transparent"/>
-                            <Track x:Name="PART_Track" IsDirectionReversed="true">
-                                <Track.Thumb>
-                                    <Thumb>
-                                        <Thumb.Template>
-                                            <ControlTemplate TargetType="Thumb">
-                                                <Border Background="#44FFFFFF" CornerRadius="3" Margin="1,0,1,0"/>
-                                            </ControlTemplate>
-                                        </Thumb.Template>
-                                    </Thumb>
-                                </Track.Thumb>
-                            </Track>
-                        </Grid>
+                        <Track x:Name="PART_Track" IsDirectionReversed="true">
+                            <Track.Thumb>
+                                <Thumb>
+                                    <Thumb.Template>
+                                        <ControlTemplate TargetType="Thumb">
+                                            <Border Background="{DynamicResource Pouch.Scrollbar}" CornerRadius="3" Margin="1,0"/>
+                                        </ControlTemplate>
+                                    </Thumb.Template>
+                                </Thumb>
+                            </Track.Thumb>
+                        </Track>
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
         </Style>
 
-        <!-- Borderless button with a hover background; shared by the header and item actions. -->
-        <Style x:Key="FlatButton" TargetType="Button">
+        <!-- Small square icon button used in the header and on tiles. -->
+        <Style x:Key="IconButton" TargetType="Button">
             <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{DynamicResource Pouch.TextSecondary}"/>
             <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="6"/>
             <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Focusable" Value="False"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border Background="{TemplateBinding Background}" CornerRadius="6" Padding="{TemplateBinding Padding}">
+                        <Border Background="{TemplateBinding Background}" CornerRadius="8" Padding="{TemplateBinding Padding}">
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                     </ControlTemplate>
@@ -67,27 +77,341 @@
             </Setter>
             <Style.Triggers>
                 <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Background" Value="#1AFFFFFF"/>
+                    <Setter Property="Background" Value="{DynamicResource Pouch.TileHover}"/>
+                    <Setter Property="Foreground" Value="{DynamicResource Pouch.Text}"/>
                 </Trigger>
             </Style.Triggers>
         </Style>
+
+        <Style x:Key="DangerIconButton" TargetType="Button" BasedOn="{StaticResource IconButton}">
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="{DynamicResource Pouch.Danger}"/>
+                    <Setter Property="Foreground" Value="White"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- Round action buttons floating on a tile's corner. -->
+        <Style x:Key="TileActionButton" TargetType="Button">
+            <Setter Property="Width" Value="22"/>
+            <Setter Property="Height" Value="22"/>
+            <Setter Property="Margin" Value="2,0,0,0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Focusable" Value="False"/>
+            <Setter Property="Background" Value="{DynamicResource Pouch.Badge}"/>
+            <Setter Property="Foreground" Value="{DynamicResource Pouch.BadgeText}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" CornerRadius="11">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="{DynamicResource Pouch.Accent}"/>
+                    <Setter Property="Foreground" Value="{DynamicResource Pouch.AccentText}"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="TileDangerButton" TargetType="Button" BasedOn="{StaticResource TileActionButton}">
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="{DynamicResource Pouch.Danger}"/>
+                    <Setter Property="Foreground" Value="White"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- Faint horizontal lines for themes with "scanlines" enabled. -->
+        <DrawingBrush x:Key="ScanlineBrush" TileMode="Tile" Viewport="0,0,3,3" ViewportUnits="Absolute" Stretch="None">
+            <DrawingBrush.Drawing>
+                <GeometryDrawing Brush="White">
+                    <GeometryDrawing.Geometry>
+                        <RectangleGeometry Rect="0,0,3,1"/>
+                    </GeometryDrawing.Geometry>
+                </GeometryDrawing>
+            </DrawingBrush.Drawing>
+        </DrawingBrush>
+
+        <ItemsPanelTemplate x:Key="WrapItemsPanel">
+            <WrapPanel Orientation="Horizontal"/>
+        </ItemsPanelTemplate>
+        <ItemsPanelTemplate x:Key="StackItemsPanel">
+            <StackPanel/>
+        </ItemsPanelTemplate>
+
+        <!-- ============================================================ Grid / compact tile -->
+        <DataTemplate x:Key="GridTileTemplate" DataType="{x:Type models:PouchItem}">
+            <StackPanel x:Name="TileRoot" Margin="4" Background="Transparent" Cursor="Hand"
+                        Width="{Binding DataContext.TileSize, RelativeSource={RelativeSource AncestorType=ListBox}}"
+                        ToolTip="{Binding DisplayName}" ToolTipService.InitialShowDelay="600"
+                        helpers:Motion.AnimateOnLoad="True"
+                        MouseLeftButtonDown="PouchItem_MouseLeftButtonDown"
+                        MouseLeftButtonUp="PouchItem_MouseLeftButtonUp"
+                        MouseMove="PouchItem_MouseMove">
+                <Grid x:Name="Tile" Height="{Binding DataContext.TileSize, RelativeSource={RelativeSource AncestorType=ListBox}}">
+                    <Border x:Name="TileBase" CornerRadius="{DynamicResource Pouch.TileCornerRadius}"
+                            Background="{DynamicResource Pouch.Tile}" BorderBrush="{DynamicResource Pouch.TileBorder}" BorderThickness="1"/>
+                    <Border x:Name="HoverLayer" CornerRadius="{DynamicResource Pouch.TileCornerRadius}"
+                            Background="{DynamicResource Pouch.TileHover}" Opacity="0"/>
+
+                    <!-- Photo / video: edge to edge, clipped by the rounded corners -->
+                    <Border x:Name="FillThumb" CornerRadius="{DynamicResource Pouch.TileCornerRadius}" Margin="1" Visibility="Collapsed">
+                        <Border.Background>
+                            <ImageBrush ImageSource="{Binding Icon}" Stretch="UniformToFill"/>
+                        </Border.Background>
+                    </Border>
+
+                    <!-- Document page preview -->
+                    <Image x:Name="FitThumb" Source="{Binding Icon}" Stretch="Uniform" Margin="10" Visibility="Collapsed"
+                           RenderOptions.BitmapScalingMode="HighQuality"/>
+
+                    <!-- Plain icon -->
+                    <Image x:Name="IconThumb" Source="{Binding Icon}" Stretch="Uniform" Visibility="Collapsed"
+                           RenderOptions.BitmapScalingMode="HighQuality"
+                           Width="{Binding DataContext.TileSize, RelativeSource={RelativeSource AncestorType=ListBox}, Converter={StaticResource Multiply}, ConverterParameter=0.5}"
+                           Height="{Binding DataContext.TileSize, RelativeSource={RelativeSource AncestorType=ListBox}, Converter={StaticResource Multiply}, ConverterParameter=0.5}"/>
+
+                    <!-- Text snippet -->
+                    <Border x:Name="TextThumb" Padding="8,7" Visibility="Collapsed" ClipToBounds="True">
+                        <TextBlock Text="{Binding PreviewText}" FontFamily="{DynamicResource Pouch.MonoFontFamily}"
+                                   FontSize="8" LineHeight="10.5" TextWrapping="Wrap" TextTrimming="CharacterEllipsis"
+                                   Foreground="{DynamicResource Pouch.TextSecondary}"/>
+                    </Border>
+
+                    <!-- Stack: the first few files fanned out like a pile of cards -->
+                    <ItemsControl x:Name="StackThumb" ItemsSource="{Binding StackPreviews}"
+                                  Margin="22,20,22,24" IsHitTestVisible="False" Visibility="Collapsed">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <Grid/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="{x:Type models:StackCard}">
+                                <Border CornerRadius="5" BorderThickness="1.5" ClipToBounds="True"
+                                        BorderBrush="{DynamicResource Pouch.TileBorder}" Background="{DynamicResource Pouch.Card}"
+                                        RenderTransformOrigin="0.5,0.5">
+                                    <Border.RenderTransform>
+                                        <TransformGroup>
+                                            <RotateTransform Angle="{Binding Angle}"/>
+                                            <TranslateTransform X="{Binding OffsetX}" Y="{Binding OffsetY}"/>
+                                        </TransformGroup>
+                                    </Border.RenderTransform>
+                                    <Image Source="{Binding Image}" Stretch="UniformToFill" RenderOptions.BitmapScalingMode="HighQuality"/>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <!-- Badges -->
+                    <Border x:Name="ExtensionBadge" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="6"
+                            Padding="5,1.5" CornerRadius="5" Background="{DynamicResource Pouch.Badge}"
+                            Visibility="{Binding DataContext.ShowTileActions, RelativeSource={RelativeSource AncestorType=ListBox}, Converter={StaticResource BoolToVisibility}}">
+                        <TextBlock Text="{Binding FileExtension}" FontSize="8.5" FontWeight="Bold" Foreground="{DynamicResource Pouch.BadgeText}"/>
+                    </Border>
+                    <Border x:Name="CountBadge" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="6"
+                            MinWidth="18" Height="18" Padding="5,0" CornerRadius="9" Background="{DynamicResource Pouch.Accent}" Visibility="Collapsed">
+                        <TextBlock Text="{Binding StackCount}" FontSize="9.5" FontWeight="Bold" Foreground="{DynamicResource Pouch.AccentText}"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <Border x:Name="MissingBadge" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="6" Width="18" Height="18"
+                            CornerRadius="9" Background="{DynamicResource Pouch.Warning}" Visibility="Collapsed" ToolTip="Moved or deleted">
+                        <TextBlock Text="!" FontSize="11" FontWeight="Bold" Foreground="#E6000000" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+
+                    <!-- Hover actions -->
+                    <StackPanel x:Name="Actions" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,5,5,0" Opacity="0"
+                                Visibility="{Binding DataContext.ShowTileActions, RelativeSource={RelativeSource AncestorType=ListBox}, Converter={StaticResource BoolToVisibility}}">
+                        <Button Style="{StaticResource TileActionButton}" ToolTip="Copy"
+                                Command="{Binding DataContext.CopyCommand, RelativeSource={RelativeSource AncestorType=ListBox}}" CommandParameter="{Binding}">
+                            <ui:SymbolIcon Symbol="Copy24" FontSize="11"/>
+                        </Button>
+                        <Button Style="{StaticResource TileDangerButton}" ToolTip="Remove"
+                                Command="{Binding DataContext.RemoveCommand, RelativeSource={RelativeSource AncestorType=ListBox}}" CommandParameter="{Binding}">
+                            <ui:SymbolIcon Symbol="Dismiss24" FontSize="11"/>
+                        </Button>
+                    </StackPanel>
+
+                    <Grid.Triggers>
+                        <EventTrigger RoutedEvent="MouseEnter">
+                            <BeginStoryboard>
+                                <Storyboard>
+                                    <DoubleAnimation Storyboard.TargetName="HoverLayer" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.15"/>
+                                    <DoubleAnimation Storyboard.TargetName="Actions" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.15"/>
+                                </Storyboard>
+                            </BeginStoryboard>
+                        </EventTrigger>
+                        <EventTrigger RoutedEvent="MouseLeave">
+                            <BeginStoryboard>
+                                <Storyboard>
+                                    <DoubleAnimation Storyboard.TargetName="HoverLayer" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.2"/>
+                                    <DoubleAnimation Storyboard.TargetName="Actions" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.2"/>
+                                </Storyboard>
+                            </BeginStoryboard>
+                        </EventTrigger>
+                    </Grid.Triggers>
+                </Grid>
+
+                <TextBlock x:Name="NameText" Text="{Binding DisplayName}" Margin="2,6,2,0" FontSize="11" FontWeight="Medium"
+                           Foreground="{DynamicResource Pouch.Text}" TextTrimming="CharacterEllipsis" TextAlignment="Center"
+                           Visibility="{Binding DataContext.ShowNames, RelativeSource={RelativeSource AncestorType=ListBox}, Converter={StaticResource BoolToVisibility}}"/>
+                <TextBlock x:Name="MetaText" Text="{Binding Metadata}" Margin="2,1,2,0" FontSize="9.5"
+                           Foreground="{DynamicResource Pouch.TextMuted}" TextTrimming="CharacterEllipsis" TextAlignment="Center"
+                           Visibility="{Binding DataContext.ShowDetails, RelativeSource={RelativeSource AncestorType=ListBox}, Converter={StaticResource BoolToVisibility}}"/>
+            </StackPanel>
+
+            <DataTemplate.Triggers>
+                <DataTrigger Binding="{Binding ThumbnailStyle}" Value="Fill">
+                    <Setter TargetName="FillThumb" Property="Visibility" Value="Visible"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding ThumbnailStyle}" Value="Fit">
+                    <Setter TargetName="FitThumb" Property="Visibility" Value="Visible"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding ThumbnailStyle}" Value="Icon">
+                    <Setter TargetName="IconThumb" Property="Visibility" Value="Visible"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Kind}" Value="Text">
+                    <Setter TargetName="TextThumb" Property="Visibility" Value="Visible"/>
+                    <Setter TargetName="IconThumb" Property="Visibility" Value="Collapsed"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Kind}" Value="Stack">
+                    <Setter TargetName="StackThumb" Property="Visibility" Value="Visible"/>
+                    <Setter TargetName="IconThumb" Property="Visibility" Value="Collapsed"/>
+                    <Setter TargetName="ExtensionBadge" Property="Visibility" Value="Collapsed"/>
+                    <Setter TargetName="CountBadge" Property="Visibility" Value="Visible"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding HasFileExtension}" Value="False">
+                    <Setter TargetName="ExtensionBadge" Property="Visibility" Value="Collapsed"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding IsMissing}" Value="True">
+                    <Setter TargetName="MissingBadge" Property="Visibility" Value="Visible"/>
+                    <Setter TargetName="FillThumb" Property="Opacity" Value="0.4"/>
+                    <Setter TargetName="FitThumb" Property="Opacity" Value="0.4"/>
+                    <Setter TargetName="IconThumb" Property="Opacity" Value="0.4"/>
+                    <Setter TargetName="StackThumb" Property="Opacity" Value="0.4"/>
+                    <Setter TargetName="MetaText" Property="Foreground" Value="{DynamicResource Pouch.Warning}"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding DataContext.ViewMode, RelativeSource={RelativeSource AncestorType=ListBox}}" Value="Compact">
+                    <Setter TargetName="StackThumb" Property="Margin" Value="11,10,11,12"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=ListBoxItem}}" Value="True">
+                    <Setter TargetName="TileBase" Property="BorderBrush" Value="{DynamicResource Pouch.Accent}"/>
+                    <Setter TargetName="TileBase" Property="BorderThickness" Value="2"/>
+                </DataTrigger>
+            </DataTemplate.Triggers>
+        </DataTemplate>
+
+        <!-- ============================================================ List row -->
+        <DataTemplate x:Key="ListRowTemplate" DataType="{x:Type models:PouchItem}">
+            <Grid x:Name="Row" Height="46" Margin="0,0,0,4" Background="Transparent" Cursor="Hand"
+                  helpers:Motion.AnimateOnLoad="True"
+                  MouseLeftButtonDown="PouchItem_MouseLeftButtonDown"
+                  MouseLeftButtonUp="PouchItem_MouseLeftButtonUp"
+                  MouseMove="PouchItem_MouseMove">
+                <Border x:Name="RowBase" CornerRadius="{DynamicResource Pouch.TileCornerRadius}"
+                        Background="{DynamicResource Pouch.Tile}" BorderBrush="{DynamicResource Pouch.TileBorder}" BorderThickness="1"/>
+                <Border x:Name="HoverLayer" CornerRadius="{DynamicResource Pouch.TileCornerRadius}"
+                        Background="{DynamicResource Pouch.TileHover}" Opacity="0"/>
+
+                <Grid Margin="7,0,6,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="34"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <Grid Width="32" Height="32" VerticalAlignment="Center">
+                        <Border x:Name="FillThumb" CornerRadius="6" Visibility="Collapsed">
+                            <Border.Background>
+                                <ImageBrush ImageSource="{Binding Icon}" Stretch="UniformToFill"/>
+                            </Border.Background>
+                        </Border>
+                        <Image x:Name="IconThumb" Source="{Binding Icon}" Width="26" Height="26" Stretch="Uniform"
+                               RenderOptions.BitmapScalingMode="HighQuality"/>
+                        <ui:SymbolIcon x:Name="TextIcon" Symbol="TextDescription24" FontSize="17"
+                                       Foreground="{DynamicResource Pouch.TextSecondary}" Visibility="Collapsed"/>
+                    </Grid>
+
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="8,0,4,0">
+                        <TextBlock Text="{Binding DisplayName}" FontSize="12" FontWeight="Medium"
+                                   Foreground="{DynamicResource Pouch.Text}" TextTrimming="CharacterEllipsis"/>
+                        <TextBlock x:Name="MetaText" Text="{Binding Metadata}" FontSize="10" Margin="0,1,0,0"
+                                   Foreground="{DynamicResource Pouch.TextMuted}" TextTrimming="CharacterEllipsis"/>
+                    </StackPanel>
+
+                    <StackPanel x:Name="Actions" Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Opacity="0">
+                        <Button Style="{StaticResource IconButton}" ToolTip="Copy"
+                                Command="{Binding DataContext.CopyCommand, RelativeSource={RelativeSource AncestorType=ListBox}}" CommandParameter="{Binding}">
+                            <ui:SymbolIcon Symbol="Copy24" FontSize="13"/>
+                        </Button>
+                        <Button Style="{StaticResource DangerIconButton}" ToolTip="Remove"
+                                Command="{Binding DataContext.RemoveCommand, RelativeSource={RelativeSource AncestorType=ListBox}}" CommandParameter="{Binding}">
+                            <ui:SymbolIcon Symbol="Delete24" FontSize="13"/>
+                        </Button>
+                    </StackPanel>
+                </Grid>
+
+                <Grid.Triggers>
+                    <EventTrigger RoutedEvent="MouseEnter">
+                        <BeginStoryboard>
+                            <Storyboard>
+                                <DoubleAnimation Storyboard.TargetName="HoverLayer" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.15"/>
+                                <DoubleAnimation Storyboard.TargetName="Actions" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.15"/>
+                            </Storyboard>
+                        </BeginStoryboard>
+                    </EventTrigger>
+                    <EventTrigger RoutedEvent="MouseLeave">
+                        <BeginStoryboard>
+                            <Storyboard>
+                                <DoubleAnimation Storyboard.TargetName="HoverLayer" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.2"/>
+                                <DoubleAnimation Storyboard.TargetName="Actions" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.2"/>
+                            </Storyboard>
+                        </BeginStoryboard>
+                    </EventTrigger>
+                </Grid.Triggers>
+            </Grid>
+
+            <DataTemplate.Triggers>
+                <DataTrigger Binding="{Binding ThumbnailStyle}" Value="Fill">
+                    <Setter TargetName="FillThumb" Property="Visibility" Value="Visible"/>
+                    <Setter TargetName="IconThumb" Property="Visibility" Value="Collapsed"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Kind}" Value="Text">
+                    <Setter TargetName="TextIcon" Property="Visibility" Value="Visible"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding IsMissing}" Value="True">
+                    <Setter TargetName="FillThumb" Property="Opacity" Value="0.4"/>
+                    <Setter TargetName="IconThumb" Property="Opacity" Value="0.4"/>
+                    <Setter TargetName="MetaText" Property="Foreground" Value="{DynamicResource Pouch.Warning}"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=ListBoxItem}}" Value="True">
+                    <Setter TargetName="RowBase" Property="BorderBrush" Value="{DynamicResource Pouch.Accent}"/>
+                    <Setter TargetName="RowBase" Property="BorderThickness" Value="2"/>
+                </DataTrigger>
+            </DataTemplate.Triggers>
+        </DataTemplate>
     </Window.Resources>
 
+    <!-- The 30px margin leaves room for the drop shadow. -->
     <Grid x:Name="RootGrid" Margin="30">
 
-        <Border x:Name="MainContainer" CornerRadius="16" BorderThickness="1" Opacity="0" Padding="10,12,10,10"
-                Background="#990A0A0C" CacheMode="BitmapCache" RenderTransformOrigin="0.5,0.5">
-            <Border.BorderBrush>
-                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
-                    <GradientStop Color="#40FFFFFF" Offset="0"/>
-                    <GradientStop Color="#10FFFFFF" Offset="1"/>
-                </LinearGradientBrush>
-            </Border.BorderBrush>
-            <Border.Effect>
-                <DropShadowEffect BlurRadius="35" ShadowDepth="8" Opacity="0.65" Color="#000000" />
-            </Border.Effect>
+        <Border x:Name="MainContainer" Opacity="0" Padding="14,12,14,14" BorderThickness="1"
+                CornerRadius="{DynamicResource Pouch.CornerRadius}"
+                Background="{DynamicResource Pouch.Background}"
+                BorderBrush="{DynamicResource Pouch.Border}"
+                Effect="{DynamicResource Pouch.Shadow}"
+                RenderTransformOrigin="0.5,0.5">
             <Border.RenderTransform>
-                <ScaleTransform x:Name="WindowScale" ScaleX="0.95" ScaleY="0.95"/>
+                <TransformGroup>
+                    <ScaleTransform x:Name="WindowScale" ScaleX="1" ScaleY="1"/>
+                    <TranslateTransform x:Name="WindowSlide" X="0"/>
+                </TransformGroup>
             </Border.RenderTransform>
 
             <Grid>
@@ -97,220 +421,171 @@
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
 
+                <Rectangle Grid.RowSpan="3" Margin="-14,-12,-14,-14" IsHitTestVisible="False"
+                           Fill="{StaticResource ScanlineBrush}" Opacity="{DynamicResource Pouch.ScanlineOpacity}"/>
+
                 <!-- Header -->
-                <Grid Grid.Row="0" Height="24" Margin="0,0,0,10" Background="Transparent" MouseLeftButtonDown="Header_MouseLeftButtonDown">
-                    <TextBlock Text="POUCHY" FontSize="9.5" FontWeight="SemiBold" Foreground="#66FFFFFF" VerticalAlignment="Center"/>
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
-                        <Button Content="Clear All" FontSize="10" FontWeight="Medium" Foreground="#66FFFFFF" Padding="8,4" Margin="0,0,4,0"
-                                Command="{Binding ClearCommand}">
-                            <Button.Style>
-                                <Style TargetType="Button" BasedOn="{StaticResource FlatButton}">
-                                    <Style.Triggers>
-                                        <Trigger Property="IsMouseOver" Value="True">
-                                            <Setter Property="Background" Value="Transparent"/>
-                                            <Setter Property="Foreground" Value="#FF6961"/>
-                                        </Trigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </Button.Style>
+                <Grid Grid.Row="0" Margin="2,0,0,10" Background="Transparent" MouseLeftButtonDown="Header_MouseLeftButtonDown">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <Border Width="20" Height="20" CornerRadius="6" Background="{DynamicResource Pouch.Accent}" Margin="0,0,8,0">
+                            <ui:SymbolIcon Symbol="ArrowDownload24" FontSize="12" Foreground="{DynamicResource Pouch.AccentText}"/>
+                        </Border>
+                        <TextBlock Text="Pouchy" FontFamily="{DynamicResource Pouch.HeaderFontFamily}" FontSize="13.5" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource Pouch.Text}" VerticalAlignment="Center"/>
+                        <Border Margin="8,0,0,0" Padding="7,1,7,2" CornerRadius="9" Background="{DynamicResource Pouch.AccentSoft}" VerticalAlignment="Center"
+                                Visibility="{Binding IsEmpty, Converter={StaticResource InverseBoolToVisibility}}">
+                            <TextBlock Text="{Binding ItemCountText}" FontSize="10.5" FontWeight="SemiBold" Foreground="{DynamicResource Pouch.Accent}"/>
+                        </Border>
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="12,0,0,0">
+                        <Button Style="{StaticResource IconButton}" ToolTip="Change view" Command="{Binding CycleViewModeCommand}">
+                            <ui:SymbolIcon FontSize="14">
+                                <ui:SymbolIcon.Style>
+                                    <Style TargetType="ui:SymbolIcon">
+                                        <Setter Property="Symbol" Value="Grid24"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding ViewMode}" Value="List">
+                                                <Setter Property="Symbol" Value="TextBulletListLtr24"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding ViewMode}" Value="Compact">
+                                                <Setter Property="Symbol" Value="GridDots24"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </ui:SymbolIcon.Style>
+                            </ui:SymbolIcon>
                         </Button>
-                        <Button Style="{StaticResource FlatButton}" Padding="6" Click="CloseButton_Click" ToolTip="Hide">
-                            <ui:SymbolIcon Symbol="Dismiss24" FontSize="12" Foreground="#888888"/>
+                        <Button Style="{StaticResource IconButton}" ToolTip="Settings" Command="{Binding OpenSettingsCommand}">
+                            <ui:SymbolIcon Symbol="Settings24" FontSize="14"/>
+                        </Button>
+                        <Button Style="{StaticResource DangerIconButton}" ToolTip="Clear all" Command="{Binding ClearCommand}"
+                                Visibility="{Binding IsEmpty, Converter={StaticResource InverseBoolToVisibility}}">
+                            <ui:SymbolIcon Symbol="Delete24" FontSize="14"/>
+                        </Button>
+                        <Button Style="{StaticResource IconButton}" ToolTip="Hide (Esc)" Click="CloseButton_Click">
+                            <ui:SymbolIcon Symbol="Dismiss24" FontSize="14"/>
                         </Button>
                     </StackPanel>
                 </Grid>
 
                 <!-- Empty state -->
-                <Grid Grid.Row="1" Height="120" Visibility="{Binding IsEmpty, Converter={StaticResource BoolToVisibility}}">
-                    <Rectangle Stroke="#44FFFFFF" StrokeThickness="1" StrokeDashArray="4 4" RadiusX="10" RadiusY="10" RenderOptions.EdgeMode="Aliased"/>
+                <Grid Grid.Row="1" Height="150" Width="{Binding ContentWidth}"
+                      Visibility="{Binding IsEmpty, Converter={StaticResource BoolToVisibility}}">
+                    <Rectangle Stroke="{DynamicResource Pouch.TextMuted}" StrokeThickness="1.5" StrokeDashArray="4 3" RadiusX="12" RadiusY="12"/>
                     <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                        <ui:SymbolIcon Symbol="Archive24" FontSize="28" Foreground="#555555" Margin="0,0,0,10"/>
-                        <TextBlock Text="Drop files or links here" Foreground="#777777" FontSize="12" FontWeight="Medium"/>
+                        <Border Width="44" Height="44" CornerRadius="22" Background="{DynamicResource Pouch.AccentSoft}" Margin="0,0,0,10">
+                            <ui:SymbolIcon Symbol="ArrowDownload24" FontSize="20" Foreground="{DynamicResource Pouch.Accent}"/>
+                        </Border>
+                        <TextBlock Text="Drop anything here" FontSize="13" FontWeight="SemiBold" HorizontalAlignment="Center"
+                                   Foreground="{DynamicResource Pouch.Text}"/>
+                        <TextBlock Text="Files, folders, text and images" FontSize="11" Margin="0,3,0,0" HorizontalAlignment="Center"
+                                   Foreground="{DynamicResource Pouch.TextMuted}"/>
                     </StackPanel>
                 </Grid>
 
                 <!-- Items -->
                 <ListBox Grid.Row="1" x:Name="PouchItemsControl" ItemsSource="{Binding Items}"
-                         Visibility="{Binding IsEmpty, Converter={StaticResource InverseBoolToVisibility}}"
-                         MaxHeight="450" Background="Transparent" BorderThickness="0"
-                         ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                         HorizontalContentAlignment="Stretch" Margin="-4,0,-4,0">
+                         Width="{Binding ItemsAreaWidth}" MaxHeight="440" Margin="-4,-4,-4,0"
+                         Background="Transparent" BorderThickness="0" FocusVisualStyle="{x:Null}"
+                         ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Auto"
+                         Visibility="{Binding IsEmpty, Converter={StaticResource InverseBoolToVisibility}}">
+                    <ListBox.Template>
+                        <ControlTemplate TargetType="ListBox">
+                            <ScrollViewer Focusable="False" Padding="{TemplateBinding Padding}">
+                                <ItemsPresenter/>
+                            </ScrollViewer>
+                        </ControlTemplate>
+                    </ListBox.Template>
                     <ListBox.ItemContainerStyle>
                         <Style TargetType="ListBoxItem">
-                            <Setter Property="Background" Value="Transparent"/>
-                            <Setter Property="Padding" Value="4"/>
+                            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
                             <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
                             <Setter Property="Template">
                                 <Setter.Value>
                                     <ControlTemplate TargetType="ListBoxItem">
-                                        <Border Background="{TemplateBinding Background}">
-                                            <ContentPresenter HorizontalAlignment="Stretch" VerticalAlignment="Center"/>
-                                        </Border>
+                                        <ContentPresenter Margin="0"/>
                                     </ControlTemplate>
                                 </Setter.Value>
                             </Setter>
                         </Style>
                     </ListBox.ItemContainerStyle>
-                    <ListBox.ItemTemplate>
-                        <DataTemplate>
-                            <Border Margin="0,0,0,5" Height="42" CornerRadius="8" BorderThickness="1" Cursor="Hand"
-                                    MouseLeftButtonDown="PouchItem_MouseLeftButtonDown"
-                                    MouseLeftButtonUp="PouchItem_MouseLeftButtonUp"
-                                    MouseMove="PouchItem_MouseMove">
-                                <Border.Background>
-                                    <SolidColorBrush Color="#14FFFFFF"/>
-                                </Border.Background>
-                                <Border.BorderBrush>
-                                    <SolidColorBrush Color="#1AFFFFFF"/>
-                                </Border.BorderBrush>
-                                <Border.Triggers>
-                                    <EventTrigger RoutedEvent="MouseEnter">
-                                        <BeginStoryboard>
-                                            <Storyboard>
-                                                <ColorAnimation Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)" To="#24FFFFFF" Duration="0:0:0.2"/>
-                                                <ColorAnimation Storyboard.TargetProperty="(Border.BorderBrush).(SolidColorBrush.Color)" To="#33FFFFFF" Duration="0:0:0.2"/>
-                                                <DoubleAnimation Storyboard.TargetName="ActionPanel" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.2">
-                                                    <DoubleAnimation.EasingFunction>
-                                                        <CubicEase EasingMode="EaseOut"/>
-                                                    </DoubleAnimation.EasingFunction>
-                                                </DoubleAnimation>
-                                            </Storyboard>
-                                        </BeginStoryboard>
-                                    </EventTrigger>
-                                    <EventTrigger RoutedEvent="MouseLeave">
-                                        <BeginStoryboard>
-                                            <Storyboard>
-                                                <ColorAnimation Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)" To="#14FFFFFF" Duration="0:0:0.2"/>
-                                                <ColorAnimation Storyboard.TargetProperty="(Border.BorderBrush).(SolidColorBrush.Color)" To="#1AFFFFFF" Duration="0:0:0.2"/>
-                                                <DoubleAnimation Storyboard.TargetName="ActionPanel" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.2">
-                                                    <DoubleAnimation.EasingFunction>
-                                                        <CubicEase EasingMode="EaseOut"/>
-                                                    </DoubleAnimation.EasingFunction>
-                                                </DoubleAnimation>
-                                            </Storyboard>
-                                        </BeginStoryboard>
-                                    </EventTrigger>
-                                </Border.Triggers>
-
-                                <Grid Margin="6,2,6,2">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="34"/>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="Auto"/>
-                                    </Grid.ColumnDefinitions>
-
-                                    <!-- Icon (dimmed when the file is missing) -->
-                                    <Border Grid.Column="0" Width="28" Height="28" CornerRadius="8" Background="#1FFFFFFF" ClipToBounds="True">
-                                        <Border.Style>
-                                            <Style TargetType="Border">
-                                                <Style.Triggers>
-                                                    <DataTrigger Binding="{Binding IsMissing}" Value="True">
-                                                        <Setter Property="Opacity" Value="0.4"/>
-                                                    </DataTrigger>
-                                                </Style.Triggers>
-                                            </Style>
-                                        </Border.Style>
-                                        <Grid>
-                                            <Image Source="{Binding Icon}" Stretch="UniformToFill" Width="18" Height="18"
-                                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                            <ui:SymbolIcon Symbol="TextDescription24" FontSize="14" Foreground="#B0B0B0"
-                                                           Visibility="{Binding Icon, Converter={StaticResource NullToVisibility}}"/>
-                                        </Grid>
-                                    </Border>
-
-                                    <!-- Name and metadata -->
-                                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="8,0,0,0">
-                                        <TextBlock Text="{Binding DisplayName}" FontFamily="Segoe UI Variable Text, Segoe UI" FontSize="11.5"
-                                                   FontWeight="Medium" Foreground="#F5F5F7" TextTrimming="CharacterEllipsis"/>
-                                        <TextBlock Text="{Binding Metadata}" FontSize="9.5" Margin="0,1,0,0" TextTrimming="CharacterEllipsis">
-                                            <TextBlock.Style>
-                                                <Style TargetType="TextBlock">
-                                                    <Setter Property="Foreground" Value="#80FFFFFF"/>
-                                                    <Style.Triggers>
-                                                        <DataTrigger Binding="{Binding IsMissing}" Value="True">
-                                                            <Setter Property="Foreground" Value="#FF9F7A"/>
-                                                        </DataTrigger>
-                                                    </Style.Triggers>
-                                                </Style>
-                                            </TextBlock.Style>
-                                        </TextBlock>
-                                    </StackPanel>
-
-                                    <!-- Hover actions -->
-                                    <StackPanel x:Name="ActionPanel" Grid.Column="2" Orientation="Horizontal" Opacity="0" VerticalAlignment="Center">
-                                        <Button Style="{StaticResource FlatButton}" Padding="6" Margin="0,0,2,0" ToolTip="Copy to Clipboard"
-                                                Command="{Binding DataContext.CopyCommand, RelativeSource={RelativeSource AncestorType=ListBox}}"
-                                                CommandParameter="{Binding}">
-                                            <ui:SymbolIcon Symbol="Copy24" FontSize="13" Foreground="#D0D0D0"/>
-                                        </Button>
-                                        <Button Padding="6" ToolTip="Remove"
-                                                Command="{Binding DataContext.RemoveCommand, RelativeSource={RelativeSource AncestorType=ListBox}}"
-                                                CommandParameter="{Binding}">
-                                            <Button.Style>
-                                                <Style TargetType="Button" BasedOn="{StaticResource FlatButton}">
-                                                    <Style.Triggers>
-                                                        <Trigger Property="IsMouseOver" Value="True">
-                                                            <Setter Property="Background" Value="#FF453A"/>
-                                                        </Trigger>
-                                                    </Style.Triggers>
-                                                </Style>
-                                            </Button.Style>
-                                            <ui:SymbolIcon Symbol="Delete24" FontSize="13" Foreground="#D0D0D0"/>
-                                        </Button>
-                                    </StackPanel>
-                                </Grid>
-                            </Border>
-                        </DataTemplate>
-                    </ListBox.ItemTemplate>
+                    <ListBox.Style>
+                        <Style TargetType="ListBox">
+                            <Setter Property="Padding" Value="0"/>
+                            <Setter Property="ItemTemplate" Value="{StaticResource GridTileTemplate}"/>
+                            <Setter Property="ItemsPanel" Value="{StaticResource WrapItemsPanel}"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsListMode}" Value="True">
+                                    <Setter Property="ItemTemplate" Value="{StaticResource ListRowTemplate}"/>
+                                    <Setter Property="ItemsPanel" Value="{StaticResource StackItemsPanel}"/>
+                                    <Setter Property="Padding" Value="4,4,10,0"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </ListBox.Style>
                 </ListBox>
 
-                <!-- Drag All -->
-                <Border Grid.Row="2" Background="#20FFFFFF" BorderBrush="#2AFFFFFF" BorderThickness="1" CornerRadius="8" Height="32" Margin="0,8,0,0"
-                        Cursor="Hand" RenderTransformOrigin="0.5,0.5"
-                        Visibility="{Binding HasMultipleItems, Converter={StaticResource BoolToVisibility}}"
-                        MouseLeftButtonDown="DragAll_MouseLeftButtonDown" MouseMove="DragAll_MouseMove">
-                    <Border.RenderTransform>
-                        <ScaleTransform x:Name="PillScale" ScaleX="1" ScaleY="1"/>
-                    </Border.RenderTransform>
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
-                        <TextBlock FontFamily="Segoe Fluent Icons" Text="&#xE700;" FontSize="11" Foreground="#FFFFFF" Margin="0,2,8,0" VerticalAlignment="Center"/>
-                        <TextBlock Text="{Binding DragAllText}" FontSize="11" FontWeight="SemiBold" Foreground="#FFFFFF"/>
+                <!-- Shown while something is dragged over the pouch -->
+                <Border x:Name="DropOverlay" Grid.Row="1" Margin="-4" Opacity="0" IsHitTestVisible="False" BorderThickness="2"
+                        CornerRadius="{DynamicResource Pouch.InnerCornerRadius}"
+                        BorderBrush="{DynamicResource Pouch.Accent}" Background="{DynamicResource Pouch.AccentSoft}">
+                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                        <ui:SymbolIcon Symbol="ArrowDownload24" FontSize="24" Foreground="{DynamicResource Pouch.Accent}" HorizontalAlignment="Center"/>
+                        <TextBlock Text="Release to add" FontSize="12.5" FontWeight="SemiBold" Margin="0,6,0,0"
+                                   Foreground="{DynamicResource Pouch.Accent}"/>
                     </StackPanel>
-                    <Border.Triggers>
+                </Border>
+
+                <!-- Drag all -->
+                <Grid Grid.Row="2" Margin="0,10,0,0" Height="34" Cursor="Hand"
+                      Visibility="{Binding HasMultipleItems, Converter={StaticResource BoolToVisibility}}"
+                      MouseLeftButtonDown="DragAll_MouseLeftButtonDown" MouseMove="DragAll_MouseMove">
+                    <Border CornerRadius="{DynamicResource Pouch.TileCornerRadius}" Background="{DynamicResource Pouch.Accent}"/>
+                    <Border x:Name="DragAllHover" CornerRadius="{DynamicResource Pouch.TileCornerRadius}" Background="White" Opacity="0"/>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <ui:SymbolIcon Symbol="ArrowMove24" FontSize="14" Foreground="{DynamicResource Pouch.AccentText}" Margin="0,0,8,0"/>
+                        <TextBlock Text="{Binding DragAllText}" FontSize="11.5" FontWeight="SemiBold" Foreground="{DynamicResource Pouch.AccentText}"
+                                   VerticalAlignment="Center"/>
+                    </StackPanel>
+                    <Grid.Triggers>
                         <EventTrigger RoutedEvent="MouseEnter">
                             <BeginStoryboard>
                                 <Storyboard>
-                                    <ColorAnimation Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)" To="#30FFFFFF" Duration="0:0:0.2"/>
-                                    <DoubleAnimation Storyboard.TargetName="PillScale" Storyboard.TargetProperty="ScaleX" To="1.01" Duration="0:0:0.2"/>
-                                    <DoubleAnimation Storyboard.TargetName="PillScale" Storyboard.TargetProperty="ScaleY" To="1.01" Duration="0:0:0.2"/>
+                                    <DoubleAnimation Storyboard.TargetName="DragAllHover" Storyboard.TargetProperty="Opacity" To="0.14" Duration="0:0:0.15"/>
                                 </Storyboard>
                             </BeginStoryboard>
                         </EventTrigger>
                         <EventTrigger RoutedEvent="MouseLeave">
                             <BeginStoryboard>
                                 <Storyboard>
-                                    <ColorAnimation Storyboard.TargetProperty="(Border.Background).(SolidColorBrush.Color)" To="#20FFFFFF" Duration="0:0:0.2"/>
-                                    <DoubleAnimation Storyboard.TargetName="PillScale" Storyboard.TargetProperty="ScaleX" To="1.0" Duration="0:0:0.2"/>
-                                    <DoubleAnimation Storyboard.TargetName="PillScale" Storyboard.TargetProperty="ScaleY" To="1.0" Duration="0:0:0.2"/>
+                                    <DoubleAnimation Storyboard.TargetName="DragAllHover" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.2"/>
                                 </Storyboard>
                             </BeginStoryboard>
                         </EventTrigger>
-                    </Border.Triggers>
-                </Border>
+                    </Grid.Triggers>
+                </Grid>
             </Grid>
         </Border>
 
         <!-- Edge tabs shown while docked -->
-        <Border x:Name="EdgeTabLeft" Background="#D1161618" CornerRadius="0,4,4,0" Width="12" Height="80"
+        <Border x:Name="EdgeTabLeft" CornerRadius="0,8,8,0" Width="14" Height="88" BorderThickness="0,1,1,1"
+                Background="{DynamicResource Pouch.Background}" BorderBrush="{DynamicResource Pouch.Border}"
                 HorizontalAlignment="Left" VerticalAlignment="Center" Visibility="Collapsed"
                 MouseEnter="EdgeTab_MouseEnter">
-            <ui:SymbolIcon Symbol="ChevronRight24" FontSize="10" Foreground="#88FFFFFF"/>
+            <ui:SymbolIcon Symbol="ChevronRight24" FontSize="10" Foreground="{DynamicResource Pouch.Accent}"/>
         </Border>
-
-        <Border x:Name="EdgeTabRight" Background="#D1161618" CornerRadius="4,0,0,4" Width="12" Height="80"
+        <Border x:Name="EdgeTabRight" CornerRadius="8,0,0,8" Width="14" Height="88" BorderThickness="1,1,0,1"
+                Background="{DynamicResource Pouch.Background}" BorderBrush="{DynamicResource Pouch.Border}"
                 HorizontalAlignment="Right" VerticalAlignment="Center" Visibility="Collapsed"
                 MouseEnter="EdgeTab_MouseEnter">
-            <ui:SymbolIcon Symbol="ChevronLeft24" FontSize="10" Foreground="#88FFFFFF"/>
+            <ui:SymbolIcon Symbol="ChevronLeft24" FontSize="10" Foreground="{DynamicResource Pouch.Accent}"/>
         </Border>
 
     </Grid>

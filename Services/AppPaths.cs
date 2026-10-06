@@ -9,6 +9,7 @@ namespace Pouchy.Services
 
         public static string SettingsFile => Path.Combine(DataFolder, "settings.json");
         public static string LegacyBlacklistFile => Path.Combine(DataFolder, "blacklist.json");
+        public static string ThemesFolder => Path.Combine(DataFolder, "themes");
         public static string LogFile => Path.Combine(DataFolder, "debug.log");
     }
 }

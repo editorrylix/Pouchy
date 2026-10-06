@@ -14,6 +14,22 @@ namespace Pouchy.Models
         Image,
     }
 
+    /// <summary>How a thumbnail should be drawn on a tile.</summary>
+    public enum ThumbnailStyle
+    {
+        /// <summary>Photo or video frame: fill the tile edge to edge.</summary>
+        Fill,
+
+        /// <summary>Document page preview: fit inside the tile with padding.</summary>
+        Fit,
+
+        /// <summary>Shell icon: draw small and centred.</summary>
+        Icon,
+    }
+
+    /// <summary>One card in a stack's fanned preview.</summary>
+    public sealed record StackCard(ImageSource Image, double Angle, double OffsetX, double OffsetY);
+
     public partial class PouchItem : ObservableObject
     {
         public Guid Id { get; init; } = Guid.NewGuid();
@@ -35,20 +51,32 @@ namespace Pouchy.Models
         /// <summary>Upper-case extension badge, e.g. "PNG", "STACK", "TXT".</summary>
         public string FileExtension { get; init; } = "";
 
+        /// <summary>Thumbnails of the first few stack files, in drawing order (last is on top).</summary>
+        public IReadOnlyList<StackCard> StackPreviews { get; init; } = Array.Empty<StackCard>();
+
         [ObservableProperty]
         private string _displayName = "";
 
         [ObservableProperty]
         private string _metadata = "";
 
+        /// <summary>Thumbnail or icon. Null for text snippets.</summary>
         [ObservableProperty]
         private ImageSource? _icon;
+
+        [ObservableProperty]
+        private ThumbnailStyle _thumbnailStyle = ThumbnailStyle.Icon;
 
         /// <summary>True when the file(s) this item points to no longer exist.</summary>
         [ObservableProperty]
         private bool _isMissing;
 
         public bool IsStack => Kind == PouchItemKind.Stack;
+        public bool HasFileExtension => FileExtension.Length > 0;
+        public int StackCount => StackFiles?.Count ?? 0;
+
+        /// <summary>Start of the text, for the tile preview.</summary>
+        public string PreviewText => TextContent is { Length: > 400 } text ? text[..400] : TextContent ?? "";
 
         /// <summary>Every file system path this item represents.</summary>
         public IEnumerable<string> FilePaths => Kind switch

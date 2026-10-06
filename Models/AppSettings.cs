@@ -15,6 +15,28 @@ namespace Pouchy.Models
         Strict,
     }
 
+    public enum PouchViewMode
+    {
+        Grid,
+        List,
+        Compact,
+    }
+
+    public enum TileSize
+    {
+        Small,
+        Medium,
+        Large,
+    }
+
+    public enum SpawnAnimation
+    {
+        Pop,
+        Slide,
+        Fade,
+        None,
+    }
+
     public enum DragModifier
     {
         Control,
@@ -46,6 +68,20 @@ namespace Pouchy.Models
 
         // Behaviour
         public bool ClearOnStartup { get; set; }
+
+        // Appearance
+        public string ThemeId { get; set; } = "midnight";
+        public PouchViewMode ViewMode { get; set; } = PouchViewMode.Grid;
+        public TileSize TileSize { get; set; } = TileSize.Medium;
+        public int GridColumns { get; set; } = 3;
+        public bool ShowItemNames { get; set; } = true;
+        public bool ShowItemDetails { get; set; }
+        /// <summary>Multiplier for the theme's background opacity (0.4–1).</summary>
+        public double BackgroundOpacity { get; set; } = 1.0;
+        public SpawnAnimation SpawnAnimation { get; set; } = SpawnAnimation.Pop;
+        /// <summary>Animation speed multiplier (0.5 = half speed, 2 = twice as fast).</summary>
+        public double AnimationSpeed { get; set; } = 1.0;
+        public bool ReduceMotion { get; set; }
 
         // Shake trigger
         public bool ShakeEnabled { get; set; } = true;

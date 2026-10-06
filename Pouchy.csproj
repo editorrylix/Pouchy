@@ -10,12 +10,18 @@
     <UseWPF>true</UseWPF>
     <RootNamespace>Pouchy</RootNamespace>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets/pouchy.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
     <PackageReference Include="H.NotifyIcon.Wpf" Version="2.4.1" />
     <PackageReference Include="WPF-UI" Version="4.3.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets/pouchy.ico" />
+    <Resource Include="Assets/pouchy-256.png" />
   </ItemGroup>
 
   <!-- The test project lives in a subfolder; keep its files out of the app build. -->

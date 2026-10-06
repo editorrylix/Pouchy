@@ -12,6 +12,7 @@
         ExtendsContentIntoTitleBar="True"
         WindowCornerPreference="Round"
         WindowStartupLocation="CenterScreen"
+        Icon="pack://application:,,,/Pouchy;component/Assets/pouchy.ico"
         Closing="Window_Closing">
 
     <ui:FluentWindow.Resources>
@@ -46,6 +47,153 @@
 
         <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
             <StackPanel Margin="20,0,20,20">
+
+                <!-- Appearance -->
+                <TextBlock Text="Theme" Style="{StaticResource SectionHeader}"/>
+                <ListBox ItemsSource="{Binding Themes}" SelectedValuePath="Id" SelectedValue="{Binding SelectedThemeId}"
+                         Background="Transparent" BorderThickness="0" Padding="0"
+                         ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                    <ListBox.Template>
+                        <ControlTemplate TargetType="ListBox">
+                            <ItemsPresenter/>
+                        </ControlTemplate>
+                    </ListBox.Template>
+                    <ListBox.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel/>
+                        </ItemsPanelTemplate>
+                    </ListBox.ItemsPanel>
+                    <ListBox.ItemContainerStyle>
+                        <Style TargetType="ListBoxItem">
+                            <Setter Property="Margin" Value="0,0,8,8"/>
+                            <Setter Property="Cursor" Value="Hand"/>
+                            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="ListBoxItem">
+                                        <Border x:Name="Ring" CornerRadius="10" BorderThickness="2" BorderBrush="Transparent" Padding="2">
+                                            <ContentPresenter/>
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter TargetName="Ring" Property="BorderBrush" Value="{DynamicResource ControlStrokeColorDefaultBrush}"/>
+                                            </Trigger>
+                                            <Trigger Property="IsSelected" Value="True">
+                                                <Setter TargetName="Ring" Property="BorderBrush" Value="{DynamicResource AccentFillColorDefaultBrush}"/>
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                    </ListBox.ItemContainerStyle>
+                    <ListBox.ItemTemplate>
+                        <DataTemplate DataType="{x:Type vm:ThemeOption}">
+                            <StackPanel Width="148">
+                                <!-- Mini pouch preview -->
+                                <Border Height="82" CornerRadius="8" Background="{Binding Background}" BorderBrush="{Binding Border}" BorderThickness="1" Padding="10,8">
+                                    <Grid>
+                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Top">
+                                            <Border Width="10" Height="10" CornerRadius="3" Background="{Binding Accent}" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                            <TextBlock Text="Pouchy" FontFamily="{Binding HeaderFont}" FontSize="11" FontWeight="SemiBold" Foreground="{Binding Text}"/>
+                                        </StackPanel>
+                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Bottom">
+                                            <Border Width="30" Height="30" CornerRadius="{Binding CornerRadius}" Background="{Binding Tile}" Margin="0,0,5,0"/>
+                                            <Border Width="30" Height="30" CornerRadius="{Binding CornerRadius}" Background="{Binding Tile}" Margin="0,0,5,0"/>
+                                            <Border Width="30" Height="30" CornerRadius="{Binding CornerRadius}" Background="{Binding Accent}"/>
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+                                <TextBlock Text="{Binding Name}" Margin="4,6,0,0" FontSize="12" FontWeight="SemiBold"
+                                           Foreground="{DynamicResource TextFillColorPrimaryBrush}" TextTrimming="CharacterEllipsis"/>
+                                <TextBlock Text="{Binding Subtitle}" Margin="4,0,0,4" FontSize="10.5"
+                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+                <TextBlock Style="{StaticResource CardDescription}" Margin="2,0,0,8"
+                           Text="Custom themes are JSON files in the themes folder. Edits apply instantly while Pouchy is running."/>
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                    <ui:Button Content="Customize this theme" Icon="{ui:SymbolIcon Edit24}" Margin="0,0,8,0" Command="{Binding CustomizeThemeCommand}"/>
+                    <ui:Button Content="Open themes folder" Icon="{ui:SymbolIcon FolderOpen24}" Command="{Binding OpenThemesFolderCommand}"/>
+                </StackPanel>
+
+                <TextBlock Text="Layout" Style="{StaticResource SectionHeader}"/>
+                <ui:CardControl>
+                    <ui:CardControl.Header>
+                        <StackPanel>
+                            <TextBlock Text="View" Style="{StaticResource CardTitle}"/>
+                            <TextBlock Text="Grid shows thumbnails, List shows details, Compact fits the most items." Style="{StaticResource CardDescription}"/>
+                        </StackPanel>
+                    </ui:CardControl.Header>
+                    <ComboBox Width="130" ItemsSource="{Binding ViewModeOptions}" SelectedItem="{Binding ViewMode}"/>
+                </ui:CardControl>
+                <ui:CardControl>
+                    <ui:CardControl.Header>
+                        <TextBlock Text="Tile size" Style="{StaticResource CardTitle}"/>
+                    </ui:CardControl.Header>
+                    <ComboBox Width="130" ItemsSource="{Binding TileSizeOptions}" SelectedItem="{Binding TileSize}"/>
+                </ui:CardControl>
+                <ui:CardControl>
+                    <ui:CardControl.Header>
+                        <TextBlock Style="{StaticResource CardTitle}">
+                            <Run Text="Columns:"/>
+                            <Run Text="{Binding GridColumns, Mode=OneWay}"/>
+                        </TextBlock>
+                    </ui:CardControl.Header>
+                    <Slider Width="180" Minimum="2" Maximum="6" TickFrequency="1" IsSnapToTickEnabled="True" Value="{Binding GridColumns}"/>
+                </ui:CardControl>
+                <ui:CardControl>
+                    <ui:CardControl.Header>
+                        <TextBlock Text="Show file names under tiles" Style="{StaticResource CardTitle}"/>
+                    </ui:CardControl.Header>
+                    <ui:ToggleSwitch IsChecked="{Binding ShowItemNames}"/>
+                </ui:CardControl>
+                <ui:CardControl>
+                    <ui:CardControl.Header>
+                        <TextBlock Text="Show size and type under tiles" Style="{StaticResource CardTitle}"/>
+                    </ui:CardControl.Header>
+                    <ui:ToggleSwitch IsChecked="{Binding ShowItemDetails}"/>
+                </ui:CardControl>
+                <ui:CardControl>
+                    <ui:CardControl.Header>
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource CardTitle}">
+                                <Run Text="Background opacity:"/>
+                                <Run Text="{Binding BackgroundOpacity, Mode=OneWay, StringFormat={}{0:P0}}"/>
+                            </TextBlock>
+                            <TextBlock Text="Lower values let more of the desktop show through." Style="{StaticResource CardDescription}"/>
+                        </StackPanel>
+                    </ui:CardControl.Header>
+                    <Slider Width="180" Minimum="0.4" Maximum="1" TickFrequency="0.05" IsSnapToTickEnabled="True" Value="{Binding BackgroundOpacity}"/>
+                </ui:CardControl>
+
+                <TextBlock Text="Motion" Style="{StaticResource SectionHeader}"/>
+                <ui:CardControl>
+                    <ui:CardControl.Header>
+                        <TextBlock Text="Open animation" Style="{StaticResource CardTitle}"/>
+                    </ui:CardControl.Header>
+                    <ComboBox Width="130" ItemsSource="{Binding SpawnAnimationOptions}" SelectedItem="{Binding SpawnAnimation}"/>
+                </ui:CardControl>
+                <ui:CardControl>
+                    <ui:CardControl.Header>
+                        <TextBlock Style="{StaticResource CardTitle}">
+                            <Run Text="Animation speed:"/>
+                            <Run Text="{Binding AnimationSpeed, Mode=OneWay, StringFormat={}{0:0.##}x}"/>
+                        </TextBlock>
+                    </ui:CardControl.Header>
+                    <Slider Width="180" Minimum="0.5" Maximum="2" TickFrequency="0.25" IsSnapToTickEnabled="True" Value="{Binding AnimationSpeed}"/>
+                </ui:CardControl>
+                <ui:CardControl>
+                    <ui:CardControl.Header>
+                        <StackPanel>
+                            <TextBlock Text="Reduce motion" Style="{StaticResource CardTitle}"/>
+                            <TextBlock Text="Turn off all animations." Style="{StaticResource CardDescription}"/>
+                        </StackPanel>
+                    </ui:CardControl.Header>
+                    <ui:ToggleSwitch IsChecked="{Binding ReduceMotion}"/>
+                </ui:CardControl>
 
                 <!-- General -->
                 <TextBlock Text="General" Style="{StaticResource SectionHeader}"/>

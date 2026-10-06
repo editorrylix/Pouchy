@@ -3,57 +3,64 @@ using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using Pouchy.Helpers;
 using Pouchy.Interop;
 using Pouchy.Models;
 
 namespace Pouchy.Services
 {
-    public interface IIconProvider
-    {
-        /// <summary>Thumbnail for images, shell icon for everything else. Safe to call off the UI thread.</summary>
-        ImageSource? GetFileIcon(string path);
+    public sealed record Thumbnail(ImageSource Image, ThumbnailStyle Style);
 
+    public interface IThumbnailProvider
+    {
+        /// <summary>Best available preview for a path. Call off the UI thread; may be slow.</summary>
+        Thumbnail? GetThumbnail(string path);
+
+        /// <summary>Generic icon for stacks in list view.</summary>
         ImageSource? GetStackIcon();
     }
 
-    public sealed class ShellIconProvider : IIconProvider
+    /// <summary>Explorer-quality thumbnails via the Windows Shell, with icon fallbacks.</summary>
+    public sealed class ShellThumbnailProvider : IThumbnailProvider, IDisposable
     {
+        private const int ThumbnailPixels = 256;
+        private const int IconPixels = 128;
         private static readonly Lazy<ImageSource> StackIcon = new(CreateStackIcon);
+
+        private readonly StaWorker _sta = new("Pouchy thumbnails");
 
         public ImageSource? GetStackIcon() => StackIcon.Value;
 
-        public ImageSource? GetFileIcon(string path)
+        public Thumbnail? GetThumbnail(string path)
         {
-            if (PreviewSupport.IsImage(path) && File.Exists(path))
+            bool exists = File.Exists(path) || Directory.Exists(path);
+            if (exists)
             {
-                try
+                var thumbnail = _sta.Invoke(() =>
+                    ShellThumbnails.GetImage(path, ThumbnailPixels, ShellThumbnails.Options.ThumbnailOnly));
+                if (thumbnail != null)
                 {
-                    var bmp = new BitmapImage();
-                    bmp.BeginInit();
-                    bmp.CacheOption = BitmapCacheOption.OnLoad;
-                    bmp.DecodePixelWidth = 96;
-                    bmp.UriSource = new Uri(path);
-                    bmp.EndInit();
-                    bmp.Freeze();
-                    return bmp;
+                    bool photoLike = PreviewSupport.IsImage(path) || PreviewSupport.IsVideo(path);
+                    return new Thumbnail(thumbnail, photoLike ? ThumbnailStyle.Fill : ThumbnailStyle.Fit);
                 }
-                catch (Exception ex)
-                {
-                    Logger.Log("Error loading image thumbnail: " + ex.Message);
-                }
+
+                var icon = _sta.Invoke(() =>
+                    ShellThumbnails.GetImage(path, IconPixels, ShellThumbnails.Options.IconOnly));
+                if (icon != null) return new Thumbnail(icon, ThumbnailStyle.Icon);
             }
 
-            return GetShellIcon(path);
+            // Missing files (or a shell failure): the generic icon for the extension.
+            return GetFileTypeIcon(path, exists) is { } fallback ? new Thumbnail(fallback, ThumbnailStyle.Icon) : null;
         }
 
-        private static ImageSource? GetShellIcon(string path)
+        public void Dispose() => _sta.Dispose();
+
+        private static ImageSource? GetFileTypeIcon(string path, bool exists)
         {
             var info = new NativeMethods.SHFILEINFO();
             uint flags = NativeMethods.SHGFI_ICON | NativeMethods.SHGFI_LARGEICON;
             uint attributes = 0;
-
-            // For paths that no longer exist, ask for the generic icon of the extension.
-            if (!File.Exists(path) && !Directory.Exists(path))
+            if (!exists)
             {
                 flags |= NativeMethods.SHGFI_USEFILEATTRIBUTES;
                 attributes = NativeMethods.FILE_ATTRIBUTE_NORMAL;
