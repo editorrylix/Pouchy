@@ -1,0 +1,104 @@
+name: Release
+
+# Push a semantic version tag (for example v1.2.0, or v1.3.0-beta.1 for a pre-release)
+# and this builds Pouchy, then publishes a GitHub release with notes from CHANGELOG.md.
+on:
+  push:
+    tags: ['v*.*.*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build and publish
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Read version from tag
+        id: version
+        shell: pwsh
+        run: |
+          $tag = '${{ github.ref_name }}'
+          if ($tag -notmatch '^v(?<core>\d+\.\d+\.\d+)(?<pre>-[0-9A-Za-z.-]+)?$') {
+            throw "Tag '$tag' is not a semantic version (expected vMAJOR.MINOR.PATCH)."
+          }
+          $version = $Matches.core + $Matches.pre
+          "version=$version" >> $env:GITHUB_OUTPUT
+          "core=$($Matches.core)" >> $env:GITHUB_OUTPUT
+          "prerelease=$(if ($Matches.pre) { 'true' } else { 'false' })" >> $env:GITHUB_OUTPUT
+
+      - name: Test
+        run: dotnet test Pouchy.sln -c Release
+
+      - name: Publish single-file builds
+        shell: pwsh
+        run: |
+          $v = '${{ steps.version.outputs.version }}'
+          New-Item -ItemType Directory -Force dist | Out-Null
+          foreach ($rid in 'win-x64', 'win-arm64') {
+            dotnet publish Pouchy.csproj -c Release -r $rid --self-contained true `
+              -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true `
+              -p:EnableCompressionInSingleFile=true -p:DebugType=none `
+              -p:Version=$v -o "publish/$rid"
+            if ($LASTEXITCODE -ne 0) { throw "Publish failed for $rid" }
+            Copy-Item "publish/$rid/Pouchy.exe" "dist/Pouchy-$v-$rid.exe"
+            Compress-Archive -Path "publish/$rid/Pouchy.exe" -DestinationPath "dist/Pouchy-$v-$rid.zip"
+          }
+          Get-ChildItem dist | Sort-Object Name | ForEach-Object {
+            "$((Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLower())  $($_.Name)"
+          } | Set-Content -Encoding utf8 dist/SHA256SUMS.txt
+
+      - name: Write release notes
+        shell: pwsh
+        run: |
+          $v = '${{ steps.version.outputs.version }}'
+          $core = '${{ steps.version.outputs.core }}'
+          $lines = Get-Content -Encoding utf8 CHANGELOG.md
+          $start = ($lines | Select-String -Pattern "^## \[$([regex]::Escape($v))\]" | Select-Object -First 1).LineNumber
+          if (-not $start) { $start = ($lines | Select-String -Pattern "^## \[$([regex]::Escape($core))\]" | Select-Object -First 1).LineNumber }
+          if (-not $start) { throw "CHANGELOG.md has no section for $v." }
+          $section = @()
+          for ($i = $start; $i -lt $lines.Count; $i++) {
+            if ($lines[$i] -match '^## \[' -or $lines[$i] -match '^\[[^\]]+\]: ') { break }
+            $section += $lines[$i]
+          }
+          $repo = '${{ github.repository }}'
+          $notes = @"
+          <p align="center"><img src="https://raw.githubusercontent.com/$repo/main/docs/media/demo.gif" alt="Pouchy demo" width="760" /></p>
+
+          $(($section -join "`n").Trim())
+
+          ## Download
+
+          | Your PC | Download |
+          | --- | --- |
+          | Most Windows PCs (Intel / AMD) | [**Pouchy-$v-win-x64.exe**](https://github.com/$repo/releases/download/v$v/Pouchy-$v-win-x64.exe) |
+          | Windows on ARM (Snapdragon, Surface Pro X) | [**Pouchy-$v-win-arm64.exe**](https://github.com/$repo/releases/download/v$v/Pouchy-$v-win-arm64.exe) |
+
+          No installer and no .NET needed: download it and run it. Pouchy lives in the system tray. Turn on **Settings → Run at Windows startup** to keep it around.
+
+          > **"Windows protected your PC"?** Pouchy isn't code-signed yet, so SmartScreen warns about new downloads. Click **More info → Run anyway**. You can check the download against **SHA256SUMS.txt** below.
+
+          **Requirements:** Windows 10 (version 2004 or later) or Windows 11.
+
+          Full changelog: [CHANGELOG.md](https://github.com/$repo/blob/v$v/CHANGELOG.md)
+          "@
+          $notes | Set-Content -Encoding utf8 notes.md
+
+      - name: Publish release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $v = '${{ steps.version.outputs.version }}'
+          $ghArgs = @('release', 'create', 'v' + $v, '--title', "Pouchy $v", '--notes-file', 'notes.md', '--verify-tag')
+          if ('${{ steps.version.outputs.prerelease }}' -eq 'true') { $ghArgs += '--prerelease' } else { $ghArgs += '--latest' }
+          $ghArgs += Get-ChildItem dist | ForEach-Object { $_.FullName }
+          gh @ghArgs
+          if ($LASTEXITCODE -ne 0) { throw "gh release create failed" }

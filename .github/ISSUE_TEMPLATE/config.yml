@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Download the latest version
+    url: https://github.com/editorrylix/Pouchy/releases/latest
+    about: Grab the newest Pouchy before reporting — your bug may already be fixed.
+  - name: Support development
+    url: https://buymeacoffee.com/notrishi
+    about: Pouchy is an independent project. A coffee keeps it going.

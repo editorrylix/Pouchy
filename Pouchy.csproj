@@ -9,6 +9,13 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
     <RootNamespace>Pouchy</RootNamespace>
+
+    <!-- Semantic version. CI overrides it from the release tag (vX.Y.Z). -->
+    <Version>1.0.0</Version>
+    <Product>Pouchy</Product>
+    <Company>editorrylix</Company>
+    <Description>The cute drop shelf for Windows</Description>
+    <Copyright>Copyright (c) 2026 editorrylix</Copyright>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>Assets/pouchy.ico</ApplicationIcon>
   </PropertyGroup>

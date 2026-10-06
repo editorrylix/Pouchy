@@ -29,6 +29,9 @@ namespace Pouchy
         private ThemeService? _themes;
         private ShellThumbnailProvider? _thumbnails;
         private LinkPreviewService? _linkPreviews;
+        private UpdateService? _updates;
+        private UpdateInfo? _availableUpdate;
+        private System.Windows.Threading.DispatcherTimer? _updateTimer;
         private PouchViewModel? _pouchViewModel;
         private PouchWindow? _pouchWindow;
         private SettingsWindow? _settingsWindow;
@@ -101,8 +104,63 @@ namespace Pouchy
             };
             _settings.Changed += (_, _) => UpdateTrayTooltip();
 
+            StartUpdateChecks();
+
             if (options.ShowPouch) Dispatcher.BeginInvoke(ShowPouchAtScreenCenter, System.Windows.Threading.DispatcherPriority.ApplicationIdle);
             if (options.ShowTrayMenu) Dispatcher.BeginInvoke(() => ShowTrayMenu(atScreenCenter: true), System.Windows.Threading.DispatcherPriority.ApplicationIdle);
+        }
+
+        // ---------------------------------------------------------------- Updates
+
+        private void StartUpdateChecks()
+        {
+            _updates = new UpdateService();
+            _trayIcon!.TrayBalloonTipClicked += (_, _) => OpenUpdatePage();
+
+            // First check shortly after startup, then every few hours (each run skips if checked in the last day).
+            _updateTimer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(45) };
+            _updateTimer.Tick += async (_, _) =>
+            {
+                _updateTimer.Interval = TimeSpan.FromHours(6);
+                await CheckForUpdatesAsync(manual: false);
+            };
+            _updateTimer.Start();
+        }
+
+        /// <returns>The available update, or null if up to date (or checks are off).</returns>
+        internal async Task<UpdateInfo?> CheckForUpdatesAsync(bool manual)
+        {
+            var s = _settings!.Current;
+            if (_updates == null) return null;
+            if (!manual && (!s.CheckForUpdates || s.LastUpdateCheck is DateTime last && DateTime.Now - last < TimeSpan.FromHours(23)))
+            {
+                return _availableUpdate;
+            }
+
+            var update = await _updates.CheckAsync();
+            _settings.Update(x => x.LastUpdateCheck = DateTime.Now);
+            _availableUpdate = update;
+
+            if (update != null && (manual || s.DismissedUpdateVersion != update.Version.ToString()))
+            {
+                Logger.Log($"Update available: {update.Tag}");
+                _trayIcon?.ShowNotification($"Pouchy {update.Version} is available",
+                    "Click to see what's new and download it.", H.NotifyIcon.Core.NotificationIcon.Info);
+                _settings.Update(x => x.DismissedUpdateVersion = update.Version.ToString()); // Notify once per version.
+            }
+            return update;
+        }
+
+        private void OpenUpdatePage()
+        {
+            try
+            {
+                FileActions.Open(_availableUpdate?.Url ?? UpdateService.ReleasesUrl);
+            }
+            catch (Exception ex)
+            {
+                Logger.Log("Could not open the release page: " + ex.Message);
+            }
         }
 
         private void ShowPouchAtScreenCenter()
@@ -218,6 +276,10 @@ namespace Pouchy
             if (AppPaths.Profile != null) status += $" · profile {AppPaths.Profile}";
 
             var header = new List<object> { MenuFactory.Header(status) };
+            if (_availableUpdate != null)
+            {
+                header.Add(MenuFactory.Item($"Update available: {_availableUpdate.Version}", Symbol.ArrowDownload24, OpenUpdatePage));
+            }
 
             var main = new List<object>
             {
@@ -313,7 +375,7 @@ namespace Pouchy
                 return;
             }
 
-            var viewModel = new SettingsViewModel(_settings!, _startup!, _hotkeys!, _themes!);
+            var viewModel = new SettingsViewModel(_settings!, _startup!, _hotkeys!, _themes!, () => CheckForUpdatesAsync(manual: true));
             _settingsWindow = new SettingsWindow(viewModel);
             _settingsWindow.Closed += (_, _) =>
             {
@@ -343,6 +405,7 @@ namespace Pouchy
             _themes?.Dispose();
             _thumbnails?.Dispose();
             _linkPreviews?.Dispose();
+            _updates?.Dispose();
 
             _singleInstanceMutex?.ReleaseMutex();
             _singleInstanceMutex?.Dispose();

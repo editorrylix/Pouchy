@@ -90,3 +90,36 @@ namespace Pouchy.Tests
         }
     }
 }
+
+namespace Pouchy.Tests
+{
+    public class UpdateServiceTests
+    {
+        [Theory]
+        [InlineData("v1.2.3", 1, 2, 3)]
+        [InlineData("1.0.0", 1, 0, 0)]
+        [InlineData("v2.0.0-beta.1", 2, 0, 0)]
+        [InlineData("v1.4", 1, 4, 0)]
+        public void TryParseVersion_Valid(string text, int major, int minor, int patch)
+        {
+            Assert.True(Pouchy.Services.UpdateService.TryParseVersion(text, out var version));
+            Assert.Equal(new Version(major, minor, patch), version);
+        }
+
+        [Theory]
+        [InlineData("")]
+        [InlineData("latest")]
+        [InlineData("vX.Y")]
+        public void TryParseVersion_Invalid(string text)
+        {
+            Assert.False(Pouchy.Services.UpdateService.TryParseVersion(text, out _));
+        }
+
+        [Fact]
+        public void CurrentVersion_ComesFromProject()
+        {
+            Assert.Matches(@"^\d+\.\d+\.\d+$", Pouchy.Services.UpdateService.CurrentVersionText);
+            Assert.True(Pouchy.Services.UpdateService.CurrentVersion >= new Version(1, 0, 0));
+        }
+    }
+}

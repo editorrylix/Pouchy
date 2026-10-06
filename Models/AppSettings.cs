@@ -105,6 +105,13 @@ namespace Pouchy.Models
         /// <summary>Remove items from the pouch once they've been dropped somewhere.</summary>
         public bool RemoveAfterDragOut { get; set; }
 
+        // Updates
+        /// <summary>Check GitHub for a newer release about once a day.</summary>
+        public bool CheckForUpdates { get; set; } = true;
+        public DateTime? LastUpdateCheck { get; set; }
+        /// <summary>A version the user chose to skip notifications for.</summary>
+        public string? DismissedUpdateVersion { get; set; }
+
         // Shake trigger
         public bool ShakeEnabled { get; set; } = true;
         /// <summary>Minimum horizontal travel (px) between direction changes.</summary>

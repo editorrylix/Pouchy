@@ -386,6 +386,45 @@
                     </StackPanel>
                 </Border>
 
+                <!-- About -->
+                <TextBlock Text="About" Style="{StaticResource SectionHeader}"/>
+                <Border Padding="16" CornerRadius="6" Margin="0,0,0,4"
+                        Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                        BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" BorderThickness="1">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Image Source="pack://application:,,,/Pouchy;component/Assets/pouchy-256.png" Width="52" Height="52" Margin="0,0,14,0"
+                               VerticalAlignment="Top" RenderOptions.BitmapScalingMode="HighQuality"/>
+                        <StackPanel Grid.Column="1">
+                            <TextBlock Text="Pouchy" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                            <TextBlock Text="{Binding VersionText}" Style="{StaticResource CardDescription}"/>
+                            <TextBlock Text="{Binding UpdateStatus}" Style="{StaticResource CardDescription}" Margin="0,6,0,0"/>
+                            <WrapPanel Margin="0,10,0,0">
+                                <ui:Button Content="Check for updates" Icon="{ui:SymbolIcon ArrowSync24}" Margin="0,0,8,8"
+                                           Command="{Binding CheckNowCommand}"/>
+                                <ui:Button Content="What's new" Icon="{ui:SymbolIcon Sparkle24}" Margin="0,0,8,8"
+                                           Command="{Binding OpenLinkCommand}" CommandParameter="https://github.com/editorrylix/Pouchy/releases"/>
+                                <ui:Button Content="Report a bug" Icon="{ui:SymbolIcon Bug24}" Margin="0,0,8,8"
+                                           Command="{Binding OpenLinkCommand}" CommandParameter="https://github.com/editorrylix/Pouchy/issues/new/choose"/>
+                                <ui:Button Content="GitHub" Icon="{ui:SymbolIcon Code24}" Margin="0,0,8,8"
+                                           Command="{Binding OpenLinkCommand}" CommandParameter="https://github.com/editorrylix/Pouchy"/>
+                            </WrapPanel>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+                <ui:CardControl>
+                    <ui:CardControl.Header>
+                        <StackPanel>
+                            <TextBlock Text="Check for updates automatically" Style="{StaticResource CardTitle}"/>
+                            <TextBlock Text="About once a day Pouchy asks GitHub for the latest release. Nothing else is sent." Style="{StaticResource CardDescription}"/>
+                        </StackPanel>
+                    </ui:CardControl.Header>
+                    <ui:ToggleSwitch IsChecked="{Binding CheckForUpdates}"/>
+                </ui:CardControl>
+
                 <!-- Advanced -->
                 <TextBlock Text="Advanced" Style="{StaticResource SectionHeader}"/>
                 <StackPanel Orientation="Horizontal">

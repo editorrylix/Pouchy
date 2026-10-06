@@ -1,0 +1,48 @@
+name: Bug report
+description: Something isn't working the way it should.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping make Pouchy better! A few details make bugs much quicker to fix.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What did you do, what did you expect, and what happened instead?
+      placeholder: I dragged a PNG out of the pouch into Discord and…
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open the pouch with Alt + Shift + Z
+        2. Drop a file
+        3. …
+  - type: input
+    id: version
+    attributes:
+      label: Pouchy version
+      description: Settings → About shows it.
+      placeholder: "1.0.0"
+    validations:
+      required: true
+  - type: input
+    id: windows
+    attributes:
+      label: Windows version
+      placeholder: Windows 11 24H2, display scale 125%
+  - type: textarea
+    id: log
+    attributes:
+      label: Log
+      description: The end of `%AppData%\Pouchy\debug.log` (Settings → Advanced → Open log) often shows what went wrong.
+      render: text
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots or recordings
+      description: Drag images or videos in here.

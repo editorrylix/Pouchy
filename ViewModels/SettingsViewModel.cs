@@ -87,8 +87,18 @@ namespace Pouchy.ViewModels
             _ => "Ignores window moves, resizes, menus and text selection.",
         };
 
-        public SettingsViewModel(SettingsService settings, StartupService startup, HotkeyService hotkeys, ThemeService themes)
+        private readonly Func<Task<UpdateInfo?>>? _runUpdateCheck;
+
+        public string VersionText => $"Version {UpdateService.CurrentVersionText}";
+
+        [ObservableProperty] private bool _checkForUpdates;
+        [ObservableProperty] private string _updateStatus = "";
+        [ObservableProperty] private bool _isCheckingForUpdates;
+
+        public SettingsViewModel(SettingsService settings, StartupService startup, HotkeyService hotkeys, ThemeService themes,
+            Func<Task<UpdateInfo?>>? checkForUpdates = null)
         {
+            _runUpdateCheck = checkForUpdates;
             _settings = settings;
             _startup = startup;
             _hotkeys = hotkeys;
@@ -107,6 +117,8 @@ namespace Pouchy.ViewModels
             AnimationSpeed = s.AnimationSpeed;
             ReduceMotion = s.ReduceMotion;
             ShowMascot = s.ShowMascot;
+            CheckForUpdates = s.CheckForUpdates;
+            UpdateStatus = s.LastUpdateCheck is DateTime last ? $"Last checked {last:g}" : "Not checked yet";
             CompactShelfTabs = s.CompactShelfTabs;
             DragOutAction = s.DragOutAction;
             RemoveAfterDragOut = s.RemoveAfterDragOut;
@@ -172,6 +184,23 @@ namespace Pouchy.ViewModels
         }
 
         [RelayCommand]
+        private async Task CheckNow()
+        {
+            if (_runUpdateCheck == null) return;
+            IsCheckingForUpdates = true;
+            UpdateStatus = "Checking…";
+            var update = await _runUpdateCheck();
+            UpdateStatus = update != null ? $"Pouchy {update.Version} is available" : "You're on the latest version";
+            IsCheckingForUpdates = false;
+        }
+
+        [RelayCommand]
+        private void OpenLink(string? url)
+        {
+            if (!string.IsNullOrEmpty(url)) OpenInShell(url);
+        }
+
+        [RelayCommand]
         private void OpenThemesFolder()
         {
             Directory.CreateDirectory(AppPaths.ThemesFolder);
@@ -234,6 +263,11 @@ namespace Pouchy.ViewModels
         {
             try
             {
+                if (Uri.TryCreate(path, UriKind.Absolute, out var uri) && uri.Scheme is "http" or "https")
+                {
+                    Process.Start(new ProcessStartInfo(path) { UseShellExecute = true });
+                    return;
+                }
                 Directory.CreateDirectory(AppPaths.DataFolder);
                 bool exists = File.Exists(path) || Directory.Exists(path);
                 Process.Start(new ProcessStartInfo(exists ? path : AppPaths.DataFolder) { UseShellExecute = true });
@@ -269,6 +303,7 @@ namespace Pouchy.ViewModels
         partial void OnAnimationSpeedChanged(double value) => Apply(s => s.AnimationSpeed = Math.Round(value, 2));
         partial void OnReduceMotionChanged(bool value) => Apply(s => s.ReduceMotion = value);
         partial void OnShowMascotChanged(bool value) => Apply(s => s.ShowMascot = value);
+        partial void OnCheckForUpdatesChanged(bool value) => Apply(s => s.CheckForUpdates = value);
         partial void OnCompactShelfTabsChanged(bool value) => Apply(s => s.CompactShelfTabs = value);
         partial void OnDragOutActionChanged(DragOutAction value) => Apply(s => s.DragOutAction = value);
         partial void OnRemoveAfterDragOutChanged(bool value) => Apply(s => s.RemoveAfterDragOut = value);
