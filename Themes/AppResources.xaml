@@ -1,12 +1,11 @@
-<!-- Resources shared by every window. Merged by App.xaml (and by the UI tests). -->
+<!--
+    Pouchy's own shared resources. Merged by App.xaml (and by the UI tests).
+    WPF-UI's ThemesDictionary/ControlsDictionary must stay directly in App.xaml:
+    its theme switcher only looks at the top level of the application resources.
+-->
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-                    xmlns:helpers="clr-namespace:Pouchy.Helpers"
-                    xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml">
-    <ResourceDictionary.MergedDictionaries>
-        <ui:ThemesDictionary Theme="Dark" />
-        <ui:ControlsDictionary />
-    </ResourceDictionary.MergedDictionaries>
+                    xmlns:helpers="clr-namespace:Pouchy.Helpers">
 
     <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
     <helpers:InverseBooleanToVisibilityConverter x:Key="InverseBoolToVisibility" />
@@ -97,6 +96,30 @@
                             <Setter Property="Opacity" Value="0.4"/>
                         </Trigger>
                     </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- App name and a status line at the top of the tray menu. A Separator so it can't be clicked. -->
+    <Style x:Key="PouchMenuHeader" TargetType="Separator">
+        <Setter Property="Focusable" Value="False"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Separator">
+                    <Grid Margin="14,8,14,8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Image Source="pack://application:,,,/Pouchy;component/Assets/pouchy-256.png" Width="28" Height="28" Margin="0,0,10,0"
+                               RenderOptions.BitmapScalingMode="HighQuality"/>
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                            <TextBlock Text="Pouchy" FontFamily="{DynamicResource Pouch.HeaderFontFamily}" FontSize="13.5" FontWeight="SemiBold"
+                                       Foreground="{DynamicResource Pouch.Text}"/>
+                            <TextBlock Text="{TemplateBinding Tag}" FontSize="11" Margin="0,1,0,0" Foreground="{DynamicResource Pouch.TextMuted}"/>
+                        </StackPanel>
+                    </Grid>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>

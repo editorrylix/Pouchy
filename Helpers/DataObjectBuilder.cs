@@ -17,7 +17,7 @@ namespace Pouchy.Helpers
                 .ToArray();
 
             string text = string.Join(Environment.NewLine,
-                items.Where(i => i.Kind == PouchItemKind.Text && !string.IsNullOrEmpty(i.TextContent))
+                items.Where(i => i.IsTextLike && !string.IsNullOrEmpty(i.TextContent))
                      .Select(i => i.TextContent));
 
             // A single bitmap only makes sense when it's the only thing being transferred.

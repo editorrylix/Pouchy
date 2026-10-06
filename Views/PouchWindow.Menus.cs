@@ -29,7 +29,11 @@ namespace Pouchy.Views
         {
             NativeMethods.GetCursorPos(out _menuPoint);
 
-            if (ItemsControl.ContainerFromElement(PouchItemsControl, (DependencyObject)e.OriginalSource) is ListBoxItem container)
+            if (FindShelfChip(e.OriginalSource as DependencyObject) is { DataContext: Shelf shelf })
+            {
+                NewMenu(BuildShelfMenu(shelf)).IsOpen = true;
+            }
+            else if (ItemsControl.ContainerFromElement(PouchItemsControl, (DependencyObject)e.OriginalSource) is ListBoxItem container)
             {
                 if (!container.IsSelected)
                 {
@@ -66,7 +70,17 @@ namespace Pouchy.Views
         }
 
         private List<PouchItem> GetSelectedItems() =>
-            PouchItemsControl.SelectedItems.Cast<PouchItem>().OrderBy(i => _vm.Items.IndexOf(i)).ToList();
+            PouchItemsControl.SelectedItems.Cast<PouchItem>().OrderBy(i => _vm.DisplayedItems.IndexOf(i)).ToList();
+
+        private static FrameworkElement? FindShelfChip(DependencyObject? element)
+        {
+            for (var current = element; current != null;
+                 current = current is System.Windows.Media.Visual ? System.Windows.Media.VisualTreeHelper.GetParent(current) : LogicalTreeHelper.GetParent(current))
+            {
+                if (current is FrameworkElement { Tag: "ShelfChip" } chip) return chip;
+            }
+            return null;
+        }
 
         private void ShowItemMenu(IReadOnlyList<PouchItem> items, bool placeAtMouse, UIElement? anchor = null)
         {
@@ -109,6 +123,7 @@ namespace Pouchy.Views
                         open.Add(Item($"Open all {existing.Count} items", Symbol.Open24, () => OpenPaths(existing)));
                         break;
                     case PouchItemKind.Text when TextTools.IsUrl(item.TextContent!):
+                    case PouchItemKind.Link:
                         open.Add(Item("Open link", Symbol.Globe24, () => FileActions.Open(item.TextContent!.Trim()), "Enter"));
                         break;
                 }
@@ -134,6 +149,17 @@ namespace Pouchy.Views
                 {
                     clipboard.Add(Item("Copy name", Symbol.TextT24, () => PouchViewModel.CopyText(Path.GetFileName(item.FilePath!.TrimEnd('\\')))));
                 }
+            }
+            if (single && item.Kind == PouchItemKind.Color && item.ColorValue is System.Windows.Media.Color color)
+            {
+                clipboard.Add(Item($"Copy {TextTools.ToHex(color)}", Symbol.Color24, () => PouchViewModel.CopyText(TextTools.ToHex(color))));
+                clipboard.Add(Item($"Copy {TextTools.ToRgb(color)}", Symbol.Color24, () => PouchViewModel.CopyText(TextTools.ToRgb(color))));
+                clipboard.Add(Item($"Copy {TextTools.ToHsl(color)}", Symbol.Color24, () => PouchViewModel.CopyText(TextTools.ToHsl(color))));
+            }
+            if (single && item.Kind == PouchItemKind.Link)
+            {
+                clipboard.Add(Item("Copy title", Symbol.TextT24, () => PouchViewModel.CopyText(item.DisplayName)));
+                clipboard.Add(Item("Copy as Markdown link", Symbol.Link24, () => PouchViewModel.CopyText($"[{item.DisplayName}]({item.TextContent})")));
             }
             if (singleFile && PreviewSupport.IsText(item.FilePath!))
             {
@@ -162,6 +188,16 @@ namespace Pouchy.Views
                     organise.Add(Item("Rename…", Symbol.Rename24, () => Rename(item), "F2"));
                 }
             }
+            var currentLabel = items.Select(i => i.Label).Distinct().Count() == 1 ? items[0].Label : (ColorLabel?)null;
+            var labels = LabelColors.All
+                .Select(l => (object)Check(l.ToString(), currentLabel == l, () => _vm.SetLabel(items, currentLabel == l ? ColorLabel.None : l),
+                    MenuFactory.Dot(LabelColors.BrushFor(l)!, ring: currentLabel == l)))
+                .Append(Separator())
+                .Append(Item("No label", Symbol.Circle24, () => _vm.SetLabel(items, ColorLabel.None)))
+                .ToArray();
+            organise.Add(Submenu("Label", Symbol.Tag24, labels));
+            organise.Add(BuildMoveToShelfMenu(items));
+
             bool allPinned = items.All(i => i.IsPinned);
             organise.Add(Item(allPinned ? "Unpin" : "Pin", allPinned ? Symbol.PinOff24 : Symbol.Pin24, () => _vm.TogglePin(items), "Ctrl+P"));
             if (items.Count > 1 && allFileSystem)
@@ -212,7 +248,7 @@ namespace Pouchy.Views
             }
 
             var share = new List<object>();
-            if (existing.Count > 0 || items.Any(i => i.Kind is PouchItemKind.Text or PouchItemKind.Image))
+            if (existing.Count > 0 || items.Any(i => i.IsTextLike || i.Kind == PouchItemKind.Image))
             {
                 share.Add(Item("Share…", Symbol.Share24, () => Share(items, existing)));
             }
@@ -253,9 +289,16 @@ namespace Pouchy.Views
             var add = new List<object>
             {
                 paste,
-                Item("New note…", Symbol.NoteAdd24, NewNote, "Ctrl+N"),
+                Item("New note…", Symbol.NoteAdd24, () => NewNote(), "Ctrl+N"),
             };
             if (!_vm.IsEmpty) add.Add(Item("Select all", Symbol.SelectAllOn24, () => PouchItemsControl.SelectAll(), "Ctrl+A"));
+
+            var shelves = _vm.Shelves
+                .Select(s => (object)Check(s.Name, s.IsActive, () => _vm.ActivateShelf(s), MenuFactory.Dot(s.ColorBrush, ring: s.IsActive)))
+                .Append(Separator())
+                .Append(Item("New shelf…", Symbol.Add24, () => PromptNewShelf(), "Ctrl+T"))
+                .ToArray();
+            add.Add(Item("Search…", Symbol.Search24, OpenSearch, "Ctrl+F"));
 
             var views = Enum.GetValues<PouchViewMode>()
                 .Select(mode => (object)Check(mode.ToString(), _vm.ViewMode == mode, () => _vm.SetViewMode(mode)))
@@ -264,11 +307,12 @@ namespace Pouchy.Views
                 .Select(t => (object)Check(t.Name, t.Id == _vm.CurrentThemeId, () => _vm.SetTheme(t.Id)))
                 .ToArray();
 
-            var look = new List<object> { Submenu("View", Symbol.Grid24, views) };
+            var look = new List<object> { Submenu("Shelf", Symbol.Tabs24, shelves), Submenu("View", Symbol.Grid24, views) };
             if (themes.Length > 0) look.Add(Submenu("Theme", Symbol.PaintBrush24, themes));
 
             var manage = new List<object>();
-            if (!_vm.IsEmpty) manage.Add(Item("Clear (keeps pinned)", Symbol.Delete24, () => _vm.ClearCommand.Execute(null)));
+            if (_vm.CanUndo) manage.Add(Item("Undo remove", Symbol.ArrowUndo24, _vm.Undo, "Ctrl+Z"));
+            if (_vm.Items.Count > 0) manage.Add(Item("Clear (keeps pinned)", Symbol.Delete24, () => _vm.ClearCommand.Execute(null)));
             manage.Add(Item("Settings…", Symbol.Settings24, () => _vm.OpenSettingsCommand.Execute(null)));
 
             return new List<List<object>> { add, look, manage };
@@ -284,7 +328,11 @@ namespace Pouchy.Views
                     FileActions.Open(item.FilePath!);
                     break;
                 case PouchItemKind.Text when TextTools.IsUrl(item.TextContent!):
+                case PouchItemKind.Link:
                     FileActions.Open(item.TextContent!.Trim());
+                    break;
+                case PouchItemKind.Color:
+                    PouchViewModel.CopyText(item.DisplayName);
                     break;
                 case PouchItemKind.File or PouchItemKind.Folder:
                     PouchDialog.Alert(this, "File not found", $"\"{item.DisplayName}\" was moved or deleted.");
@@ -352,11 +400,14 @@ namespace Pouchy.Views
             if (text != null) _vm.UpdateText(item, text);
         }
 
-        private void NewNote()
+        /// <returns>True if a note was added.</returns>
+        internal bool NewNote()
         {
             string? text = PouchDialog.Prompt(this, "New note", "Ctrl+Enter to save.", "", "Add", multiline: true,
                 validate: t => string.IsNullOrWhiteSpace(t) ? "Write something first." : null);
-            if (text != null) _vm.AddText(text);
+            if (text == null) return false;
+            _vm.AddText(text);
+            return true;
         }
 
         private void MoveOrCopyTo(IReadOnlyList<PouchItem> items, IReadOnlyList<string> paths, bool move)
@@ -439,7 +490,7 @@ namespace Pouchy.Views
                 paths.Add(temp);
             }
             string? text = string.Join(Environment.NewLine,
-                items.Where(i => i.Kind == PouchItemKind.Text).Select(i => i.TextContent));
+                items.Where(i => i.IsTextLike).Select(i => i.TextContent));
             string title = items.Count == 1 ? items[0].DisplayName : $"{items.Count} items from Pouchy";
             ShareSheet.Show(Handle, paths, text.Length > 0 ? text : null, title);
         }
@@ -469,7 +520,7 @@ namespace Pouchy.Views
 
             if (FileActions.DeleteToRecycleBin(paths, Handle))
             {
-                _vm.RemoveItems(items);
+                _vm.RemoveItems(items, undoable: false);
             }
             else
             {
@@ -513,66 +564,17 @@ namespace Pouchy.Views
 
         // ---------------------------------------------------------------- Menu building
 
-        private ContextMenu NewMenu(List<List<object>> groups)
-        {
-            var menu = new ContextMenu
-            {
-                Style = (Style)FindResource("PouchContextMenu"),
-                PlacementTarget = this,
-                Placement = PlacementMode.MousePoint,
-            };
+        private ContextMenu NewMenu(List<List<object>> groups) => MenuFactory.Create(groups, this);
 
-            // Separators only between non-empty groups.
-            foreach (var group in groups.Where(g => g.Count > 0))
-            {
-                if (menu.Items.Count > 0) menu.Items.Add(Separator());
-                foreach (var entry in group) menu.Items.Add(entry);
-            }
-            return menu;
-        }
+        private static MenuItem Item(string header, SymbolRegular symbol, Action action, string? gesture = null, bool danger = false) =>
+            MenuFactory.Item(header, symbol, action, gesture, danger);
 
-        private MenuItem Item(string header, SymbolRegular symbol, Action action, string? gesture = null, bool danger = false)
-        {
-            var item = new MenuItem
-            {
-                Header = header,
-                Icon = new SymbolIcon(symbol) { FontSize = 15 },
-                InputGestureText = gesture ?? "",
-                Style = (Style)FindResource(danger ? "PouchDangerMenuItem" : "PouchMenuItem"),
-            };
-            item.Click += (_, _) =>
-            {
-                try
-                {
-                    action();
-                }
-                catch (Exception ex)
-                {
-                    ReportError(ex);
-                }
-            };
-            return item;
-        }
+        private static MenuItem Check(string header, bool isChecked, Action action, object? icon = null) =>
+            MenuFactory.Check(header, isChecked, action, icon);
 
-        private MenuItem Check(string header, bool isChecked, Action action)
-        {
-            var item = Item(header, isChecked ? Symbol.Checkmark24 : Symbol.Empty, action);
-            item.IsChecked = isChecked;
-            return item;
-        }
+        private static MenuItem Submenu(string header, SymbolRegular symbol, params object[] children) =>
+            MenuFactory.Submenu(header, symbol, children);
 
-        private MenuItem Submenu(string header, SymbolRegular symbol, params object[] children)
-        {
-            var item = new MenuItem
-            {
-                Header = header,
-                Icon = new SymbolIcon(symbol) { FontSize = 15 },
-                Style = (Style)FindResource("PouchMenuItem"),
-            };
-            foreach (var child in children) item.Items.Add(child);
-            return item;
-        }
-
-        private Separator Separator() => new() { Style = (Style)FindResource("PouchMenuSeparator") };
+        private static Separator Separator() => MenuFactory.Separator();
     }
 }

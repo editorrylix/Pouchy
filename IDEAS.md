@@ -225,6 +225,33 @@ Settings apply live, without a restart.
 
 ---
 
+## Phase 4 status ✅
+
+Done:
+- ✅ **Shelves:** named, coloured tabs under the header.
+  - Click to switch; Ctrl+Tab, Ctrl+1–9 or the background, tray and tab menus also switch shelves.
+  - Create with "+" or Ctrl+T; rename, recolour or delete from the tab's right-click menu.
+  - Drag items onto a tab to move them; drop files from outside onto a tab to add them to that shelf.
+  - "Move to shelf ▸" in the item menu.
+- ✅ **Search** (Ctrl+F) across every shelf, matching names, paths, text and file types. Colour-label filter dots.
+- ✅ **Colour labels** (red to grey), Finder-style, from the item menu "Label ▸"; shown as a dot on tiles and rows.
+- ✅ **Undo:** "Removed N items · Undo" bar for 6 seconds, plus Ctrl+Z (20 steps). Clear is undoable; Recycle Bin deletes aren't.
+- ✅ **Link items:** dropped or pasted URLs fetch the page title and icon (can be turned off in Settings); copy as Markdown link.
+- ✅ **Colour items:** `#hex` and `rgb()` text becomes a swatch; copy as HEX, RGB or HSL.
+- ✅ Saved state v2 (shelves, labels, link icons); the old flat format migrates automatically.
+- ✅ **Tray menu redesign:**
+  - Themed, with an app header and live status
+  - Show pouch, new note, paste into pouch
+  - Shelf, Theme and View submenus
+  - Pause/resume gestures, Settings, Clear, Quit
+- ✅ Fixed: Settings text was invisible with light pouch themes.
+
+Deferred:
+- Smart shelves (auto-filled by rules) and expanding stacks inline. These fit Phase 5's rules engine.
+- Separate floating windows per shelf.
+
+---
+
 ## Phase 3 status ✅
 
 Done:
@@ -311,6 +338,6 @@ Deferred to later phases:
 | **1. Foundation** ✅ | Stability | Git, MVVM, services, bug fixes, settings model, start with Windows |
 | **2. Look** ✅ | Identity | Theme engine, 4–5 built-in themes, redesigned pouch, view modes, animations |
 | **3. Interaction** ✅ | UX | Right-click menus, multi-select, keyboard support, Shell thumbnails, smart triggers |
-| **4. Organisation** | Power | Multiple shelves, pins, tags, search, full persistence, link and colour content types |
+| **4. Organisation** ✅ | Power | Multiple shelves, pins, tags, search, full persistence, link and colour content types |
 | **5. Actions** | Pro | Drop actions, plugin interface, Explorer integration, clipboard history |
 | **6. Polish** | Release | Theme editor, command palette, installer, auto-update, sound packs |

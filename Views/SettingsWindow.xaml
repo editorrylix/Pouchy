@@ -210,10 +210,19 @@
                     <ui:CardControl.Header>
                         <StackPanel>
                             <TextBlock Text="Clear pouch on startup" Style="{StaticResource CardTitle}"/>
-                            <TextBlock Text="Start with an empty pouch instead of restoring the last session." Style="{StaticResource CardDescription}"/>
+                            <TextBlock Text="Start with empty shelves (pinned items stay) instead of restoring the last session." Style="{StaticResource CardDescription}"/>
                         </StackPanel>
                     </ui:CardControl.Header>
                     <ui:ToggleSwitch IsChecked="{Binding ClearOnStartup}"/>
+                </ui:CardControl>
+                <ui:CardControl>
+                    <ui:CardControl.Header>
+                        <StackPanel>
+                            <TextBlock Text="Fetch link titles and icons" Style="{StaticResource CardTitle}"/>
+                            <TextBlock Text="When you drop a web address, Pouchy loads the page once to show its title and icon." Style="{StaticResource CardDescription}"/>
+                        </StackPanel>
+                    </ui:CardControl.Header>
+                    <ui:ToggleSwitch IsChecked="{Binding FetchLinkPreviews}"/>
                 </ui:CardControl>
 
                 <!-- Triggers -->

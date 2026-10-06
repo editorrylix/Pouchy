@@ -178,8 +178,15 @@
                            Width="{Binding DataContext.TileSize, RelativeSource={RelativeSource AncestorType=ListBox}, Converter={StaticResource Multiply}, ConverterParameter=0.5}"
                            Height="{Binding DataContext.TileSize, RelativeSource={RelativeSource AncestorType=ListBox}, Converter={StaticResource Multiply}, ConverterParameter=0.5}"/>
 
+                    <!-- Colour swatch -->
+                    <Border x:Name="SwatchThumb" CornerRadius="{DynamicResource Pouch.TileCornerRadius}" Margin="1"
+                            Background="{Binding SwatchBrush}" Visibility="Collapsed"/>
+
+                    <!-- Link without an icon yet -->
+                    <ui:SymbolIcon x:Name="LinkGlyph" Symbol="Globe24" FontSize="30" Foreground="{DynamicResource Pouch.TextSecondary}" Visibility="Collapsed"/>
+
                     <!-- Text snippet -->
-                    <Border x:Name="TextThumb" Padding="8,7" Visibility="Collapsed" ClipToBounds="True">
+                    <Border x:Name="TextThumb" Padding="8,7,8,26" Visibility="Collapsed" ClipToBounds="True">
                         <TextBlock Text="{Binding PreviewText}" FontFamily="{DynamicResource Pouch.MonoFontFamily}"
                                    FontSize="8" LineHeight="10.5" TextWrapping="Wrap" TextTrimming="CharacterEllipsis"
                                    Foreground="{DynamicResource Pouch.TextSecondary}"/>
@@ -231,6 +238,10 @@
                             <ui:SymbolIcon Symbol="Pin24" FontSize="10" Foreground="{DynamicResource Pouch.AccentText}"/>
                         </Border>
                     </StackPanel>
+
+                    <!-- Colour label -->
+                    <Ellipse x:Name="LabelDot" Width="11" Height="11" Margin="0,8,8,0" HorizontalAlignment="Right" VerticalAlignment="Top"
+                             Fill="{Binding LabelBrush}" Stroke="{DynamicResource Pouch.Tile}" StrokeThickness="1.5"/>
 
                     <!-- Hover actions -->
                     <StackPanel x:Name="Actions" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,5,5,0" Opacity="0"
@@ -287,6 +298,20 @@
                     <Setter TargetName="TextThumb" Property="Visibility" Value="Visible"/>
                     <Setter TargetName="IconThumb" Property="Visibility" Value="Collapsed"/>
                 </DataTrigger>
+                <DataTrigger Binding="{Binding Kind}" Value="Color">
+                    <Setter TargetName="SwatchThumb" Property="Visibility" Value="Visible"/>
+                    <Setter TargetName="IconThumb" Property="Visibility" Value="Collapsed"/>
+                </DataTrigger>
+                <MultiDataTrigger>
+                    <MultiDataTrigger.Conditions>
+                        <Condition Binding="{Binding Kind}" Value="Link"/>
+                        <Condition Binding="{Binding Icon}" Value="{x:Null}"/>
+                    </MultiDataTrigger.Conditions>
+                    <Setter TargetName="LinkGlyph" Property="Visibility" Value="Visible"/>
+                </MultiDataTrigger>
+                <DataTrigger Binding="{Binding Label}" Value="None">
+                    <Setter TargetName="LabelDot" Property="Visibility" Value="Collapsed"/>
+                </DataTrigger>
                 <DataTrigger Binding="{Binding Kind}" Value="Stack">
                     <Setter TargetName="StackThumb" Property="Visibility" Value="Visible"/>
                     <Setter TargetName="IconThumb" Property="Visibility" Value="Collapsed"/>
@@ -298,7 +323,7 @@
                 </DataTrigger>
                 <DataTrigger Binding="{Binding IsPinned}" Value="True">
                     <Setter TargetName="PinBadge" Property="Visibility" Value="Visible"/>
-                    <Setter TargetName="TextThumb" Property="Padding" Value="8,28,8,7"/>
+                    <Setter TargetName="TextThumb" Property="Padding" Value="8,28,8,26"/>
                 </DataTrigger>
                 <DataTrigger Binding="{Binding IsMissing}" Value="True">
                     <Setter TargetName="MissingBadge" Property="Visibility" Value="Visible"/>
@@ -347,6 +372,10 @@
                                RenderOptions.BitmapScalingMode="HighQuality"/>
                         <ui:SymbolIcon x:Name="TextIcon" Symbol="TextDescription24" FontSize="17"
                                        Foreground="{DynamicResource Pouch.TextSecondary}" Visibility="Collapsed"/>
+                        <Border x:Name="SwatchThumb" CornerRadius="6" Background="{Binding SwatchBrush}" Visibility="Collapsed"
+                                BorderBrush="{DynamicResource Pouch.TileBorder}" BorderThickness="1"/>
+                        <ui:SymbolIcon x:Name="LinkGlyph" Symbol="Globe24" FontSize="17"
+                                       Foreground="{DynamicResource Pouch.TextSecondary}" Visibility="Collapsed"/>
                     </Grid>
 
                     <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="8,0,4,0">
@@ -355,8 +384,11 @@
                                 <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
-                            <ui:SymbolIcon x:Name="PinIcon" Symbol="Pin24" FontSize="11" Margin="0,0,4,0" Visibility="Collapsed"
-                                           Foreground="{DynamicResource Pouch.Accent}" ToolTip="Pinned"/>
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <Ellipse x:Name="LabelDot" Width="8" Height="8" Margin="0,1,5,0" Fill="{Binding LabelBrush}"/>
+                                <ui:SymbolIcon x:Name="PinIcon" Symbol="Pin24" FontSize="11" Margin="0,0,4,0" Visibility="Collapsed"
+                                               Foreground="{DynamicResource Pouch.Accent}" ToolTip="Pinned"/>
+                            </StackPanel>
                             <TextBlock Grid.Column="1" Text="{Binding DisplayName}" FontSize="12" FontWeight="Medium"
                                        Foreground="{DynamicResource Pouch.Text}" TextTrimming="CharacterEllipsis"/>
                         </Grid>
@@ -407,6 +439,20 @@
                 <DataTrigger Binding="{Binding IsPinned}" Value="True">
                     <Setter TargetName="PinIcon" Property="Visibility" Value="Visible"/>
                 </DataTrigger>
+                <DataTrigger Binding="{Binding Label}" Value="None">
+                    <Setter TargetName="LabelDot" Property="Visibility" Value="Collapsed"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Kind}" Value="Color">
+                    <Setter TargetName="SwatchThumb" Property="Visibility" Value="Visible"/>
+                    <Setter TargetName="IconThumb" Property="Visibility" Value="Collapsed"/>
+                </DataTrigger>
+                <MultiDataTrigger>
+                    <MultiDataTrigger.Conditions>
+                        <Condition Binding="{Binding Kind}" Value="Link"/>
+                        <Condition Binding="{Binding Icon}" Value="{x:Null}"/>
+                    </MultiDataTrigger.Conditions>
+                    <Setter TargetName="LinkGlyph" Property="Visibility" Value="Visible"/>
+                </MultiDataTrigger>
                 <DataTrigger Binding="{Binding IsMissing}" Value="True">
                     <Setter TargetName="FillThumb" Property="Opacity" Value="0.4"/>
                     <Setter TargetName="IconThumb" Property="Opacity" Value="0.4"/>
@@ -438,12 +484,15 @@
 
             <Grid>
                 <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="*"/>
-                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/> <!-- header -->
+                    <RowDefinition Height="Auto"/> <!-- shelf tabs -->
+                    <RowDefinition Height="Auto"/> <!-- search -->
+                    <RowDefinition Height="*"/>    <!-- items -->
+                    <RowDefinition Height="Auto"/> <!-- undo -->
+                    <RowDefinition Height="Auto"/> <!-- drag all -->
                 </Grid.RowDefinitions>
 
-                <Rectangle Grid.RowSpan="3" Margin="-14,-12,-14,-14" IsHitTestVisible="False"
+                <Rectangle Grid.RowSpan="6" Margin="-14,-12,-14,-14" IsHitTestVisible="False"
                            Fill="{StaticResource ScanlineBrush}" Opacity="{DynamicResource Pouch.ScanlineOpacity}"/>
 
                 <!-- Header -->
@@ -467,6 +516,9 @@
                     </StackPanel>
 
                     <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="12,0,0,0">
+                        <Button Style="{StaticResource IconButton}" ToolTip="Search all shelves (Ctrl+F)" Click="SearchButton_Click">
+                            <ui:SymbolIcon Symbol="Search24" FontSize="14"/>
+                        </Button>
                         <Button Style="{StaticResource IconButton}" ToolTip="Change view" Command="{Binding CycleViewModeCommand}">
                             <ui:SymbolIcon FontSize="14">
                                 <ui:SymbolIcon.Style>
@@ -497,23 +549,141 @@
                     </StackPanel>
                 </Grid>
 
+                <!-- Shelf tabs -->
+                <Grid Grid.Row="1" Margin="0,0,0,10" Width="{Binding ContentWidth}">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <ScrollViewer HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Disabled" PreviewMouseWheel="ShelfTabs_PreviewMouseWheel">
+                        <ItemsControl ItemsSource="{Binding Shelves}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel Orientation="Horizontal"/>
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="{x:Type models:Shelf}">
+                                    <Border x:Name="Chip" Tag="ShelfChip" Margin="0,0,6,0" Padding="9,4,10,5" CornerRadius="12" Cursor="Hand"
+                                            BorderThickness="1" Background="{DynamicResource Pouch.Tile}" BorderBrush="{DynamicResource Pouch.TileBorder}"
+                                            AllowDrop="True" ToolTip="Drop here to add to this shelf. Right-click for options."
+                                            MouseLeftButtonUp="ShelfChip_MouseLeftButtonUp"
+                                            DragEnter="ShelfChip_DragEnter" DragOver="ShelfChip_DragOver" DragLeave="ShelfChip_DragLeave" Drop="ShelfChip_Drop">
+                                        <StackPanel Orientation="Horizontal">
+                                            <Ellipse Width="8" Height="8" Fill="{Binding ColorBrush}" Margin="0,1,6,0" VerticalAlignment="Center"/>
+                                            <TextBlock x:Name="ChipName" Text="{Binding Name}" FontSize="11.5" FontWeight="Medium" MaxWidth="120"
+                                                       TextTrimming="CharacterEllipsis" Foreground="{DynamicResource Pouch.TextSecondary}"/>
+                                            <TextBlock Text="{Binding Items.Count}" FontSize="10.5" Margin="6,1,0,0"
+                                                       Foreground="{DynamicResource Pouch.TextMuted}"/>
+                                        </StackPanel>
+                                    </Border>
+                                    <DataTemplate.Triggers>
+                                        <DataTrigger Binding="{Binding IsActive}" Value="True">
+                                            <Setter TargetName="Chip" Property="Background" Value="{DynamicResource Pouch.AccentSoft}"/>
+                                            <Setter TargetName="Chip" Property="BorderBrush" Value="{DynamicResource Pouch.Accent}"/>
+                                            <Setter TargetName="ChipName" Property="Foreground" Value="{DynamicResource Pouch.Text}"/>
+                                        </DataTrigger>
+                                    </DataTemplate.Triggers>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                    <Button Grid.Column="1" Style="{StaticResource IconButton}" Padding="5" Margin="4,0,0,0" ToolTip="New shelf" Click="NewShelf_Click">
+                        <ui:SymbolIcon Symbol="Add24" FontSize="13"/>
+                    </Button>
+                </Grid>
+
+                <!-- Search -->
+                <Grid Grid.Row="2" Margin="0,0,0,10" Width="{Binding ContentWidth}"
+                      Visibility="{Binding IsSearchOpen, Converter={StaticResource BoolToVisibility}}">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <Border CornerRadius="9" BorderThickness="1" Padding="8,0,4,0"
+                            Background="{DynamicResource Pouch.Tile}" BorderBrush="{DynamicResource Pouch.Accent}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <ui:SymbolIcon Symbol="Search24" FontSize="13" Foreground="{DynamicResource Pouch.TextMuted}" Margin="0,0,6,0"/>
+                            <TextBox x:Name="SearchBox" Grid.Column="1" Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+                                     Background="Transparent" BorderThickness="0" FontSize="12" Padding="0,7"
+                                     Foreground="{DynamicResource Pouch.Text}" CaretBrush="{DynamicResource Pouch.Accent}"
+                                     SelectionBrush="{DynamicResource Pouch.Accent}">
+                                <TextBox.Template>
+                                    <ControlTemplate TargetType="TextBox">
+                                        <Grid>
+                                            <TextBlock x:Name="Placeholder" Text="Search all shelves" Foreground="{DynamicResource Pouch.TextMuted}"
+                                                       FontSize="12" VerticalAlignment="Center" Visibility="Collapsed" IsHitTestVisible="False"/>
+                                            <ScrollViewer x:Name="PART_ContentHost" Focusable="False" Padding="{TemplateBinding Padding}"/>
+                                        </Grid>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="Text" Value="">
+                                                <Setter TargetName="Placeholder" Property="Visibility" Value="Visible"/>
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </TextBox.Template>
+                            </TextBox>
+                            <Button Grid.Column="2" Style="{StaticResource IconButton}" Padding="5" ToolTip="Close search (Esc)"
+                                    Command="{Binding ToggleSearchCommand}">
+                                <ui:SymbolIcon Symbol="Dismiss24" FontSize="11"/>
+                            </Button>
+                        </Grid>
+                    </Border>
+                    <ItemsControl Grid.Row="1" ItemsSource="{Binding LabelOptions}" Margin="2,8,0,0">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel Orientation="Horizontal"/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="{x:Type vm:LabelOption}">
+                                <Button Cursor="Hand" Focusable="False" Margin="0,0,6,0" ToolTip="{Binding Label}"
+                                        Command="{Binding DataContext.ToggleLabelFilterCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                        CommandParameter="{Binding}">
+                                    <Button.Template>
+                                        <ControlTemplate TargetType="Button">
+                                            <Grid Width="18" Height="18">
+                                                <Ellipse x:Name="Ring" Stroke="{DynamicResource Pouch.Text}" StrokeThickness="2" Opacity="0"/>
+                                                <Ellipse Width="12" Height="12" Fill="{Binding Brush}"/>
+                                            </Grid>
+                                            <ControlTemplate.Triggers>
+                                                <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                                                    <Setter TargetName="Ring" Property="Opacity" Value="1"/>
+                                                </DataTrigger>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter TargetName="Ring" Property="Opacity" Value="0.5"/>
+                                                </Trigger>
+                                            </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                    </Button.Template>
+                                </Button>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </Grid>
+
                 <!-- Empty state -->
-                <Grid Grid.Row="1" Height="150" Width="{Binding ContentWidth}"
+                <Grid Grid.Row="3" Height="150" Width="{Binding ContentWidth}"
                       Visibility="{Binding IsEmpty, Converter={StaticResource BoolToVisibility}}">
                     <Rectangle Stroke="{DynamicResource Pouch.TextMuted}" StrokeThickness="1.5" StrokeDashArray="4 3" RadiusX="12" RadiusY="12"/>
                     <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
                         <Border Width="44" Height="44" CornerRadius="22" Background="{DynamicResource Pouch.AccentSoft}" Margin="0,0,0,10">
                             <ui:SymbolIcon Symbol="ArrowDownload24" FontSize="20" Foreground="{DynamicResource Pouch.Accent}"/>
                         </Border>
-                        <TextBlock Text="Drop anything here" FontSize="13" FontWeight="SemiBold" HorizontalAlignment="Center"
+                        <TextBlock Text="{Binding EmptyTitle}" FontSize="13" FontWeight="SemiBold" HorizontalAlignment="Center"
                                    Foreground="{DynamicResource Pouch.Text}"/>
-                        <TextBlock Text="Files, folders, text and images" FontSize="11" Margin="0,3,0,0" HorizontalAlignment="Center"
+                        <TextBlock Text="{Binding EmptySubtitle}" FontSize="11" Margin="0,3,0,0" HorizontalAlignment="Center"
                                    Foreground="{DynamicResource Pouch.TextMuted}"/>
                     </StackPanel>
                 </Grid>
 
                 <!-- Items -->
-                <ListBox Grid.Row="1" x:Name="PouchItemsControl" ItemsSource="{Binding Items}"
+                <ListBox Grid.Row="3" x:Name="PouchItemsControl" ItemsSource="{Binding DisplayedItems}"
                          Width="{Binding ItemsAreaWidth}" MaxHeight="440" Margin="-4,-4,-4,0"
                          Background="Transparent" BorderThickness="0" FocusVisualStyle="{x:Null}" SelectionMode="Extended"
                          ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Auto"
@@ -555,7 +725,7 @@
                 </ListBox>
 
                 <!-- Shown while something is dragged over the pouch -->
-                <Border x:Name="DropOverlay" Grid.Row="1" Margin="-4" Opacity="0" IsHitTestVisible="False" BorderThickness="2"
+                <Border x:Name="DropOverlay" Grid.Row="3" Margin="-4" Opacity="0" IsHitTestVisible="False" BorderThickness="2"
                         CornerRadius="{DynamicResource Pouch.InnerCornerRadius}"
                         BorderBrush="{DynamicResource Pouch.Accent}" Background="{DynamicResource Pouch.AccentSoft}">
                     <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
@@ -565,8 +735,29 @@
                     </StackPanel>
                 </Border>
 
+                <!-- Undo -->
+                <Border Grid.Row="4" Margin="0,10,0,0" Padding="12,0,4,0" Height="34" CornerRadius="{DynamicResource Pouch.TileCornerRadius}"
+                        Background="{DynamicResource Pouch.Tile}" BorderBrush="{DynamicResource Pouch.TileBorder}" BorderThickness="1"
+                        Visibility="{Binding HasUndoMessage, Converter={StaticResource BoolToVisibility}}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="{Binding UndoMessage}" FontSize="11.5" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
+                                   Foreground="{DynamicResource Pouch.TextSecondary}"/>
+                        <Button Grid.Column="1" Style="{StaticResource IconButton}" Padding="8,4" Command="{Binding UndoCommand}" ToolTip="Ctrl+Z">
+                            <TextBlock Text="Undo" FontSize="11.5" FontWeight="SemiBold" Foreground="{DynamicResource Pouch.Accent}"/>
+                        </Button>
+                        <Button Grid.Column="2" Style="{StaticResource IconButton}" Padding="5" Command="{Binding DismissUndoCommand}" ToolTip="Dismiss">
+                            <ui:SymbolIcon Symbol="Dismiss24" FontSize="10"/>
+                        </Button>
+                    </Grid>
+                </Border>
+
                 <!-- Drag all -->
-                <Grid Grid.Row="2" Margin="0,10,0,0" Height="34" Cursor="Hand"
+                <Grid Grid.Row="5" Margin="0,10,0,0" Height="34" Cursor="Hand"
                       Visibility="{Binding HasMultipleItems, Converter={StaticResource BoolToVisibility}}"
                       MouseLeftButtonDown="DragAll_MouseLeftButtonDown" MouseMove="DragAll_MouseMove">
                     <Border CornerRadius="{DynamicResource Pouch.TileCornerRadius}" Background="{DynamicResource Pouch.Accent}"/>

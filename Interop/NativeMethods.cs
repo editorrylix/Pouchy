@@ -66,6 +66,7 @@ namespace Pouchy.Interop
         public static bool IsKeyDown(int vKey) => (GetAsyncKeyState(vKey) & 0x8000) != 0;
 
         // System metrics
+        public const int SM_CXSMICON = 49;
         public const int SM_XVIRTUALSCREEN = 76;
         public const int SM_YVIRTUALSCREEN = 77;
         public const int SM_CXVIRTUALSCREEN = 78;

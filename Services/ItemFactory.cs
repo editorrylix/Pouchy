@@ -90,6 +90,47 @@ namespace Pouchy.Services
             };
         }
 
+        /// <summary>A link item. Title and icon are filled in later by <see cref="LinkPreviewService"/>.</summary>
+        public PouchItem CreateLink(string url, Guid? id = null, DateTime? addedAt = null, BitmapSource? icon = null)
+        {
+            url = url.Trim();
+            string host = LinkPreviewParser.HostName(url);
+            return new PouchItem
+            {
+                Id = id ?? Guid.NewGuid(),
+                AddedAt = addedAt ?? DateTime.Now,
+                Kind = PouchItemKind.Link,
+                TextContent = url,
+                FileExtension = "LINK",
+                DisplayName = host,
+                Metadata = $"Link · {host}",
+                Icon = icon,
+                ThumbnailStyle = ThumbnailStyle.Icon,
+            };
+        }
+
+        public PouchItem CreateColor(string text, Guid? id = null, DateTime? addedAt = null)
+        {
+            if (!TextTools.TryParseColor(text, out var color)) throw new ArgumentException($"'{text}' is not a colour.");
+            return new PouchItem
+            {
+                Id = id ?? Guid.NewGuid(),
+                AddedAt = addedAt ?? DateTime.Now,
+                Kind = PouchItemKind.Color,
+                TextContent = text.Trim(),
+                ColorValue = color,
+                FileExtension = "COLOR",
+                DisplayName = TextTools.ToHex(color),
+                Metadata = TextTools.ToRgb(color),
+            };
+        }
+
+        /// <summary>Text becomes a link, a colour or a plain snippet depending on what it looks like.</summary>
+        public PouchItem CreateFromText(string text) =>
+            TextTools.IsUrl(text) ? CreateLink(text)
+            : TextTools.TryParseColor(text, out _) ? CreateColor(text)
+            : CreateText(text);
+
         public PouchItem CreateImage(BitmapSource image, Guid? id = null, DateTime? addedAt = null)
         {
             var frozen = EnsureFrozen(image);
@@ -122,12 +163,17 @@ namespace Pouchy.Services
                     => CreateText(saved.TextContent, id, saved.AddedAt),
                 PouchItemKind.Image when image != null
                     => CreateImage(image, id, saved.AddedAt),
+                PouchItemKind.Link when saved.TextContent != null
+                    => CreateLink(saved.TextContent, id, saved.AddedAt, image),
+                PouchItemKind.Color when saved.TextContent != null && TextTools.TryParseColor(saved.TextContent, out _)
+                    => CreateColor(saved.TextContent, id, saved.AddedAt),
                 _ => null,
             };
 
             if (item == null) return null;
             if (!string.IsNullOrEmpty(saved.DisplayName)) item.DisplayName = saved.DisplayName;
             item.IsPinned = saved.IsPinned;
+            item.Label = saved.Label;
             return item;
         }
 

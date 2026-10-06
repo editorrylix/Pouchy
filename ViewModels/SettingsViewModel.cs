@@ -58,6 +58,7 @@ namespace Pouchy.ViewModels
 
         [ObservableProperty] private bool _runAtStartup;
         [ObservableProperty] private bool _clearOnStartup;
+        [ObservableProperty] private bool _fetchLinkPreviews;
 
         [ObservableProperty] private bool _shakeEnabled;
         [ObservableProperty] private int _shakeMinDistance;
@@ -103,6 +104,7 @@ namespace Pouchy.ViewModels
 
             RunAtStartup = startup.IsEnabled;
             ClearOnStartup = s.ClearOnStartup;
+            FetchLinkPreviews = s.FetchLinkPreviews;
             ShakeEnabled = s.ShakeEnabled;
             ShakeMinDistance = s.ShakeMinDistance;
             ShakeReversals = s.ShakeReversals;
@@ -259,6 +261,7 @@ namespace Pouchy.ViewModels
         partial void OnReduceMotionChanged(bool value) => Apply(s => s.ReduceMotion = value);
 
         partial void OnClearOnStartupChanged(bool value) => Apply(s => s.ClearOnStartup = value);
+        partial void OnFetchLinkPreviewsChanged(bool value) => Apply(s => s.FetchLinkPreviews = value);
         partial void OnShakeEnabledChanged(bool value) => Apply(s => s.ShakeEnabled = value);
         partial void OnShakeMinDistanceChanged(int value) => Apply(s => s.ShakeMinDistance = value);
         partial void OnShakeReversalsChanged(int value) => Apply(s => s.ShakeReversals = value);

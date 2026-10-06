@@ -130,6 +130,7 @@ namespace Pouchy.Services
             }
 
             var s = _settings.Current;
+            if (s.GesturesPaused) return;
             if (s.ModifierDragEnabled && !_modifierTriggerFired && NativeMethods.IsKeyDown(ToVirtualKey(s.ModifierDragKey)))
             {
                 _modifierTriggerFired = true;

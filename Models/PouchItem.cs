@@ -12,6 +12,12 @@ namespace Pouchy.Models
         Stack,
         Text,
         Image,
+
+        /// <summary>A web address. TextContent holds the URL.</summary>
+        Link,
+
+        /// <summary>A colour value like "#FF8800". TextContent holds the original text.</summary>
+        Color,
     }
 
     /// <summary>How a thumbnail should be drawn on a tile.</summary>
@@ -67,6 +73,17 @@ namespace Pouchy.Models
         [ObservableProperty]
         private ThumbnailStyle _thumbnailStyle = ThumbnailStyle.Icon;
 
+        /// <summary>Set for <see cref="PouchItemKind.Color"/>.</summary>
+        public Color? ColorValue { get; init; }
+
+        public Brush? SwatchBrush => ColorValue is Color color ? Frozen(new SolidColorBrush(color)) : null;
+
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(LabelBrush))]
+        private ColorLabel _label;
+
+        public Brush? LabelBrush => LabelColors.BrushFor(Label);
+
         /// <summary>Pinned items survive "Clear".</summary>
         [ObservableProperty]
         private bool _isPinned;
@@ -78,10 +95,20 @@ namespace Pouchy.Models
         public bool IsStack => Kind == PouchItemKind.Stack;
         public bool IsFileSystemItem => Kind is PouchItemKind.File or PouchItemKind.Folder or PouchItemKind.Stack;
         public bool HasFileExtension => FileExtension.Length > 0;
+        public bool IsTextLike => Kind is PouchItemKind.Text or PouchItemKind.Link or PouchItemKind.Color;
         public int StackCount => StackFiles?.Count ?? 0;
 
         /// <summary>Start of the text, for the tile preview.</summary>
         public string PreviewText => TextContent is { Length: > 400 } text ? text[..400] : TextContent ?? "";
+
+        /// <summary>Text to search in, besides the name.</summary>
+        public string SearchText => string.Join(" ", new[] { DisplayName, Metadata, FileExtension, TextContent ?? "" }.Concat(FilePaths));
+
+        private static Brush Frozen(Brush brush)
+        {
+            brush.Freeze();
+            return brush;
+        }
 
         /// <summary>Every file system path this item represents.</summary>
         public IEnumerable<string> FilePaths => Kind switch

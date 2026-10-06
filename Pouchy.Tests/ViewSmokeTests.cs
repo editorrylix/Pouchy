@@ -90,6 +90,11 @@ namespace Pouchy.Tests
                 Render(pouch, Path.Combine(outDir, "empty.png"));
 
                 foreach (var item in CreateSampleItems(folder, factory)) vm.Items.Add(item);
+                vm.Items[0].Label = ColorLabel.Red;
+                vm.Items[2].Label = ColorLabel.Blue;
+                vm.NewShelf("Screenshots");
+                vm.NewShelf("Reading list");
+                vm.ActivateShelf(vm.Shelves[0]);
 
                 foreach (var theme in themes.Themes)
                 {
@@ -104,6 +109,16 @@ namespace Pouchy.Tests
                     }
                 }
 
+                settings.Update(s => { s.ThemeId = "midnight"; s.ViewMode = PouchViewMode.Grid; });
+                vm.IsSearchOpen = true;
+                vm.SearchText = "notes";
+                Render(pouch, Path.Combine(outDir, "search.png"));
+                vm.IsSearchOpen = false;
+
+                vm.RemoveItems(new[] { vm.Items[^1] });
+                Render(pouch, Path.Combine(outDir, "undo.png"));
+                vm.Undo();
+
                 // Context menus, hosted in a plain window so they can be rendered.
                 settings.Update(s => { s.ThemeId = "midnight"; s.ViewMode = PouchViewMode.Grid; });
                 vm.ThemeListProvider = () => themes.Themes.Select(t => (t.Id, t.Name)).ToList();
@@ -116,6 +131,21 @@ namespace Pouchy.Tests
                     ("menu-text", buildItemMenu.Invoke(pouch, new object[] { new List<PouchItem> { vm.Items[4] } })!),
                     ("menu-multi", buildItemMenu.Invoke(pouch, new object[] { vm.Items.Take(3).ToList() })!),
                     ("menu-background", buildBackgroundMenu.Invoke(pouch, null)!),
+                    ("menu-tray", new List<List<object>>
+                    {
+                        new() { MenuFactory.Header("8 items on 3 shelves") },
+                        new()
+                        {
+                            MenuFactory.Item("Show pouch", Wpf.Ui.Controls.SymbolRegular.PanelLeft24, () => { }, "Alt + Shift + Z"),
+                            MenuFactory.Item("New note…", Wpf.Ui.Controls.SymbolRegular.NoteAdd24, () => { }),
+                        },
+                        new()
+                        {
+                            MenuFactory.Item("Pause gestures", Wpf.Ui.Controls.SymbolRegular.Pause24, () => { }),
+                            MenuFactory.Item("Settings…", Wpf.Ui.Controls.SymbolRegular.Settings24, () => { }),
+                        },
+                        new() { MenuFactory.Item("Quit Pouchy", Wpf.Ui.Controls.SymbolRegular.Power24, () => { }) },
+                    }),
                 };
                 foreach (var (name, groups) in menus)
                 {
@@ -157,6 +187,18 @@ namespace Pouchy.Tests
                 Render(settingsWindow, Path.Combine(outDir, "settings.png"));
                 settingsWindow.Close();
 
+                // Light pouch theme: the Fluent windows must switch to light too (text was invisible once).
+                settings.Update(s => s.ThemeId = "paper");
+                Wpf.Ui.Appearance.ApplicationThemeManager.Apply(Wpf.Ui.Appearance.ApplicationTheme.Light, Wpf.Ui.Controls.WindowBackdropType.Mica, updateAccent: false);
+                var lightSettings = new SettingsWindow(new SettingsViewModel(settings, new StartupService(), new HotkeyService(), themes))
+                {
+                    ShowActivated = false, Left = -20000, Top = -20000,
+                };
+                lightSettings.Show();
+                Render(lightSettings, Path.Combine(outDir, "settings-light.png"));
+                lightSettings.Close();
+                Wpf.Ui.Appearance.ApplicationThemeManager.Apply(Wpf.Ui.Appearance.ApplicationTheme.Dark, Wpf.Ui.Controls.WindowBackdropType.Mica, updateAccent: false);
+
                 pouch.AllowClose = true;
                 pouch.Close();
                 Motion.Enabled = true;
@@ -181,6 +223,8 @@ namespace Pouchy.Tests
             note.IsPinned = true;
             yield return note;
             yield return factory.CreateFromPath(Path.Combine(folder.Path, "Deleted report.pdf"));
+            yield return factory.CreateLink("https://github.com/editorrylix/Pouchy");
+            yield return factory.CreateColor("#FF8A5B");
         }
 
         private static void SaveSamplePng(string path, Color from, Color to)
@@ -237,7 +281,10 @@ namespace Pouchy.Tests
         {
             if (_app == null)
             {
+                // Same layout as App.xaml: WPF-UI dictionaries at the top level, then ours.
                 _app = new Application { ShutdownMode = ShutdownMode.OnExplicitShutdown };
+                _app.Resources.MergedDictionaries.Add(new Wpf.Ui.Markup.ThemesDictionary { Theme = Wpf.Ui.Appearance.ApplicationTheme.Dark });
+                _app.Resources.MergedDictionaries.Add(new Wpf.Ui.Markup.ControlsDictionary());
                 _app.Resources.MergedDictionaries.Add(new ResourceDictionary
                 {
                     Source = new Uri("pack://application:,,,/Pouchy;component/Themes/AppResources.xaml"),

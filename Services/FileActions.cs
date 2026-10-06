@@ -293,6 +293,63 @@ namespace Pouchy.Services
             (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps) &&
             !text.Trim().Contains(' ');
 
+        private static readonly System.Text.RegularExpressions.Regex RgbPattern = new(
+            @"^rgba?\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*(?:,\s*([\d.]+%?)\s*)?\)$",
+            System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+        /// <summary>Recognises "#RGB", "#RRGGBB", "#AARRGGBB", "rgb(r, g, b)" and "rgba(r, g, b, a)".</summary>
+        public static bool TryParseColor(string text, out System.Windows.Media.Color color)
+        {
+            color = default;
+            string value = text.Trim();
+            if (value.Length > 40) return false;
+
+            if (value.StartsWith('#') && value.Length is 4 or 7 or 9 && value.Skip(1).All(Uri.IsHexDigit))
+            {
+                color = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(value);
+                return true;
+            }
+
+            var match = RgbPattern.Match(value);
+            if (!match.Success) return false;
+            var parts = Enumerable.Range(1, 3).Select(i => int.Parse(match.Groups[i].Value)).ToArray();
+            if (parts.Any(p => p > 255)) return false;
+
+            byte alpha = 255;
+            if (match.Groups[4].Success)
+            {
+                string a = match.Groups[4].Value;
+                double fraction = a.EndsWith('%')
+                    ? double.Parse(a[..^1], System.Globalization.CultureInfo.InvariantCulture) / 100
+                    : double.Parse(a, System.Globalization.CultureInfo.InvariantCulture);
+                if (fraction is < 0 or > 1) return false;
+                alpha = (byte)Math.Round(fraction * 255);
+            }
+            color = System.Windows.Media.Color.FromArgb(alpha, (byte)parts[0], (byte)parts[1], (byte)parts[2]);
+            return true;
+        }
+
+        public static string ToHex(System.Windows.Media.Color c) =>
+            c.A == 255 ? $"#{c.R:X2}{c.G:X2}{c.B:X2}" : $"#{c.A:X2}{c.R:X2}{c.G:X2}{c.B:X2}";
+
+        public static string ToRgb(System.Windows.Media.Color c) =>
+            c.A == 255 ? $"rgb({c.R}, {c.G}, {c.B})" : $"rgba({c.R}, {c.G}, {c.B}, {Math.Round(c.A / 255.0, 2).ToString(System.Globalization.CultureInfo.InvariantCulture)})";
+
+        public static string ToHsl(System.Windows.Media.Color c)
+        {
+            double r = c.R / 255.0, g = c.G / 255.0, b = c.B / 255.0;
+            double max = Math.Max(r, Math.Max(g, b)), min = Math.Min(r, Math.Min(g, b));
+            double h = 0, s = 0, l = (max + min) / 2;
+            if (max != min)
+            {
+                double d = max - min;
+                s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+                h = max == r ? (g - b) / d + (g < b ? 6 : 0) : max == g ? (b - r) / d + 2 : (r - g) / d + 4;
+                h *= 60;
+            }
+            return $"hsl({Math.Round(h)}, {Math.Round(s * 100)}%, {Math.Round(l * 100)}%)";
+        }
+
         public static string ToTitleCase(string text) =>
             System.Globalization.CultureInfo.CurrentCulture.TextInfo.ToTitleCase(text.ToLower());
 

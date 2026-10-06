@@ -68,6 +68,10 @@ namespace Pouchy.Models
 
         // Behaviour
         public bool ClearOnStartup { get; set; }
+        /// <summary>Fetch page titles and icons for links dropped into the pouch.</summary>
+        public bool FetchLinkPreviews { get; set; } = true;
+        /// <summary>Temporarily ignore shake/edge/modifier gestures (the hotkey still works).</summary>
+        public bool GesturesPaused { get; set; }
 
         // Appearance
         public string ThemeId { get; set; } = "midnight";

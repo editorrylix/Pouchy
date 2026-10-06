@@ -44,6 +44,7 @@ namespace Pouchy.Views
             InitializeComponent();
             _vm = viewModel;
             DataContext = viewModel;
+            InitializeShelves();
         }
 
         private IntPtr Handle => new WindowInteropHelper(this).EnsureHandle();
@@ -430,6 +431,7 @@ namespace Pouchy.Views
 
             element.Opacity = 0.5;
             _vm.IsDraggingOut = true;
+            _draggedItems = items;
             bool wasTopmost = Topmost;
             Topmost = false;
 
@@ -446,6 +448,7 @@ namespace Pouchy.Views
             {
                 Topmost = wasTopmost;
                 _vm.IsDraggingOut = false;
+                _draggedItems = null;
                 element.Opacity = 1.0;
             }
         }
@@ -457,11 +460,40 @@ namespace Pouchy.Views
             var key = e.Key == Key.System ? e.SystemKey : e.Key;
             var modifiers = Keyboard.Modifiers;
             bool ctrl = modifiers == ModifierKeys.Control;
+
+            // Typing in the search box: only a few keys mean something to the pouch.
+            if (Keyboard.FocusedElement is TextBox)
+            {
+                if (HandleSearchBoxKey(key)) e.Handled = true;
+                return;
+            }
+
             var selected = GetSelectedItems();
             bool handled = true;
 
             switch (key)
             {
+                case Key.F when ctrl:
+                    OpenSearch();
+                    break;
+                case Key.Z when ctrl:
+                    _vm.Undo();
+                    break;
+                case Key.T when ctrl:
+                    PromptNewShelf();
+                    break;
+                case Key.Tab when ctrl:
+                    _vm.CycleShelf(1);
+                    break;
+                case Key.Tab when modifiers == (ModifierKeys.Control | ModifierKeys.Shift):
+                    _vm.CycleShelf(-1);
+                    break;
+                case >= Key.D1 and <= Key.D9 when ctrl && key - Key.D1 < _vm.Shelves.Count:
+                    _vm.ActivateShelf(_vm.Shelves[key - Key.D1]);
+                    break;
+                case Key.Escape when _vm.IsSearchOpen && selected.Count == 0:
+                    _vm.IsSearchOpen = false;
+                    break;
                 case Key.Escape when selected.Count > 0:
                     PouchItemsControl.SelectedItems.Clear();
                     break;

@@ -1,0 +1,231 @@
+using System.ComponentModel;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Input;
+using System.Windows.Threading;
+using Pouchy.Models;
+using Pouchy.ViewModels;
+using Symbol = Wpf.Ui.Controls.SymbolRegular;
+
+namespace Pouchy.Views
+{
+    /// <summary>Shelf tabs, search and the undo bar.</summary>
+    public partial class PouchWindow
+    {
+        private static readonly TimeSpan UndoMessageDuration = TimeSpan.FromSeconds(6);
+
+        private DispatcherTimer? _undoTimer;
+
+        /// <summary>Items currently being dragged out of the pouch, so a shelf tab can take them.</summary>
+        private IReadOnlyCollection<PouchItem>? _draggedItems;
+
+        private void InitializeShelves()
+        {
+            _vm.PropertyChanged += OnViewModelPropertyChanged;
+        }
+
+        private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(PouchViewModel.UndoMessage) && _vm.UndoMessage != null)
+            {
+                // Hide the undo bar after a few seconds; Ctrl+Z keeps working after that.
+                _undoTimer?.Stop();
+                _undoTimer = new DispatcherTimer { Interval = UndoMessageDuration };
+                _undoTimer.Tick += (_, _) =>
+                {
+                    _undoTimer?.Stop();
+                    _vm.DismissUndoCommand.Execute(null);
+                };
+                _undoTimer.Start();
+            }
+        }
+
+        // ---------------------------------------------------------------- Search
+
+        private void SearchButton_Click(object sender, RoutedEventArgs e) => OpenSearch();
+
+        private void OpenSearch()
+        {
+            if (!_vm.IsSearchOpen) _vm.IsSearchOpen = true;
+            Dispatcher.BeginInvoke(() =>
+            {
+                SearchBox.Focus();
+                SearchBox.SelectAll();
+            }, DispatcherPriority.Input);
+        }
+
+        /// <summary>Keys while typing in the search box. Returns true if handled.</summary>
+        private bool HandleSearchBoxKey(Key key)
+        {
+            switch (key)
+            {
+                case Key.Escape:
+                    _vm.IsSearchOpen = false;
+                    PouchItemsControl.Focus();
+                    return true;
+                case Key.Down:
+                case Key.Enter:
+                    if (_vm.DisplayedItems.Count > 0)
+                    {
+                        PouchItemsControl.SelectedIndex = 0;
+                        (PouchItemsControl.ItemContainerGenerator.ContainerFromIndex(0) as UIElement)?.Focus();
+                    }
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        // ---------------------------------------------------------------- Shelf tabs
+
+        private void NewShelf_Click(object sender, RoutedEventArgs e) => PromptNewShelf();
+
+        private Shelf? PromptNewShelf(IReadOnlyCollection<PouchItem>? moveItems = null)
+        {
+            string? name = PouchDialog.Prompt(this, "New shelf", "Shelves keep separate sets of items, like Work or Screenshots.",
+                $"Shelf {_vm.Shelves.Count + 1}", "Create",
+                validate: n => string.IsNullOrWhiteSpace(n) ? "Give the shelf a name." : null);
+            if (name == null) return null;
+
+            var shelf = _vm.NewShelf(name);
+            if (moveItems != null) _vm.MoveToShelf(moveItems, shelf);
+            return shelf;
+        }
+
+        private void ShelfChip_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            if (sender is FrameworkElement { DataContext: Shelf shelf })
+            {
+                if (_vm.IsSearchOpen) _vm.IsSearchOpen = false;
+                _vm.ActivateShelf(shelf);
+            }
+        }
+
+        private void ShelfTabs_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
+        {
+            // Scroll the tab strip sideways with the normal wheel.
+            if (sender is ScrollViewer viewer)
+            {
+                viewer.ScrollToHorizontalOffset(viewer.HorizontalOffset - e.Delta / 3.0);
+                e.Handled = true;
+            }
+        }
+
+        private void ShelfChip_DragEnter(object sender, DragEventArgs e)
+        {
+            if (sender is Border chip) chip.SetResourceReference(Border.BorderBrushProperty, "Pouch.Accent");
+            ShelfChip_DragOver(sender, e);
+        }
+
+        private void ShelfChip_DragOver(object sender, DragEventArgs e)
+        {
+            e.Effects = _draggedItems != null ? DragDropEffects.Move : DragDropEffects.Copy;
+            e.Handled = true;
+        }
+
+        private void ShelfChip_DragLeave(object sender, DragEventArgs e)
+        {
+            // Let the template trigger decide the border again.
+            if (sender is Border chip) chip.ClearValue(Border.BorderBrushProperty);
+        }
+
+        /// <summary>Dropping on a tab moves pouch items there, or adds outside files/text to that shelf.</summary>
+        private async void ShelfChip_Drop(object sender, DragEventArgs e)
+        {
+            e.Handled = true;
+            ShelfChip_DragLeave(sender, e);
+            ShowDropOverlay(false);
+            _isDraggingIn = false;
+            if (sender is not FrameworkElement { DataContext: Shelf shelf }) return;
+
+            try
+            {
+                if (_draggedItems != null)
+                {
+                    _vm.MoveToShelf(_draggedItems, shelf);
+                    e.Effects = DragDropEffects.None; // Nothing for the drag source to do.
+                    return;
+                }
+
+                var data = e.Data;
+                if (data.GetDataPresent(DataFormats.FileDrop) && data.GetData(DataFormats.FileDrop) is string[] { Length: > 0 } files)
+                {
+                    await _vm.AddPathsAsync(files, shelf);
+                }
+                else if ((data.GetData(DataFormats.UnicodeText) ?? data.GetData(DataFormats.Text)) is string text)
+                {
+                    _vm.AddText(text, shelf);
+                }
+            }
+            catch (Exception ex)
+            {
+                ReportError(ex);
+            }
+        }
+
+        private List<List<object>> BuildShelfMenu(Shelf shelf)
+        {
+            var colors = Shelf.Palette
+                .Select(hex => (object)Check(ColorName(hex), shelf.Color == hex, () => _vm.SetShelfColor(shelf, hex),
+                    MenuFactory.Dot(LabelColors.BrushFromHex(hex))))
+                .ToArray();
+
+            var edit = new List<object>
+            {
+                Item("Rename…", Symbol.Rename24, () =>
+                {
+                    string? name = PouchDialog.Prompt(this, "Rename shelf", null, shelf.Name, "Rename",
+                        validate: n => string.IsNullOrWhiteSpace(n) ? "Give the shelf a name." : null);
+                    if (name != null) _vm.RenameShelf(shelf, name);
+                }),
+                Submenu("Colour", Symbol.Color24, colors),
+            };
+
+            var create = new List<object> { Item("New shelf…", Symbol.Add24, () => PromptNewShelf()) };
+
+            var delete = new List<object>();
+            if (_vm.HasMultipleShelves)
+            {
+                delete.Add(Item("Delete shelf…", Symbol.Delete24, () =>
+                {
+                    bool empty = shelf.Items.Count == 0;
+                    if (empty || PouchDialog.Confirm(this, $"Delete “{shelf.Name}”?",
+                            $"Its {shelf.Items.Count} items are removed from the pouch. Files on disk aren't touched.", "Delete", destructive: true))
+                    {
+                        _vm.DeleteShelf(shelf);
+                    }
+                }, danger: true));
+            }
+            return new List<List<object>> { edit, create, delete };
+        }
+
+        /// <summary>"Move to shelf" entries for the item menu.</summary>
+        private object BuildMoveToShelfMenu(IReadOnlyList<PouchItem> items)
+        {
+            var owner = items.Count > 0 ? _vm.OwnerOf(items[0]) : null;
+            var entries = _vm.Shelves
+                .Where(s => s != owner)
+                .Select(s => (object)Item(s.Name, MenuFactory.Dot(s.ColorBrush), () => _vm.MoveToShelf(items, s)))
+                .ToList();
+            if (entries.Count > 0) entries.Add(Separator());
+            entries.Add(Item("New shelf…", Symbol.Add24, () => PromptNewShelf(items)));
+            return MenuFactory.Submenu("Move to shelf", Symbol.Tabs24, entries);
+        }
+
+        private static string ColorName(string hex) => hex switch
+        {
+            "#8B7CFF" => "Violet",
+            "#3B82F6" => "Blue",
+            "#14B8A6" => "Teal",
+            "#22C55E" => "Green",
+            "#EAB308" => "Yellow",
+            "#F97316" => "Orange",
+            "#EF4444" => "Red",
+            "#EC4899" => "Pink",
+            "#94A3B8" => "Grey",
+            _ => hex,
+        };
+
+        private static MenuItem Item(string header, object icon, Action action) => MenuFactory.Item(header, icon, action);
+    }
+}

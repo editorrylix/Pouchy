@@ -8,6 +8,7 @@ using Pouchy.Services.Theming;
 using Pouchy.ViewModels;
 using Pouchy.Views;
 using Wpf.Ui.Appearance;
+using Symbol = Wpf.Ui.Controls.SymbolRegular;
 
 namespace Pouchy
 {
@@ -25,6 +26,7 @@ namespace Pouchy
         private TriggerService? _triggers;
         private ThemeService? _themes;
         private ShellThumbnailProvider? _thumbnails;
+        private LinkPreviewService? _linkPreviews;
         private PouchViewModel? _pouchViewModel;
         private PouchWindow? _pouchWindow;
         private SettingsWindow? _settingsWindow;
@@ -62,13 +64,15 @@ namespace Pouchy
             var persistence = new PersistenceService();
             _thumbnails = new ShellThumbnailProvider();
             var factory = new ItemFactory(_thumbnails);
-            _pouchViewModel = new PouchViewModel(factory, persistence, _settings)
+            _linkPreviews = new LinkPreviewService();
+            _pouchViewModel = new PouchViewModel(factory, persistence, _settings, _linkPreviews)
             {
                 OpenSettingsAction = ShowSettings,
                 ThemeListProvider = () => _themes.Themes.Select(t => (t.Id, t.Name)).ToList(),
             };
             _pouchWindow = new PouchWindow(_pouchViewModel);
-            _ = _pouchViewModel.LoadAsync(clearInstead: _settings.Current.ClearOnStartup);
+            _ = _pouchViewModel.LoadAsync(clearUnpinned: _settings.Current.ClearOnStartup);
+            MenuFactory.ErrorHandler = ex => PouchDialog.Alert(_pouchWindow, "That didn't work", ex.Message);
 
             _hotkeys = new HotkeyService();
             _hotkeys.Pressed += (_, _) => TogglePouchAtCursor();
@@ -79,6 +83,11 @@ namespace Pouchy
             _triggers.Start();
 
             SetupTrayIcon();
+            _pouchViewModel.PropertyChanged += (_, e) =>
+            {
+                if (e.PropertyName is nameof(PouchViewModel.StatusText) or "") UpdateTrayTooltip();
+            };
+            _settings.Changed += (_, _) => UpdateTrayTooltip();
         }
 
         private void RegisterExceptionHandlers()
@@ -117,12 +126,10 @@ namespace Pouchy
 
         private void SetupTrayIcon()
         {
-            var menu = new ContextMenu();
-            menu.Items.Add(MenuItem("Show Pouch", (_, _) => TogglePouchAtCursor()));
-            menu.Items.Add(MenuItem("Settings", (_, _) => ShowSettings()));
-            menu.Items.Add(MenuItem("Clear Pouch", (_, _) => _pouchViewModel?.ClearCommand.Execute(null)));
-            menu.Items.Add(new Separator());
-            menu.Items.Add(MenuItem("Quit Pouchy", (_, _) => Quit()));
+            // Rebuilt every time it opens so counts, checks and shelves are current.
+            var menu = MenuFactory.Create(Array.Empty<IEnumerable<object>>(), null);
+            menu.Opened += (_, _) => MenuFactory.Fill(menu, BuildTrayMenu());
+            MenuFactory.Fill(menu, BuildTrayMenu());
 
             _trayIcon = new TaskbarIcon
             {
@@ -132,6 +139,7 @@ namespace Pouchy
                 NoLeftClickDelay = true,
             };
             _trayIcon.TrayLeftMouseUp += (_, _) => TogglePouchAtCursor();
+            UpdateTrayTooltip();
 
             // Icons created in code (not in XAML) must be created explicitly to appear.
             _trayIcon.ForceCreate(enablesEfficiencyMode: false);
@@ -140,8 +148,10 @@ namespace Pouchy
             {
                 try
                 {
+                    // Ask for the size the tray actually draws at this DPI.
+                    int size = Math.Max(16, NativeMethods.GetSystemMetrics(NativeMethods.SM_CXSMICON));
                     using var stream = GetResourceStream(new Uri(IconUri)).Stream;
-                    return new System.Drawing.Icon(stream, 16, 16);
+                    return new System.Drawing.Icon(stream, size, size);
                 }
                 catch (Exception ex)
                 {
@@ -149,13 +159,80 @@ namespace Pouchy
                     return System.Drawing.SystemIcons.Application;
                 }
             }
+        }
 
-            static MenuItem MenuItem(string header, RoutedEventHandler onClick)
+        private List<List<object>> BuildTrayMenu()
+        {
+            var vm = _pouchViewModel!;
+            var s = _settings!.Current;
+            string hotkey = s.Hotkey.Enabled ? s.Hotkey.ToString() : "";
+            string status = s.GesturesPaused ? $"{vm.StatusText} · gestures paused" : vm.StatusText;
+
+            var header = new List<object> { MenuFactory.Header(status) };
+
+            var main = new List<object>
             {
-                var item = new MenuItem { Header = header };
-                item.Click += onClick;
-                return item;
+                MenuFactory.Item("Show pouch", Symbol.PanelLeft24, TogglePouchAtCursor, hotkey),
+                MenuFactory.Item("New note…", Symbol.NoteAdd24, () =>
+                {
+                    if (_pouchWindow!.NewNote()) ShowPouchAtCursor();
+                }),
+                MenuFactory.Item("Paste into pouch", Symbol.ClipboardPaste24, async () =>
+                {
+                    await vm.PasteAsync();
+                    ShowPouchAtCursor();
+                }),
+            };
+
+            var shelves = vm.Shelves
+                .Select(shelf => (object)MenuFactory.Check($"{shelf.Name}  ({shelf.Items.Count})", shelf.IsActive, () =>
+                {
+                    vm.ActivateShelf(shelf);
+                    ShowPouchAtCursor();
+                }, MenuFactory.Dot(shelf.ColorBrush, ring: shelf.IsActive)))
+                .ToList();
+            var themes = _themes!.Themes
+                .Select(t => (object)MenuFactory.Check(t.Name, t.Id == s.ThemeId, () => vm.SetTheme(t.Id)))
+                .ToList();
+            var views = Enum.GetValues<Models.PouchViewMode>()
+                .Select(mode => (object)MenuFactory.Check(mode.ToString(), s.ViewMode == mode, () => vm.SetViewMode(mode)))
+                .ToList();
+
+            var look = new List<object>
+            {
+                MenuFactory.Submenu("Shelf", Symbol.Tabs24, shelves),
+                MenuFactory.Submenu("Theme", Symbol.PaintBrush24, themes),
+                MenuFactory.Submenu("View", Symbol.Grid24, views),
+            };
+
+            var behaviour = new List<object>
+            {
+                MenuFactory.Item(s.GesturesPaused ? "Resume gestures" : "Pause gestures",
+                    s.GesturesPaused ? Symbol.Play24 : Symbol.Pause24,
+                    () => _settings.Update(x => x.GesturesPaused = !x.GesturesPaused)),
+                MenuFactory.Item("Settings…", Symbol.Settings24, ShowSettings),
+            };
+            if (vm.Items.Count > 0)
+            {
+                behaviour.Add(MenuFactory.Item("Clear shelf (keeps pinned)", Symbol.Delete24, () => vm.ClearCommand.Execute(null)));
             }
+
+            var quit = new List<object> { MenuFactory.Item("Quit Pouchy", Symbol.Power24, Quit) };
+
+            return new List<List<object>> { header, main, look, behaviour, quit };
+        }
+
+        private void UpdateTrayTooltip()
+        {
+            if (_trayIcon == null || _pouchViewModel == null) return;
+            string paused = _settings!.Current.GesturesPaused ? " (gestures paused)" : "";
+            _trayIcon.ToolTipText = $"Pouchy · {_pouchViewModel.StatusText}{paused}";
+        }
+
+        private void ShowPouchAtCursor()
+        {
+            if (_pouchWindow == null || _pouchWindow.IsVisible) return;
+            if (NativeMethods.GetCursorPos(out var point)) _pouchWindow.SpawnAt(point.x, point.y);
         }
 
         private void OnTriggered(object? sender, TriggerEventArgs e)
@@ -216,6 +293,7 @@ namespace Pouchy
             _triggers?.Dispose();
             _themes?.Dispose();
             _thumbnails?.Dispose();
+            _linkPreviews?.Dispose();
 
             _singleInstanceMutex?.ReleaseMutex();
             _singleInstanceMutex?.Dispose();
