@@ -24,6 +24,16 @@ namespace Pouchy.Helpers
             throw new NotSupportedException();
     }
 
+    /// <summary>"Heart" → SymbolRegular.Heart24, for shelf icons stored by name.</summary>
+    public sealed class SymbolNameConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture) =>
+            Enum.TryParse<Wpf.Ui.Controls.SymbolRegular>($"{value}24", out var symbol) ? symbol : Wpf.Ui.Controls.SymbolRegular.Archive24;
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) =>
+            throw new NotSupportedException();
+    }
+
     /// <summary>Multiplies a number by the converter parameter, e.g. tile size × 0.45 for icon size.</summary>
     public sealed class MultiplyConverter : IValueConverter
     {

@@ -12,9 +12,23 @@ namespace Pouchy.Models
             "#8B7CFF", "#3B82F6", "#14B8A6", "#22C55E", "#EAB308", "#F97316", "#EF4444", "#EC4899", "#94A3B8",
         };
 
+        /// <summary>Icons a shelf can show on its tab (Fluent icon names, drawn filled in the shelf colour).</summary>
+        public static readonly string[] Icons =
+        {
+            "Archive", "Heart", "Star", "Sparkle", "Briefcase", "Camera", "Image", "Video",
+            "MusicNote2", "Document", "Book", "Bookmark", "Code", "Bug", "Lightbulb", "Rocket",
+            "Gift", "Balloon", "Umbrella", "Trophy", "Diamond", "Fire", "Flash", "LeafOne",
+            "WeatherSunny", "WeatherMoon", "Cloud", "Backpack", "Airplane", "Beach", "Home", "Cart",
+            "AnimalCat", "AnimalDog", "AnimalRabbit", "AnimalTurtle", "DrinkCoffee", "FoodPizza", "FoodCake", "Games",
+        };
+
         public Guid Id { get; init; } = Guid.NewGuid();
 
         public ObservableCollection<PouchItem> Items { get; } = new();
+
+        /// <summary>One of <see cref="Icons"/>.</summary>
+        [ObservableProperty]
+        private string _icon = Icons[0];
 
         [ObservableProperty]
         private string _name = "Pouch";
@@ -46,6 +60,15 @@ namespace Pouchy.Models
 
     public static class LabelColors
     {
+        /// <summary>The label colour at low opacity, for tinting a tile's background.</summary>
+        public static Brush? TintFor(ColorLabel label)
+        {
+            if (BrushFor(label) is not SolidColorBrush solid) return null;
+            var tint = new SolidColorBrush(Color.FromArgb(0x3D, solid.Color.R, solid.Color.G, solid.Color.B));
+            tint.Freeze();
+            return tint;
+        }
+
         private static readonly Dictionary<ColorLabel, Brush> Brushes = new()
         {
             [ColorLabel.Red] = BrushFromHex("#EF4444"),

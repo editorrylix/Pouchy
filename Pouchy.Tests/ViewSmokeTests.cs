@@ -179,6 +179,35 @@ namespace Pouchy.Tests
                     host.Close();
                 }
 
+                // Mascot moods side by side.
+                var moods = new System.Windows.Controls.StackPanel { Orientation = System.Windows.Controls.Orientation.Horizontal };
+                foreach (var mood in Enum.GetValues<MascotMood>())
+                {
+                    moods.Children.Add(new Mascot { Mood = mood, Width = 110, Height = 110, Animated = false, Margin = new Thickness(10) });
+                }
+                RenderElement(moods, Path.Combine(outDir, "mascot.png"));
+
+                // The shelf icon picker grid.
+                var shelfMenu = (List<List<object>>)typeof(PouchWindow)
+                    .GetMethod("BuildShelfMenu", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!
+                    .Invoke(pouch, new object[] { vm.Shelves[1] })!;
+                foreach (var picker in shelfMenu[0].OfType<System.Windows.Controls.MenuItem>().Where(m => m.Items.Count > 0))
+                {
+                    var tiles = picker.Items.Cast<object>().ToList();
+                    picker.Items.Clear();
+                    var grid = new System.Windows.Controls.Menu
+                    {
+                        Width = picker.Header as string == "Icon" ? 8 * 40 + 8 : 5 * 40 + 8,
+                        Template = (System.Windows.Controls.ControlTemplate)System.Windows.Markup.XamlReader.Parse(
+                            "<ControlTemplate xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation' TargetType='Menu'>" +
+                            "<WrapPanel IsItemsHost='True'/></ControlTemplate>"),
+                    };
+                    foreach (var tile in tiles) grid.Items.Add(tile);
+                    var chrome = new System.Windows.Controls.Border { Padding = new Thickness(6), CornerRadius = new CornerRadius(10), Child = grid };
+                    chrome.SetResourceReference(System.Windows.Controls.Border.BackgroundProperty, "Pouch.MenuBackground");
+                    RenderElement(chrome, Path.Combine(outDir, $"picker-{picker.Header}.png".ToLowerInvariant()));
+                }
+
                 var settingsWindow = new SettingsWindow(new SettingsViewModel(settings, new StartupService(), new HotkeyService(), themes))
                 {
                     ShowActivated = false, Left = -20000, Top = -20000,
@@ -243,6 +272,18 @@ namespace Pouchy.Tests
             encoder.Save(stream);
         }
 
+        private static void RenderElement(FrameworkElement element, string path)
+        {
+            var host = new Window
+            {
+                Content = element, SizeToContent = SizeToContent.WidthAndHeight, WindowStyle = WindowStyle.None,
+                AllowsTransparency = true, Background = Brushes.Transparent, ShowActivated = false, Left = -20000, Top = -20000,
+            };
+            host.Show();
+            Render(host, path);
+            host.Close();
+        }
+
         private static void Render(Window window, string path)
         {
             window.UpdateLayout();
@@ -250,15 +291,26 @@ namespace Pouchy.Tests
             window.UpdateLayout();
 
             var root = (FrameworkElement)window.Content;
-            double width = Math.Ceiling(root.ActualWidth + 40);
-            double height = Math.Ceiling(root.ActualHeight + 40);
+            // Everything drawn (shadows and sparkles can spill outside the layout box), mapped 1:1.
+            var bounds = VisualTreeHelper.GetDescendantBounds(root);
+            bounds.Union(new Rect(0, 0, root.ActualWidth, root.ActualHeight));
+            double width = Math.Ceiling(bounds.Width + 40);
+            double height = Math.Ceiling(bounds.Height + 40);
 
             var visual = new DrawingVisual();
             using (var dc = visual.RenderOpen())
             {
                 // A neutral desktop-like backdrop so translucent themes are visible.
                 dc.DrawRectangle(new LinearGradientBrush(Color.FromRgb(70, 90, 120), Color.FromRgb(150, 120, 160), 45), null, new Rect(0, 0, width, height));
-                dc.DrawRectangle(new VisualBrush(root), null, new Rect(20, 20, root.ActualWidth, root.ActualHeight));
+                var brush = new VisualBrush(root)
+                {
+                    Stretch = Stretch.None,
+                    AlignmentX = AlignmentX.Left,
+                    AlignmentY = AlignmentY.Top,
+                    ViewboxUnits = BrushMappingMode.Absolute,
+                    Viewbox = bounds,
+                };
+                dc.DrawRectangle(brush, null, new Rect(20, 20, bounds.Width, bounds.Height));
             }
 
             var bitmap = new RenderTargetBitmap((int)width * 2, (int)height * 2, 192, 192, PixelFormats.Pbgra32);

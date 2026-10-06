@@ -1,4 +1,4 @@
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using System.IO;
 using System.Windows.Controls;
 using System.Windows;
@@ -280,6 +280,7 @@ namespace Pouchy.Views
 
         private void ShowDropOverlay(bool show)
         {
+            if (HeaderMascot.Mood != MascotMood.Happy || show) SetMascotMood(show ? MascotMood.Excited : MascotMood.Idle);
             var animation = new DoubleAnimation(show ? 1 : 0, Motion.Enabled ? Motion.Duration(show ? 120 : 180) : TimeSpan.Zero);
             DropOverlay.BeginAnimation(OpacityProperty, animation);
         }
@@ -288,6 +289,7 @@ namespace Pouchy.Views
         {
             _isDraggingIn = false;
             ShowDropOverlay(false);
+            if (!_vm.IsDraggingOut) SetMascotMood(MascotMood.Happy);
             if (_vm.IsDraggingOut) return; // Dropped back onto ourselves.
 
             e.Effects = GetDragEffect(e);
@@ -426,7 +428,18 @@ namespace Pouchy.Views
 
         private void PerformDragOut(FrameworkElement element, IReadOnlyCollection<PouchItem> items)
         {
-            var data = DataObjectBuilder.Build(items);
+            // Files only: drag Explorer's own data object, which also carries a picture of the tile
+            // (rendered before the tile is dimmed). Text and images use WPF's data object.
+            object? data = null; // Explorer's COM data object, or a WPF DataObject
+            var paths = items.SelectMany(i => i.FilePaths).Where(p => File.Exists(p) || Directory.Exists(p))
+                .Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+            if (items.All(i => i.IsFileSystemItem) && ShellDataObject.Create(paths) is { } shellData)
+            {
+                var accent = TryFindResource("Pouch.Accent") as Brush ?? Brushes.SlateBlue;
+                DragImage.Attach(shellData, element, items.Count, accent, Mouse.GetPosition(element));
+                data = shellData;
+            }
+            data ??= DataObjectBuilder.Build(items);
             if (data == null) return;
 
             element.Opacity = 0.5;
@@ -437,8 +450,13 @@ namespace Pouchy.Views
 
             try
             {
-                // A dummy source stops WPF from drawing its own drag preview.
-                DragDrop.DoDragDrop(new DependencyObject(), data, DragDropEffects.All);
+                const DragDropEffects allowed = DragDropEffects.Copy | DragDropEffects.Move | DragDropEffects.Link;
+                var result = data is System.Runtime.InteropServices.ComTypes.IDataObject comData
+                    ? OleDrag.Run(comData, allowed)
+                    : DragDrop.DoDragDrop(element, data, allowed); // The drag source must be a UIElement.
+                Logger.Log($"Dragged {items.Count} item(s) out: {result}.");
+                // Explorer moves files itself and reports "None" (an optimised move), so always re-check.
+                _vm.RefreshMissingState();
             }
             catch (Exception ex)
             {

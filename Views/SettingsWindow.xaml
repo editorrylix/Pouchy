@@ -119,6 +119,16 @@
                     <ui:Button Content="Open themes folder" Icon="{ui:SymbolIcon FolderOpen24}" Command="{Binding OpenThemesFolderCommand}"/>
                 </StackPanel>
 
+                <ui:CardControl Margin="0,4,0,4">
+                    <ui:CardControl.Header>
+                        <StackPanel>
+                            <TextBlock Text="Show Pouchy the mascot" Style="{StaticResource CardTitle}"/>
+                            <TextBlock Text="The little pouch in the header and empty pouch that reacts when you drop things." Style="{StaticResource CardDescription}"/>
+                        </StackPanel>
+                    </ui:CardControl.Header>
+                    <ui:ToggleSwitch IsChecked="{Binding ShowMascot}"/>
+                </ui:CardControl>
+
                 <TextBlock Text="Layout" Style="{StaticResource SectionHeader}"/>
                 <ui:CardControl>
                     <ui:CardControl.Header>

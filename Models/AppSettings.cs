@@ -86,6 +86,8 @@ namespace Pouchy.Models
         /// <summary>Animation speed multiplier (0.5 = half speed, 2 = twice as fast).</summary>
         public double AnimationSpeed { get; set; } = 1.0;
         public bool ReduceMotion { get; set; }
+        /// <summary>Show Pouchy the mascot in the pouch.</summary>
+        public bool ShowMascot { get; set; } = true;
 
         // Shake trigger
         public bool ShakeEnabled { get; set; } = true;

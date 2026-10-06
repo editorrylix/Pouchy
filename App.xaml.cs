@@ -238,7 +238,7 @@ namespace Pouchy
                 {
                     vm.ActivateShelf(shelf);
                     ShowPouchAtCursor();
-                }, MenuFactory.Dot(shelf.ColorBrush, ring: shelf.IsActive)))
+                }, MenuFactory.ShelfIcon(shelf)))
                 .ToList();
             var themes = _themes!.Themes
                 .Select(t => (object)MenuFactory.Check(t.Name, t.Id == s.ThemeId, () => vm.SetTheme(t.Id)))

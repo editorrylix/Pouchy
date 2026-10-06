@@ -165,10 +165,23 @@ namespace Pouchy.Views
 
         private List<List<object>> BuildShelfMenu(Shelf shelf)
         {
-            var colors = Shelf.Palette
-                .Select(hex => (object)Check(ColorName(hex), shelf.Color == hex, () => _vm.SetShelfColor(shelf, hex),
-                    MenuFactory.Dot(LabelColors.BrushFromHex(hex))))
-                .ToArray();
+            var icons = Shelf.Icons.Select(icon => (
+                (object)new Wpf.Ui.Controls.SymbolIcon
+                {
+                    Symbol = Enum.TryParse<Wpf.Ui.Controls.SymbolRegular>($"{icon}24", out var symbol) ? symbol : Wpf.Ui.Controls.SymbolRegular.Archive24,
+                    Filled = true,
+                    FontSize = 18,
+                    Foreground = shelf.ColorBrush,
+                },
+                SplitWords(icon),
+                shelf.Icon == icon,
+                (Action)(() => _vm.SetShelfIcon(shelf, icon))));
+
+            var colors = Shelf.Palette.Select(hex => (
+                (object)new System.Windows.Shapes.Ellipse { Width = 20, Height = 20, Fill = LabelColors.BrushFromHex(hex) },
+                ColorName(hex),
+                shelf.Color == hex,
+                (Action)(() => _vm.SetShelfColor(shelf, hex))));
 
             var edit = new List<object>
             {
@@ -178,7 +191,8 @@ namespace Pouchy.Views
                         validate: n => string.IsNullOrWhiteSpace(n) ? "Give the shelf a name." : null);
                     if (name != null) _vm.RenameShelf(shelf, name);
                 }),
-                Submenu("Colour", Symbol.Color24, colors),
+                MenuFactory.Grid("Icon", Symbol.Emoji24, icons, columns: 8),
+                MenuFactory.Grid("Colour", Symbol.Color24, colors, columns: 5),
             };
 
             var create = new List<object> { Item("New shelf…", Symbol.Add24, () => PromptNewShelf()) };
@@ -205,7 +219,7 @@ namespace Pouchy.Views
             var owner = items.Count > 0 ? _vm.OwnerOf(items[0]) : null;
             var entries = _vm.Shelves
                 .Where(s => s != owner)
-                .Select(s => (object)Item(s.Name, MenuFactory.Dot(s.ColorBrush), () => _vm.MoveToShelf(items, s)))
+                .Select(s => (object)Item(s.Name, MenuFactory.ShelfIcon(s), () => _vm.MoveToShelf(items, s)))
                 .ToList();
             if (entries.Count > 0) entries.Add(Separator());
             entries.Add(Item("New shelf…", Symbol.Add24, () => PromptNewShelf(items)));
@@ -227,5 +241,32 @@ namespace Pouchy.Views
         };
 
         private static MenuItem Item(string header, object icon, Action action) => MenuFactory.Item(header, icon, action);
+
+        /// <summary>"AnimalCat" → "Animal cat", "MusicNote2" → "Music note".</summary>
+        private static string SplitWords(string name)
+        {
+            var words = System.Text.RegularExpressions.Regex.Replace(name.TrimEnd('0', '1', '2', '3'), "(?<!^)([A-Z])", " $1");
+            return words[..1] + words[1..].ToLowerInvariant();
+        }
+
+        // ---------------------------------------------------------------- Mascot
+
+        private DispatcherTimer? _mascotTimer;
+
+        /// <summary>Sets the header mascot's mood; Happy wears off after a moment.</summary>
+        private void SetMascotMood(MascotMood mood)
+        {
+            HeaderMascot.Mood = mood;
+            _mascotTimer?.Stop();
+            if (mood != MascotMood.Happy) return;
+
+            _mascotTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(1600) };
+            _mascotTimer.Tick += (_, _) =>
+            {
+                _mascotTimer?.Stop();
+                HeaderMascot.Mood = MascotMood.Idle;
+            };
+            _mascotTimer.Start();
+        }
     }
 }

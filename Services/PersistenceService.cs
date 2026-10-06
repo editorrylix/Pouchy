@@ -31,6 +31,7 @@ namespace Pouchy.Services
         public Guid Id { get; set; }
         public string Name { get; set; } = "Pouch";
         public string Color { get; set; } = Shelf.Palette[0];
+        public string Icon { get; set; } = Shelf.Icons[0];
         public List<PersistedItem> Items { get; set; } = new();
     }
 
@@ -145,7 +146,7 @@ namespace Pouchy.Services
 
             foreach (var shelf in shelves)
             {
-                var saved = new PersistedShelf { Id = shelf.Id, Name = shelf.Name, Color = shelf.Color };
+                var saved = new PersistedShelf { Id = shelf.Id, Name = shelf.Name, Color = shelf.Color, Icon = shelf.Icon };
                 foreach (var item in shelf.Items)
                 {
                     var persisted = new PersistedItem

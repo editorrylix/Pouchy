@@ -294,7 +294,7 @@ namespace Pouchy.Views
             if (!_vm.IsEmpty) add.Add(Item("Select all", Symbol.SelectAllOn24, () => PouchItemsControl.SelectAll(), "Ctrl+A"));
 
             var shelves = _vm.Shelves
-                .Select(s => (object)Check(s.Name, s.IsActive, () => _vm.ActivateShelf(s), MenuFactory.Dot(s.ColorBrush, ring: s.IsActive)))
+                .Select(s => (object)Check(s.Name, s.IsActive, () => _vm.ActivateShelf(s), MenuFactory.ShelfIcon(s)))
                 .Append(Separator())
                 .Append(Item("New shelf…", Symbol.Add24, () => PromptNewShelf(), "Ctrl+T"))
                 .ToArray();

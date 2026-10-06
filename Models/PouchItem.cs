@@ -79,10 +79,15 @@ namespace Pouchy.Models
         public Brush? SwatchBrush => ColorValue is Color color ? Frozen(new SolidColorBrush(color)) : null;
 
         [ObservableProperty]
-        [NotifyPropertyChangedFor(nameof(LabelBrush))]
+        [NotifyPropertyChangedFor(nameof(LabelBrush), nameof(LabelTint), nameof(HasLabel))]
         private ColorLabel _label;
 
         public Brush? LabelBrush => LabelColors.BrushFor(Label);
+
+        /// <summary>Background tint for labelled tiles.</summary>
+        public Brush? LabelTint => LabelColors.TintFor(Label);
+
+        public bool HasLabel => Label != ColorLabel.None;
 
         /// <summary>Pinned items survive "Clear".</summary>
         [ObservableProperty]

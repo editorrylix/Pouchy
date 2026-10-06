@@ -83,10 +83,12 @@ namespace Pouchy.ViewModels
 
         public Shelf NewShelf(string name)
         {
+            // Each new shelf gets the next colour and a different icon.
             var shelf = AddShelf(new Shelf
             {
                 Name = name.Trim(),
                 Color = Shelf.Palette[Shelves.Count % Shelf.Palette.Length],
+                Icon = Shelf.Icons[(Shelves.Count * 5) % Shelf.Icons.Length],
             });
             ActiveShelf = shelf;
             Save();
@@ -102,6 +104,12 @@ namespace Pouchy.ViewModels
         public void SetShelfColor(Shelf shelf, string color)
         {
             shelf.Color = color;
+            Save();
+        }
+
+        public void SetShelfIcon(Shelf shelf, string icon)
+        {
+            shelf.Icon = icon;
             Save();
         }
 
@@ -221,8 +229,8 @@ namespace Pouchy.ViewModels
         public bool HasMultipleItems => DisplayedItems.Count > 1;
         public string DragAllText => $"Drag all {DisplayedItems.Count} items";
         public string ItemCountText => Items.Count.ToString();
-        public string EmptyTitle => IsFiltering ? "No matches" : "Drop anything here";
-        public string EmptySubtitle => IsFiltering ? "Try other words, or another colour" : "Files, folders, text and images";
+        public string EmptyTitle => IsFiltering ? "Hmm, nothing here" : "Drop anything on me!";
+        public string EmptySubtitle => IsFiltering ? "Try other words, or another colour" : "Files, folders, links, text and images";
 
         /// <summary>One line for the tray menu header.</summary>
         public string StatusText
@@ -273,6 +281,7 @@ namespace Pouchy.ViewModels
         public bool ShowNames => ViewMode == PouchViewMode.Grid && _settings.Current.ShowItemNames;
         public bool ShowDetails => ViewMode == PouchViewMode.Grid && _settings.Current.ShowItemDetails;
         public bool ShowTileActions => ViewMode == PouchViewMode.Grid;
+        public bool ShowMascot => _settings.Current.ShowMascot;
         public SpawnAnimation SpawnAnimation => _settings.Current.ReduceMotion ? SpawnAnimation.None : _settings.Current.SpawnAnimation;
 
         /// <summary>Set by the app to open the settings window.</summary>
@@ -332,6 +341,7 @@ namespace Pouchy.ViewModels
                             Id = r.Shelf.Id == Guid.Empty ? Guid.NewGuid() : r.Shelf.Id,
                             Name = string.IsNullOrWhiteSpace(r.Shelf.Name) ? "Pouch" : r.Shelf.Name,
                             Color = r.Shelf.Color,
+                            Icon = Shelf.Icons.Contains(r.Shelf.Icon) ? r.Shelf.Icon : Shelf.Icons[0],
                         };
                         foreach (var item in r.Items)
                         {

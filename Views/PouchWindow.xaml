@@ -7,6 +7,7 @@
         xmlns:vm="clr-namespace:Pouchy.ViewModels"
         xmlns:models="clr-namespace:Pouchy.Models"
         xmlns:helpers="clr-namespace:Pouchy.Helpers"
+        xmlns:views="clr-namespace:Pouchy.Views"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Type=vm:PouchViewModel}"
         Title="Pouchy"
@@ -240,7 +241,9 @@
                         </Border>
                     </StackPanel>
 
-                    <!-- Colour label -->
+                    <!-- Colour label: a ring over the thumbnail (the background tint is on TileBase) -->
+                    <Border x:Name="LabelRing" CornerRadius="{DynamicResource Pouch.TileCornerRadius}" BorderThickness="2.5"
+                            BorderBrush="{Binding LabelBrush}" IsHitTestVisible="False" Visibility="Collapsed"/>
                     <Ellipse x:Name="LabelDot" Width="11" Height="11" Margin="0,8,8,0" HorizontalAlignment="Right" VerticalAlignment="Top"
                              Fill="{Binding LabelBrush}" Stroke="{DynamicResource Pouch.Tile}" StrokeThickness="1.5"/>
 
@@ -277,9 +280,11 @@
                     </Grid.Triggers>
                 </Grid>
 
-                <TextBlock x:Name="NameText" Text="{Binding DisplayName}" Margin="2,6,2,0" FontSize="11" FontWeight="Medium"
-                           Foreground="{DynamicResource Pouch.Text}" TextTrimming="CharacterEllipsis" TextAlignment="Center"
-                           Visibility="{Binding DataContext.ShowNames, RelativeSource={RelativeSource AncestorType=ListBox}, Converter={StaticResource BoolToVisibility}}"/>
+                <Border x:Name="NamePill" Margin="0,5,0,0" Padding="5,1,5,2" CornerRadius="6" HorizontalAlignment="Center"
+                        Visibility="{Binding DataContext.ShowNames, RelativeSource={RelativeSource AncestorType=ListBox}, Converter={StaticResource BoolToVisibility}}">
+                    <TextBlock x:Name="NameText" Text="{Binding DisplayName}" FontSize="11" FontWeight="Medium"
+                               Foreground="{DynamicResource Pouch.Text}" TextTrimming="CharacterEllipsis" TextAlignment="Center"/>
+                </Border>
                 <TextBlock x:Name="MetaText" Text="{Binding Metadata}" Margin="2,1,2,0" FontSize="9.5"
                            Foreground="{DynamicResource Pouch.TextMuted}" TextTrimming="CharacterEllipsis" TextAlignment="Center"
                            Visibility="{Binding DataContext.ShowDetails, RelativeSource={RelativeSource AncestorType=ListBox}, Converter={StaticResource BoolToVisibility}}"/>
@@ -312,6 +317,12 @@
                 </MultiDataTrigger>
                 <DataTrigger Binding="{Binding Label}" Value="None">
                     <Setter TargetName="LabelDot" Property="Visibility" Value="Collapsed"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding HasLabel}" Value="True">
+                    <Setter TargetName="TileBase" Property="Background" Value="{Binding LabelTint}"/>
+                    <Setter TargetName="TileBase" Property="BorderBrush" Value="{Binding LabelBrush}"/>
+                    <Setter TargetName="LabelRing" Property="Visibility" Value="Visible"/>
+                    <Setter TargetName="NamePill" Property="Background" Value="{Binding LabelTint}"/>
                 </DataTrigger>
                 <DataTrigger Binding="{Binding Kind}" Value="Stack">
                     <Setter TargetName="StackThumb" Property="Visibility" Value="Visible"/>
@@ -443,6 +454,10 @@
                 <DataTrigger Binding="{Binding Label}" Value="None">
                     <Setter TargetName="LabelDot" Property="Visibility" Value="Collapsed"/>
                 </DataTrigger>
+                <DataTrigger Binding="{Binding HasLabel}" Value="True">
+                    <Setter TargetName="RowBase" Property="Background" Value="{Binding LabelTint}"/>
+                    <Setter TargetName="RowBase" Property="BorderBrush" Value="{Binding LabelBrush}"/>
+                </DataTrigger>
                 <DataTrigger Binding="{Binding Kind}" Value="Color">
                     <Setter TargetName="SwatchThumb" Property="Visibility" Value="Visible"/>
                     <Setter TargetName="IconThumb" Property="Visibility" Value="Collapsed"/>
@@ -507,7 +522,10 @@
                     </Grid.ColumnDefinitions>
 
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                        <Border Width="20" Height="20" CornerRadius="6" Background="{DynamicResource Pouch.Accent}" Margin="0,0,8,0">
+                        <views:Mascot x:Name="HeaderMascot" Width="26" Height="26" Margin="-2,-4,6,0"
+                                      Visibility="{Binding ShowMascot, Converter={StaticResource BoolToVisibility}}"/>
+                        <Border Width="20" Height="20" CornerRadius="6" Background="{DynamicResource Pouch.Accent}" Margin="0,0,8,0"
+                                Visibility="{Binding ShowMascot, Converter={StaticResource InverseBoolToVisibility}}">
                             <ui:SymbolIcon Symbol="ArrowDownload24" FontSize="12" Foreground="{DynamicResource Pouch.AccentText}"/>
                         </Border>
                         <TextBlock Text="Pouchy" FontFamily="{DynamicResource Pouch.HeaderFontFamily}" FontSize="13.5" FontWeight="SemiBold"
@@ -573,7 +591,8 @@
                                             MouseLeftButtonUp="ShelfChip_MouseLeftButtonUp"
                                             DragEnter="ShelfChip_DragEnter" DragOver="ShelfChip_DragOver" DragLeave="ShelfChip_DragLeave" Drop="ShelfChip_Drop">
                                         <StackPanel Orientation="Horizontal">
-                                            <Ellipse Width="8" Height="8" Fill="{Binding ColorBrush}" Margin="0,1,6,0" VerticalAlignment="Center"/>
+                                            <ui:SymbolIcon Symbol="{Binding Icon, Converter={StaticResource SymbolName}}" Filled="True" FontSize="14"
+                                                           Foreground="{Binding ColorBrush}" Margin="0,0,5,0" VerticalAlignment="Center"/>
                                             <TextBlock x:Name="ChipName" Text="{Binding Name}" FontSize="11.5" FontWeight="Medium" MaxWidth="120"
                                                        TextTrimming="CharacterEllipsis" Foreground="{DynamicResource Pouch.TextSecondary}"/>
                                             <TextBlock Text="{Binding Items.Count}" FontSize="10.5" Margin="6,1,0,0"
@@ -671,11 +690,24 @@
                 </Grid>
 
                 <!-- Empty state -->
-                <Grid Grid.Row="3" Height="150" Width="{Binding ContentWidth}"
+                <Grid Grid.Row="3" Height="170" Width="{Binding ContentWidth}"
                       Visibility="{Binding IsEmpty, Converter={StaticResource BoolToVisibility}}">
                     <Rectangle Stroke="{DynamicResource Pouch.TextMuted}" StrokeThickness="1.5" StrokeDashArray="4 3" RadiusX="12" RadiusY="12"/>
                     <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                        <Border Width="44" Height="44" CornerRadius="22" Background="{DynamicResource Pouch.AccentSoft}" Margin="0,0,0,10">
+                        <views:Mascot x:Name="EmptyMascot" Width="72" Height="72" Margin="0,-4,0,4"
+                                      Visibility="{Binding ShowMascot, Converter={StaticResource BoolToVisibility}}">
+                            <views:Mascot.Style>
+                                <Style TargetType="views:Mascot">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsFiltering}" Value="True">
+                                            <Setter Property="Mood" Value="Puzzled"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </views:Mascot.Style>
+                        </views:Mascot>
+                        <Border Width="44" Height="44" CornerRadius="22" Background="{DynamicResource Pouch.AccentSoft}" Margin="0,0,0,10"
+                                Visibility="{Binding ShowMascot, Converter={StaticResource InverseBoolToVisibility}}">
                             <ui:SymbolIcon Symbol="ArrowDownload24" FontSize="20" Foreground="{DynamicResource Pouch.Accent}"/>
                         </Border>
                         <TextBlock Text="{Binding EmptyTitle}" FontSize="13" FontWeight="SemiBold" HorizontalAlignment="Center"
@@ -732,9 +764,23 @@
                         CornerRadius="{DynamicResource Pouch.InnerCornerRadius}"
                         BorderBrush="{DynamicResource Pouch.Accent}" Background="{DynamicResource Pouch.AccentSoft}">
                     <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                        <ui:SymbolIcon Symbol="ArrowDownload24" FontSize="24" Foreground="{DynamicResource Pouch.Accent}" HorizontalAlignment="Center"/>
-                        <TextBlock Text="Release to add" FontSize="12.5" FontWeight="SemiBold" Margin="0,6,0,0"
-                                   Foreground="{DynamicResource Pouch.Accent}"/>
+                        <views:Mascot Mood="Excited" Width="60" Height="60"
+                                      Visibility="{Binding ShowMascot, Converter={StaticResource BoolToVisibility}}"/>
+                        <ui:SymbolIcon Symbol="ArrowDownload24" FontSize="24" Foreground="{DynamicResource Pouch.Accent}" HorizontalAlignment="Center"
+                                       Visibility="{Binding ShowMascot, Converter={StaticResource InverseBoolToVisibility}}"/>
+                        <TextBlock FontSize="12.5" FontWeight="SemiBold" Margin="0,6,0,0" HorizontalAlignment="Center"
+                                   Foreground="{DynamicResource Pouch.Accent}">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Text" Value="Release to add"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding ShowMascot}" Value="True">
+                                            <Setter Property="Text" Value="Yum! Release to add"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
                     </StackPanel>
                 </Border>
 

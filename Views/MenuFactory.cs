@@ -94,6 +94,46 @@ namespace Pouchy.Views
         /// <summary>A non-clickable app header ("Pouchy" plus a status line) for the top of a menu.</summary>
         public static Separator Header(string subtitle) => new() { Style = Style("PouchMenuHeader"), Tag = subtitle };
 
+        /// <summary>
+        /// A submenu that lays its entries out as a grid of square tiles (icon and colour pickers).
+        /// </summary>
+        public static MenuItem Grid(string header, SymbolRegular symbol, IEnumerable<(object Content, string ToolTip, bool Checked, Action Action)> tiles, int columns)
+        {
+            var panel = new FrameworkElementFactory(typeof(WrapPanel));
+            panel.SetValue(FrameworkElement.WidthProperty, columns * 40.0);
+            panel.SetValue(FrameworkElement.MarginProperty, new Thickness(4, 0, 4, 0));
+
+            var submenu = Submenu(header, symbol, Array.Empty<object>());
+            submenu.ItemsPanel = new ItemsPanelTemplate(panel);
+            foreach (var (content, toolTip, isChecked, action) in tiles)
+            {
+                var tile = new MenuItem { Header = content, ToolTip = toolTip, IsChecked = isChecked, Style = Style("PouchMenuTile") };
+                tile.Click += (_, _) =>
+                {
+                    try
+                    {
+                        action();
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.Log("Menu action failed: " + ex);
+                        ErrorHandler?.Invoke(ex);
+                    }
+                };
+                submenu.Items.Add(tile);
+            }
+            return submenu;
+        }
+
+        /// <summary>A shelf's icon in its colour, as a menu icon.</summary>
+        public static SymbolIcon ShelfIcon(Models.Shelf shelf, double size = 15) => new()
+        {
+            Symbol = Enum.TryParse<SymbolRegular>($"{shelf.Icon}24", out var symbol) ? symbol : SymbolRegular.Archive24,
+            Filled = true,
+            FontSize = size,
+            Foreground = shelf.ColorBrush,
+        };
+
         /// <summary>A small filled circle, used as the icon for colour choices.</summary>
         public static Ellipse Dot(Brush fill, bool ring = false) => new()
         {
