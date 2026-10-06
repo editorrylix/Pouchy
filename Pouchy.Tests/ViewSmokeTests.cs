@@ -92,8 +92,8 @@ namespace Pouchy.Tests
                 foreach (var item in CreateSampleItems(folder, factory)) vm.Items.Add(item);
                 vm.Items[0].Label = ColorLabel.Red;
                 vm.Items[2].Label = ColorLabel.Blue;
-                vm.NewShelf("Screenshots");
-                vm.NewShelf("Reading list");
+                vm.NewShelf("Work");
+                vm.NewShelf("Ideas");
                 vm.ActivateShelf(vm.Shelves[0]);
 
                 foreach (var theme in themes.Themes)
@@ -234,6 +234,9 @@ namespace Pouchy.Tests
             });
         }
 
+        /// <summary>POUCHY_RENDER_MARKETING=1: transparent backgrounds and only "happy path" items, for README images.</summary>
+        private static bool Marketing => Environment.GetEnvironmentVariable("POUCHY_RENDER_MARKETING") == "1";
+
         private static IEnumerable<PouchItem> CreateSampleItems(TestFolder folder, ItemFactory factory)
         {
             string photo = Path.Combine(folder.Path, "Sunset photo.png");
@@ -251,7 +254,16 @@ namespace Pouchy.Tests
             var note = factory.CreateText("Remember to email the designs to the team before Friday.");
             note.IsPinned = true;
             yield return note;
-            yield return factory.CreateFromPath(Path.Combine(folder.Path, "Deleted report.pdf"));
+            if (Marketing)
+            {
+                string beach = Path.Combine(folder.Path, "Beach day.png");
+                SaveSamplePng(beach, Color.FromRgb(255, 196, 120), Color.FromRgb(40, 170, 220));
+                yield return factory.CreateFromPath(beach);
+            }
+            else
+            {
+                yield return factory.CreateFromPath(Path.Combine(folder.Path, "Deleted report.pdf"));
+            }
             yield return factory.CreateLink("https://github.com/editorrylix/Pouchy");
             yield return factory.CreateColor("#FF8A5B");
         }
@@ -261,8 +273,12 @@ namespace Pouchy.Tests
             var visual = new DrawingVisual();
             using (var dc = visual.RenderOpen())
             {
-                dc.DrawRectangle(new LinearGradientBrush(from, to, 90), null, new Rect(0, 0, 320, 240));
-                dc.DrawEllipse(Brushes.Gold, null, new Point(220, 90), 40, 40);
+                dc.DrawRectangle(new LinearGradientBrush(to, from, 90), null, new Rect(0, 0, 320, 240));
+                dc.DrawEllipse(new SolidColorBrush(Color.FromArgb(235, 255, 236, 160)), null, new Point(220, 110), 34, 34);
+                var far = Geometry.Parse("M0,170 L60,120 L110,150 L170,95 L240,145 L320,110 L320,240 L0,240 Z");
+                var near = Geometry.Parse("M0,200 L70,160 L140,195 L210,150 L280,190 L320,175 L320,240 L0,240 Z");
+                dc.DrawGeometry(new SolidColorBrush(Color.FromArgb(150, 30, 20, 60)), null, far);
+                dc.DrawGeometry(new SolidColorBrush(Color.FromArgb(220, 20, 12, 40)), null, near);
             }
             var bitmap = new RenderTargetBitmap(320, 240, 96, 96, PixelFormats.Pbgra32);
             bitmap.Render(visual);
@@ -290,18 +306,18 @@ namespace Pouchy.Tests
             Dispatcher.CurrentDispatcher.Invoke(() => { }, DispatcherPriority.ApplicationIdle);
             window.UpdateLayout();
 
-            var root = (FrameworkElement)window.Content;
-            // Everything drawn (shadows and sparkles can spill outside the layout box), mapped 1:1.
+            // The whole window, including its transparent shadow margin, mapped 1:1.
+            var root = (Visual)window;
             var bounds = VisualTreeHelper.GetDescendantBounds(root);
-            bounds.Union(new Rect(0, 0, root.ActualWidth, root.ActualHeight));
+            bounds.Union(new Rect(0, 0, window.ActualWidth, window.ActualHeight));
             double width = Math.Ceiling(bounds.Width + 40);
             double height = Math.Ceiling(bounds.Height + 40);
 
             var visual = new DrawingVisual();
             using (var dc = visual.RenderOpen())
             {
-                // A neutral desktop-like backdrop so translucent themes are visible.
-                dc.DrawRectangle(new LinearGradientBrush(Color.FromRgb(70, 90, 120), Color.FromRgb(150, 120, 160), 45), null, new Rect(0, 0, width, height));
+                // A neutral desktop-like backdrop so translucent themes are visible (transparent for README images).
+                if (!Marketing) dc.DrawRectangle(new LinearGradientBrush(Color.FromRgb(70, 90, 120), Color.FromRgb(150, 120, 160), 45), null, new Rect(0, 0, width, height));
                 var brush = new VisualBrush(root)
                 {
                     Stretch = Stretch.None,

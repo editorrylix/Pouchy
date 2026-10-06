@@ -134,7 +134,8 @@ namespace Pouchy.Interop
                 var pixels = new byte[stride * height];
                 Marshal.Copy(dib.dsBm.bmBits, pixels, 0, pixels.Length);
 
-                if (dib.dsBmih.biHeight > 0) FlipRows(pixels, stride, height);
+                // The shell hands out top-down DIBs. GetObject reports their height as positive anyway,
+                // so it can't be used to detect row order (flipping on it turned photos upside down).
 
                 bool hasAlpha = false;
                 for (int i = 3; i < pixels.Length; i += 4)
@@ -156,18 +157,6 @@ namespace Pouchy.Interop
                 hbitmap, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
             fallback.Freeze();
             return fallback;
-        }
-
-        /// <summary>Bottom-up DIBs store the last row first.</summary>
-        private static void FlipRows(byte[] pixels, int stride, int height)
-        {
-            var row = new byte[stride];
-            for (int top = 0, bottom = height - 1; top < bottom; top++, bottom--)
-            {
-                Buffer.BlockCopy(pixels, top * stride, row, 0, stride);
-                Buffer.BlockCopy(pixels, bottom * stride, pixels, top * stride, stride);
-                Buffer.BlockCopy(row, 0, pixels, bottom * stride, stride);
-            }
         }
     }
 }
