@@ -249,8 +249,8 @@ If Pouchy saves you a few Alt-Tabs a day, a ⭐ helps other Windows users find i
 
 Pouchy is an independent project. If it makes your day a little smoother, you can keep it going:
 
-<a href="https://buymeacoffee.com/notrishi">
-  <img src="https://img.buymeacoffee.com/button-api/?text=Buy%20me%20a%20coffee&emoji=☕&slug=notrishi&button_colour=8B7CFF&font_colour=ffffff&font_family=Inter&outline_colour=000000&coffee_colour=FFDD00" alt="Buy me a coffee" height="44" />
+<a href="https://buymeacoffee.com/notrishi" target="_blank">
+  <img src="Assets/buymeacoffee.png" alt="Buy me a coffee" height="44" />
 </a>
 
 <a id="license"></a>
