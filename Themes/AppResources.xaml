@@ -7,6 +7,15 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:helpers="clr-namespace:Pouchy.Helpers">
 
+    <!-- Fallbacks for the theme tokens menus and dialogs use. ThemeService writes the real values
+         into the application resources at startup, which take precedence over these. -->
+    <SolidColorBrush x:Key="Pouch.MenuBackground" Color="#FF1F1F26"/>
+    <SolidColorBrush x:Key="Pouch.Text" Color="#FFF5F5F7"/>
+    <SolidColorBrush x:Key="Pouch.TextSecondary" Color="#B3FFFFFF"/>
+    <SolidColorBrush x:Key="Pouch.TextMuted" Color="#80FFFFFF"/>
+    <SolidColorBrush x:Key="Pouch.TileHover" Color="#22FFFFFF"/>
+    <SolidColorBrush x:Key="Pouch.TileBorder" Color="#24FFFFFF"/>
+
     <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
     <helpers:InverseBooleanToVisibilityConverter x:Key="InverseBoolToVisibility" />
     <helpers:NullToVisibilityConverter x:Key="NullToVisibility" />
@@ -18,17 +27,25 @@
         <Setter Property="FontSize" Value="12"/>
         <Setter Property="Foreground" Value="{DynamicResource Pouch.Text}"/>
         <Setter Property="HasDropShadow" Value="False"/>
+        <Setter Property="Background" Value="{DynamicResource Pouch.MenuBackground}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource Pouch.TileBorder}"/>
+        <Setter Property="UseLayoutRounding" Value="True"/>
+        <Setter Property="TextOptions.TextFormattingMode" Value="Display"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="ContextMenu">
-                    <!-- Margin leaves room for the shadow inside the popup. -->
-                    <Border Margin="10" Padding="0,4" MinWidth="220" CornerRadius="10" BorderThickness="1"
-                            Background="{DynamicResource Pouch.MenuBackground}" BorderBrush="{DynamicResource Pouch.TileBorder}">
-                        <Border.Effect>
-                            <DropShadowEffect BlurRadius="18" ShadowDepth="4" Direction="270" Opacity="0.35"/>
-                        </Border.Effect>
-                        <ItemsPresenter KeyboardNavigation.DirectionalNavigation="Cycle"/>
-                    </Border>
+                    <!-- Margin leaves room for the shadow inside the popup. The shadow is a separate
+                         layer so the text isn't rendered through an Effect (which blurs it). -->
+                    <Grid Margin="12" MinWidth="220">
+                        <Border CornerRadius="10" Background="{TemplateBinding Background}">
+                            <Border.Effect>
+                                <DropShadowEffect BlurRadius="20" ShadowDepth="5" Direction="270" Opacity="0.4"/>
+                            </Border.Effect>
+                        </Border>
+                        <Border Padding="0,5" CornerRadius="10" BorderThickness="1" BorderBrush="{TemplateBinding BorderBrush}">
+                            <ItemsPresenter KeyboardNavigation.DirectionalNavigation="Cycle"/>
+                        </Border>
+                    </Grid>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
@@ -72,13 +89,16 @@
                         <Popup x:Name="PART_Popup" Placement="Right" HorizontalOffset="-8" VerticalOffset="-14" AllowsTransparency="True"
                                Focusable="False" PopupAnimation="Fade"
                                IsOpen="{Binding IsSubmenuOpen, RelativeSource={RelativeSource TemplatedParent}}">
-                            <Border Margin="10" Padding="0,4" MinWidth="180" CornerRadius="10" BorderThickness="1"
-                                    Background="{DynamicResource Pouch.MenuBackground}" BorderBrush="{DynamicResource Pouch.TileBorder}">
-                                <Border.Effect>
-                                    <DropShadowEffect BlurRadius="18" ShadowDepth="4" Direction="270" Opacity="0.35"/>
-                                </Border.Effect>
-                                <ItemsPresenter KeyboardNavigation.DirectionalNavigation="Cycle"/>
-                            </Border>
+                            <Grid Margin="12" MinWidth="180" UseLayoutRounding="True" TextOptions.TextFormattingMode="Display">
+                                <Border CornerRadius="10" Background="{DynamicResource Pouch.MenuBackground}">
+                                    <Border.Effect>
+                                        <DropShadowEffect BlurRadius="20" ShadowDepth="5" Direction="270" Opacity="0.4"/>
+                                    </Border.Effect>
+                                </Border>
+                                <Border Padding="0,5" CornerRadius="10" BorderThickness="1" BorderBrush="{DynamicResource Pouch.TileBorder}">
+                                    <ItemsPresenter KeyboardNavigation.DirectionalNavigation="Cycle"/>
+                                </Border>
+                            </Grid>
                         </Popup>
                     </Grid>
                     <ControlTemplate.Triggers>

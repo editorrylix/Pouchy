@@ -1,5 +1,7 @@
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
+using System.Windows.Interop;
 using H.NotifyIcon;
 using Pouchy.Helpers;
 using Pouchy.Interop;
@@ -31,13 +33,18 @@ namespace Pouchy
         private PouchWindow? _pouchWindow;
         private SettingsWindow? _settingsWindow;
         private TaskbarIcon? _trayIcon;
+        private ContextMenu? _trayMenu;
         private DateTime _lastSpawn = DateTime.MinValue;
 
         protected override void OnStartup(StartupEventArgs e)
         {
             base.OnStartup(e);
 
-            _singleInstanceMutex = new Mutex(true, SingleInstanceMutexName, out bool isFirstInstance);
+            var options = StartupOptions.Parse(e.Args);
+            if (options.Profile != null) AppPaths.UseProfile(options.Profile);
+
+            string mutexName = options.Profile == null ? SingleInstanceMutexName : $"{SingleInstanceMutexName}.{options.Profile}";
+            _singleInstanceMutex = new Mutex(true, mutexName, out bool isFirstInstance);
             if (!isFirstInstance)
             {
                 // A second hook and a second writer to the same state file would fight.
@@ -53,6 +60,11 @@ namespace Pouchy
             _settings = new SettingsService();
             _startup = new StartupService();
             _startup.RefreshPathIfEnabled();
+
+            // WPF-UI applies its Mica backdrop to Application.MainWindow whenever the theme changes.
+            // On the transparent pouch window that draws a solid rectangle, so give it a hidden
+            // stand-in that never shows.
+            MainWindow = new Window { Width = 0, Height = 0, WindowStyle = WindowStyle.None, ShowInTaskbar = false, ShowActivated = false };
 
             // Themes first: every window binds to the theme's resources.
             _themes = new ThemeService(_settings, Resources, AppPaths.ThemesFolder, Dispatcher);
@@ -88,6 +100,16 @@ namespace Pouchy
                 if (e.PropertyName is nameof(PouchViewModel.StatusText) or "") UpdateTrayTooltip();
             };
             _settings.Changed += (_, _) => UpdateTrayTooltip();
+
+            if (options.ShowPouch) Dispatcher.BeginInvoke(ShowPouchAtScreenCenter, System.Windows.Threading.DispatcherPriority.ApplicationIdle);
+            if (options.ShowTrayMenu) Dispatcher.BeginInvoke(() => ShowTrayMenu(atScreenCenter: true), System.Windows.Threading.DispatcherPriority.ApplicationIdle);
+        }
+
+        private void ShowPouchAtScreenCenter()
+        {
+            int x = NativeMethods.GetSystemMetrics(0) / 2;
+            int y = NativeMethods.GetSystemMetrics(1) / 2;
+            _pouchWindow?.SpawnAt(x - 200, y);
         }
 
         private void RegisterExceptionHandlers()
@@ -126,19 +148,18 @@ namespace Pouchy
 
         private void SetupTrayIcon()
         {
-            // Rebuilt every time it opens so counts, checks and shelves are current.
-            var menu = MenuFactory.Create(Array.Empty<IEnumerable<object>>(), null);
-            menu.Opened += (_, _) => MenuFactory.Fill(menu, BuildTrayMenu());
-            MenuFactory.Fill(menu, BuildTrayMenu());
+            // The menu is opened by us rather than by the tray library, so it is styled and
+            // positioned exactly like the pouch's own menus.
+            _trayMenu = MenuFactory.Create(Array.Empty<IEnumerable<object>>(), null);
 
             _trayIcon = new TaskbarIcon
             {
                 Icon = LoadTrayIcon(),
                 ToolTipText = "Pouchy",
-                ContextMenu = menu,
                 NoLeftClickDelay = true,
             };
             _trayIcon.TrayLeftMouseUp += (_, _) => TogglePouchAtCursor();
+            _trayIcon.TrayRightMouseUp += (_, _) => ShowTrayMenu(atScreenCenter: false);
             UpdateTrayTooltip();
 
             // Icons created in code (not in XAML) must be created explicitly to appear.
@@ -161,12 +182,40 @@ namespace Pouchy
             }
         }
 
+        private void ShowTrayMenu(bool atScreenCenter)
+        {
+            if (_trayMenu == null) return;
+
+            // Rebuilt every time so counts, checks and shelves are current.
+            MenuFactory.Fill(_trayMenu, BuildTrayMenu());
+            if (atScreenCenter)
+            {
+                _trayMenu.Placement = PlacementMode.AbsolutePoint;
+                _trayMenu.HorizontalOffset = SystemParameters.PrimaryScreenWidth / 2 + 100;
+                _trayMenu.VerticalOffset = SystemParameters.PrimaryScreenHeight / 2 - 200;
+            }
+            else
+            {
+                _trayMenu.Placement = PlacementMode.MousePoint;
+            }
+            // The developer flag opens it without a click, so Windows won't give it focus; keep it open anyway.
+            _trayMenu.StaysOpen = atScreenCenter;
+            _trayMenu.IsOpen = true;
+
+            // Without this the menu doesn't close when you click somewhere else.
+            if (PresentationSource.FromVisual(_trayMenu) is HwndSource source)
+            {
+                NativeMethods.SetForegroundWindow(source.Handle);
+            }
+        }
+
         private List<List<object>> BuildTrayMenu()
         {
             var vm = _pouchViewModel!;
             var s = _settings!.Current;
             string hotkey = s.Hotkey.Enabled ? s.Hotkey.ToString() : "";
             string status = s.GesturesPaused ? $"{vm.StatusText} · gestures paused" : vm.StatusText;
+            if (AppPaths.Profile != null) status += $" · profile {AppPaths.Profile}";
 
             var header = new List<object> { MenuFactory.Header(status) };
 

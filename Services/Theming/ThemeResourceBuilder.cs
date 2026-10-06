@@ -113,7 +113,7 @@ namespace Pouchy.Services.Theming
 
             Color Color(string spec) => BrushParser.ParseColor(spec, context.SystemAccent);
 
-            // Menus and dialogs float over anything, so they use a nearly opaque version of the background.
+            // Menus and dialogs float over anything, so they use an opaque version of the background.
             Color MenuColor(string spec)
             {
                 var color = BrushParser.ParseBrush(spec, context.SystemAccent) switch
@@ -122,7 +122,7 @@ namespace Pouchy.Services.Theming
                     GradientBrush { GradientStops.Count: > 0 } gradient => gradient.GradientStops[0].Color,
                     _ => System.Windows.Media.Color.FromRgb(30, 30, 34),
                 };
-                return System.Windows.Media.Color.FromArgb(0xF7, color.R, color.G, color.B);
+                return System.Windows.Media.Color.FromArgb(0xFF, color.R, color.G, color.B);
             }
             Brush Brush(string spec) => BrushParser.ParseBrush(spec, context.SystemAccent);
 

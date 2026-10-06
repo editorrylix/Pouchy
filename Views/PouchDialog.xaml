@@ -12,6 +12,7 @@
         ResizeMode="NoResize"
         WindowStartupLocation="CenterOwner"
         FontFamily="{DynamicResource Pouch.FontFamily}"
+        UseLayoutRounding="True"
         TextOptions.TextFormattingMode="Display"
         PreviewKeyDown="Window_PreviewKeyDown">
 
@@ -45,9 +46,12 @@
         </Style>
     </Window.Resources>
 
-    <Border Margin="24" Padding="20,18,20,18" CornerRadius="{DynamicResource Pouch.CornerRadius}" BorderThickness="1"
-            Background="{DynamicResource Pouch.MenuBackground}" BorderBrush="{DynamicResource Pouch.Border}"
-            Effect="{DynamicResource Pouch.Shadow}">
+    <Grid Margin="24">
+        <!-- Shadow on its own layer so the dialog's text stays sharp. -->
+        <Border CornerRadius="{DynamicResource Pouch.CornerRadius}" Background="{DynamicResource Pouch.MenuBackground}"
+                Effect="{DynamicResource Pouch.Shadow}"/>
+    <Border Padding="20,18,20,18" CornerRadius="{DynamicResource Pouch.CornerRadius}" BorderThickness="1"
+            BorderBrush="{DynamicResource Pouch.Border}">
         <StackPanel>
             <TextBlock x:Name="TitleText" FontFamily="{DynamicResource Pouch.HeaderFontFamily}" FontSize="15" FontWeight="SemiBold"
                        Foreground="{DynamicResource Pouch.Text}" TextWrapping="Wrap"/>
@@ -76,4 +80,5 @@
             </StackPanel>
         </StackPanel>
     </Border>
+    </Grid>
 </Window>

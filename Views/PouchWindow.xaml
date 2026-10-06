@@ -27,6 +27,7 @@
         Focusable="True"
         ResizeMode="NoResize"
         FontFamily="{DynamicResource Pouch.FontFamily}"
+        UseLayoutRounding="True"
         TextOptions.TextFormattingMode="Display">
 
     <!--
@@ -469,19 +470,21 @@
     <!-- The 30px margin leaves room for the drop shadow. -->
     <Grid x:Name="RootGrid" Margin="30">
 
-        <Border x:Name="MainContainer" Opacity="0" Padding="14,12,14,14" BorderThickness="1"
-                CornerRadius="{DynamicResource Pouch.CornerRadius}"
-                Background="{DynamicResource Pouch.Background}"
-                BorderBrush="{DynamicResource Pouch.Border}"
-                Effect="{DynamicResource Pouch.Shadow}"
-                RenderTransformOrigin="0.5,0.5">
-            <Border.RenderTransform>
+        <Grid x:Name="MainContainer" Opacity="0" RenderTransformOrigin="0.5,0.5">
+            <Grid.RenderTransform>
                 <TransformGroup>
                     <ScaleTransform x:Name="WindowScale" ScaleX="1" ScaleY="1"/>
                     <TranslateTransform x:Name="WindowSlide" X="0"/>
                 </TransformGroup>
-            </Border.RenderTransform>
+            </Grid.RenderTransform>
 
+            <!-- Background and shadow live on their own layer: an Effect on the element that
+                 contains the text would make WPF render all of it soft and blurry. -->
+            <Border CornerRadius="{DynamicResource Pouch.CornerRadius}" BorderThickness="1"
+                    Background="{DynamicResource Pouch.Background}" BorderBrush="{DynamicResource Pouch.Border}"
+                    Effect="{DynamicResource Pouch.Shadow}"/>
+
+            <Border Padding="14,12,14,14" BorderThickness="1" BorderBrush="Transparent">
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/> <!-- header -->
@@ -785,7 +788,8 @@
                     </Grid.Triggers>
                 </Grid>
             </Grid>
-        </Border>
+            </Border>
+        </Grid>
 
         <!-- Edge tabs shown while docked -->
         <Border x:Name="EdgeTabLeft" CornerRadius="0,8,8,0" Width="14" Height="88" BorderThickness="0,1,1,1"
