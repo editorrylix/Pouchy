@@ -22,6 +22,7 @@ namespace Pouchy.Services
 
         public string DisplayName { get; set; } = "";
         public DateTime? AddedAt { get; set; }
+        public bool IsPinned { get; set; }
     }
 
     /// <summary>
@@ -119,6 +120,7 @@ namespace Pouchy.Services
                     TextContent = item.TextContent,
                     DisplayName = item.DisplayName,
                     AddedAt = item.AddedAt,
+                    IsPinned = item.IsPinned,
                 };
                 if (item.Kind == PouchItemKind.Image)
                 {

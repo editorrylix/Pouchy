@@ -1,0 +1,79 @@
+<Window x:Class="Pouchy.Views.PouchDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Pouchy"
+        Width="380"
+        SizeToContent="Height"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        Topmost="True"
+        ShowInTaskbar="False"
+        ResizeMode="NoResize"
+        WindowStartupLocation="CenterOwner"
+        FontFamily="{DynamicResource Pouch.FontFamily}"
+        TextOptions.TextFormattingMode="Display"
+        PreviewKeyDown="Window_PreviewKeyDown">
+
+    <Window.Resources>
+        <Style x:Key="DialogButton" TargetType="Button">
+            <Setter Property="MinWidth" Value="84"/>
+            <Setter Property="Height" Value="32"/>
+            <Setter Property="Margin" Value="8,0,0,0"/>
+            <Setter Property="Padding" Value="14,0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="{DynamicResource Pouch.Text}"/>
+            <Setter Property="Background" Value="{DynamicResource Pouch.Tile}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Grid>
+                            <Border CornerRadius="8" Background="{TemplateBinding Background}" BorderBrush="{DynamicResource Pouch.TileBorder}" BorderThickness="1"/>
+                            <Border x:Name="Hover" CornerRadius="8" Background="White" Opacity="0"/>
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" Margin="{TemplateBinding Padding}"/>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Hover" Property="Opacity" Value="0.1"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <Border Margin="24" Padding="20,18,20,18" CornerRadius="{DynamicResource Pouch.CornerRadius}" BorderThickness="1"
+            Background="{DynamicResource Pouch.MenuBackground}" BorderBrush="{DynamicResource Pouch.Border}"
+            Effect="{DynamicResource Pouch.Shadow}">
+        <StackPanel>
+            <TextBlock x:Name="TitleText" FontFamily="{DynamicResource Pouch.HeaderFontFamily}" FontSize="15" FontWeight="SemiBold"
+                       Foreground="{DynamicResource Pouch.Text}" TextWrapping="Wrap"/>
+            <TextBlock x:Name="MessageText" Margin="0,6,0,0" FontSize="12" TextWrapping="Wrap"
+                       Foreground="{DynamicResource Pouch.TextSecondary}"/>
+
+            <Border x:Name="InputBorder" Margin="0,14,0,0" CornerRadius="8" BorderThickness="1" Padding="8,2"
+                    Background="{DynamicResource Pouch.Tile}" BorderBrush="{DynamicResource Pouch.Accent}" Visibility="Collapsed">
+                <TextBox x:Name="InputBox" Background="Transparent" BorderThickness="0" FontSize="13" Padding="0,6"
+                         Foreground="{DynamicResource Pouch.Text}" CaretBrush="{DynamicResource Pouch.Accent}"
+                         SelectionBrush="{DynamicResource Pouch.Accent}" TextChanged="InputBox_TextChanged">
+                    <TextBox.Template>
+                        <ControlTemplate TargetType="TextBox">
+                            <ScrollViewer x:Name="PART_ContentHost" Focusable="False" Padding="{TemplateBinding Padding}"/>
+                        </ControlTemplate>
+                    </TextBox.Template>
+                </TextBox>
+            </Border>
+            <TextBlock x:Name="ErrorText" Margin="2,6,0,0" FontSize="11.5" TextWrapping="Wrap"
+                       Foreground="{DynamicResource Pouch.Danger}" Visibility="Collapsed"/>
+
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,18,0,0">
+                <Button x:Name="CancelButton" Content="Cancel" Style="{StaticResource DialogButton}" IsCancel="True" Click="Cancel_Click"/>
+                <Button x:Name="OkButton" Content="OK" Style="{StaticResource DialogButton}" IsDefault="True" Click="Ok_Click"
+                        Background="{DynamicResource Pouch.Accent}" Foreground="{DynamicResource Pouch.AccentText}"/>
+            </StackPanel>
+        </StackPanel>
+    </Border>
+</Window>

@@ -1,4 +1,6 @@
 using System.ComponentModel;
+using System.IO;
+using System.Windows.Controls;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Interop;
@@ -330,28 +332,74 @@ namespace Pouchy.Views
             return DragDropEffects.None;
         }
 
-        // ---------------------------------------------------------------- Drag out / click
+        // ---------------------------------------------------------------- Click, select, drag out
 
-        private void PouchItem_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        private bool _pressedOnItem;
+        private PouchItem? _collapseSelectionTo;
+
+        private void PouchItem_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
+            if (sender is not FrameworkElement { DataContext: PouchItem item }) return;
+            if (IsInsideButton(e.OriginalSource as DependencyObject)) return; // Tile copy/remove buttons.
+
             _dragStartPoint = e.GetPosition(null);
+            _pressedOnItem = true;
+            _collapseSelectionTo = null;
+
+            if (e.ClickCount == 2)
+            {
+                _pressedOnItem = false;
+                OpenItem(item);
+                e.Handled = true;
+                return;
+            }
+
+            // Pressing on an item that's part of a multi-selection: keep the selection so it can
+            // be dragged as a group. A plain click (no drag) narrows it on mouse up instead.
+            if (PouchItemsControl.SelectedItems.Count > 1 && PouchItemsControl.SelectedItems.Contains(item) &&
+                Keyboard.Modifiers == ModifierKeys.None)
+            {
+                _collapseSelectionTo = item;
+                e.Handled = true;
+            }
         }
 
         private void PouchItem_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
         {
-            if (!IsBeyondDragThreshold(e) && sender is FrameworkElement { DataContext: PouchItem item })
+            if (_collapseSelectionTo != null && !IsBeyondDragThreshold(e))
             {
-                OpenQuickLook(item);
+                PouchItemsControl.SelectedItems.Clear();
+                PouchItemsControl.SelectedItem = _collapseSelectionTo;
             }
+            _collapseSelectionTo = null;
+            _pressedOnItem = false;
         }
 
         private void PouchItem_MouseMove(object sender, MouseEventArgs e)
         {
-            if (e.LeftButton == MouseButtonState.Pressed && IsBeyondDragThreshold(e) &&
-                sender is FrameworkElement { DataContext: PouchItem item } element)
+            if (!_pressedOnItem || e.LeftButton != MouseButtonState.Pressed || !IsBeyondDragThreshold(e)) return;
+            if (sender is not FrameworkElement { DataContext: PouchItem item } element) return;
+
+            _pressedOnItem = false;
+            _collapseSelectionTo = null;
+
+            // Dragging a selected item drags the whole selection.
+            IReadOnlyCollection<PouchItem> items = PouchItemsControl.SelectedItems.Contains(item)
+                ? GetSelectedItems()
+                : new[] { item };
+            PerformDragOut(element, items);
+        }
+
+        private static bool IsInsideButton(DependencyObject? element)
+        {
+            for (var current = element; current != null; current = current is Visual or System.Windows.Media.Media3D.Visual3D
+                     ? VisualTreeHelper.GetParent(current)
+                     : LogicalTreeHelper.GetParent(current))
             {
-                PerformDragOut(element, new[] { item });
+                if (current is System.Windows.Controls.Primitives.ButtonBase) return true;
+                if (current is ListBoxItem) return false;
             }
+            return false;
         }
 
         private void DragAll_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
@@ -406,34 +454,79 @@ namespace Pouchy.Views
 
         private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
         {
-            if (PouchItemsControl.SelectedItem is not PouchItem selected)
-            {
-                if (e.Key == Key.Escape)
-                {
-                    Despawn();
-                    e.Handled = true;
-                }
-                return;
-            }
+            var key = e.Key == Key.System ? e.SystemKey : e.Key;
+            var modifiers = Keyboard.Modifiers;
+            bool ctrl = modifiers == ModifierKeys.Control;
+            var selected = GetSelectedItems();
+            bool handled = true;
 
-            switch (e.Key)
+            switch (key)
             {
-                case Key.Space:
-                    OpenQuickLook(selected);
-                    e.Handled = true;
-                    break;
-                case Key.Delete:
-                    _vm.RemoveCommand.Execute(selected);
-                    e.Handled = true;
-                    break;
-                case Key.C when Keyboard.Modifiers == ModifierKeys.Control:
-                    _vm.CopyCommand.Execute(selected);
-                    e.Handled = true;
+                case Key.Escape when selected.Count > 0:
+                    PouchItemsControl.SelectedItems.Clear();
                     break;
                 case Key.Escape:
                     Despawn();
-                    e.Handled = true;
                     break;
+                case Key.A when ctrl:
+                    PouchItemsControl.SelectAll();
+                    break;
+                case Key.V when ctrl:
+                    RunAsync(_vm.PasteAsync);
+                    break;
+                case Key.N when ctrl:
+                    NewNote();
+                    break;
+                case Key.Apps:
+                case Key.F10 when modifiers == ModifierKeys.Shift:
+                    ShowItemMenuFromKeyboard();
+                    break;
+                default:
+                    handled = selected.Count > 0 && HandleSelectionKey(key, modifiers, selected);
+                    break;
+            }
+            if (handled) e.Handled = true;
+        }
+
+        /// <returns>True if the key did something.</returns>
+        private bool HandleSelectionKey(Key key, ModifierKeys modifiers, List<PouchItem> selected)
+        {
+            bool ctrl = modifiers == ModifierKeys.Control;
+            var paths = selected.SelectMany(i => i.FilePaths).ToList();
+            var existing = paths.Where(p => File.Exists(p) || Directory.Exists(p)).ToList();
+
+            switch (key)
+            {
+                case Key.Space:
+                    OpenQuickLook(selected[0]);
+                    return true;
+                case Key.Enter:
+                    if (selected.Count == 1) OpenItem(selected[0]);
+                    else OpenPaths(existing);
+                    return true;
+                case Key.F2 when selected.Count == 1:
+                    Rename(selected[0]);
+                    return true;
+                case Key.Delete when modifiers == ModifierKeys.Shift && existing.Count > 0 && selected.All(i => i.IsFileSystemItem):
+                    DeleteFromDisk(selected, existing);
+                    return true;
+                case Key.Delete:
+                    _vm.RemoveItems(selected);
+                    return true;
+                case Key.C when ctrl:
+                    PouchViewModel.CopyItems(selected);
+                    return true;
+                case Key.C when modifiers == (ModifierKeys.Control | ModifierKeys.Shift) && paths.Count > 0:
+                    PouchViewModel.CopyText(string.Join(Environment.NewLine, paths));
+                    return true;
+                case Key.P when ctrl:
+                    _vm.TogglePin(selected);
+                    return true;
+                case Key.G when ctrl && selected.Count > 1 && selected.All(i => i.IsFileSystemItem):
+                    RunAsync(() => _vm.GroupAsync(selected));
+                    return true;
+                default:
+                    return false;
             }
         }
 

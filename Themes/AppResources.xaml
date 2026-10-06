@@ -11,4 +11,99 @@
     <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
     <helpers:InverseBooleanToVisibilityConverter x:Key="InverseBoolToVisibility" />
     <helpers:NullToVisibilityConverter x:Key="NullToVisibility" />
+
+    <!-- ============================================================ Pouch context menus
+         Themed with the pouch's tokens. Applied by Views/PouchWindow.Menus.cs. -->
+    <Style x:Key="PouchContextMenu" TargetType="ContextMenu">
+        <Setter Property="FontFamily" Value="{DynamicResource Pouch.FontFamily}"/>
+        <Setter Property="FontSize" Value="12"/>
+        <Setter Property="Foreground" Value="{DynamicResource Pouch.Text}"/>
+        <Setter Property="HasDropShadow" Value="False"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ContextMenu">
+                    <!-- Margin leaves room for the shadow inside the popup. -->
+                    <Border Margin="10" Padding="0,4" MinWidth="220" CornerRadius="10" BorderThickness="1"
+                            Background="{DynamicResource Pouch.MenuBackground}" BorderBrush="{DynamicResource Pouch.TileBorder}">
+                        <Border.Effect>
+                            <DropShadowEffect BlurRadius="18" ShadowDepth="4" Direction="270" Opacity="0.35"/>
+                        </Border.Effect>
+                        <ItemsPresenter KeyboardNavigation.DirectionalNavigation="Cycle"/>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="PouchMenuSeparator" TargetType="Separator">
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Separator">
+                    <Rectangle Height="1" Margin="10,4" Fill="{DynamicResource Pouch.TileBorder}"/>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="PouchMenuItem" TargetType="MenuItem">
+        <Setter Property="Foreground" Value="{DynamicResource Pouch.Text}"/>
+        <Setter Property="FontFamily" Value="{DynamicResource Pouch.FontFamily}"/>
+        <Setter Property="FontSize" Value="12"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="MenuItem">
+                    <Grid>
+                        <Border x:Name="Bd" Margin="4,0" Padding="8,6" CornerRadius="6" Background="Transparent">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="26"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="16"/>
+                                </Grid.ColumnDefinitions>
+                                <ContentPresenter x:Name="IconHost" ContentSource="Icon" VerticalAlignment="Center" HorizontalAlignment="Left"
+                                                  TextElement.Foreground="{DynamicResource Pouch.TextSecondary}"/>
+                                <ContentPresenter Grid.Column="1" ContentSource="Header" RecognizesAccessKey="True" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="2" Text="{TemplateBinding InputGestureText}" Margin="24,0,0,0" FontSize="11"
+                                           VerticalAlignment="Center" Foreground="{DynamicResource Pouch.TextMuted}"/>
+                                <Path x:Name="Arrow" Grid.Column="3" Data="M0,0 L4,4 L0,8" Stroke="{DynamicResource Pouch.TextSecondary}"
+                                      StrokeThickness="1.5" HorizontalAlignment="Right" VerticalAlignment="Center" Visibility="Collapsed"/>
+                            </Grid>
+                        </Border>
+                        <Popup x:Name="PART_Popup" Placement="Right" HorizontalOffset="-8" VerticalOffset="-14" AllowsTransparency="True"
+                               Focusable="False" PopupAnimation="Fade"
+                               IsOpen="{Binding IsSubmenuOpen, RelativeSource={RelativeSource TemplatedParent}}">
+                            <Border Margin="10" Padding="0,4" MinWidth="180" CornerRadius="10" BorderThickness="1"
+                                    Background="{DynamicResource Pouch.MenuBackground}" BorderBrush="{DynamicResource Pouch.TileBorder}">
+                                <Border.Effect>
+                                    <DropShadowEffect BlurRadius="18" ShadowDepth="4" Direction="270" Opacity="0.35"/>
+                                </Border.Effect>
+                                <ItemsPresenter KeyboardNavigation.DirectionalNavigation="Cycle"/>
+                            </Border>
+                        </Popup>
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="Role" Value="SubmenuHeader">
+                            <Setter TargetName="Arrow" Property="Visibility" Value="Visible"/>
+                        </Trigger>
+                        <Trigger Property="IsHighlighted" Value="True">
+                            <Setter TargetName="Bd" Property="Background" Value="{DynamicResource Pouch.TileHover}"/>
+                        </Trigger>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="IconHost" Property="TextElement.Foreground" Value="{DynamicResource Pouch.Accent}"/>
+                            <Setter Property="Foreground" Value="{DynamicResource Pouch.Accent}"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.4"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Red text for destructive actions like "Delete from disk". -->
+    <Style x:Key="PouchDangerMenuItem" TargetType="MenuItem" BasedOn="{StaticResource PouchMenuItem}">
+        <Setter Property="Foreground" Value="{DynamicResource Pouch.Danger}"/>
+    </Style>
 </ResourceDictionary>

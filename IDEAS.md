@@ -225,6 +225,34 @@ Settings apply live, without a restart.
 
 ---
 
+## Phase 3 status ✅
+
+Done:
+- ✅ **Item right-click menu** (themed; options depend on the selection):
+  - Open / Open with… / Quick Look / Show in folder
+  - Copy, Copy path(s), Copy as "path", Copy name, Copy contents (text files), Copy image
+  - Rename on disk (stacks, images and missing files rename the label), Pin / Unpin, Group into stack, Ungroup
+  - Move to…, Copy to…, Compress to ZIP, Extract here
+  - Image ▸ convert to PNG/JPG, resize 50% / 25%, extract text (OCR), set as wallpaper
+  - Note ▸ edit, UPPER / lower / Title case, tidy whitespace, save as .txt, open link
+  - Share… (Windows share sheet) and **More options…**, which opens the real Explorer menu (7-Zip, Send to, etc.)
+  - Remove from pouch, Delete from disk (Recycle Bin, with confirmation)
+- ✅ **Background menu:** Paste, New note, Select all, View ▸, Theme ▸, Clear (keeps pinned), Settings.
+- ✅ **Multi-select** (Ctrl/Shift+click); dragging a selected item drags the whole selection.
+- ✅ **Keyboard:**
+  - Enter open, Space Quick Look, F2 rename/edit
+  - Del remove, Shift+Del delete from disk
+  - Ctrl+A/C/V/N/P/G, Ctrl+Shift+C copy paths
+  - Menu key or Shift+F10 opens the menu, Esc clears the selection then hides the pouch
+- ✅ **Pinned items:** pin badge on tiles, kept on Clear, saved across restarts.
+- ✅ Themed dialogs for rename, notes and confirmations.
+- Behaviour change: a single click now selects; double-click opens (files open in their app, other items in Quick Look).
+
+Deferred:
+- Rubber-band (box) selection, a drag-in Copy/Move/Link badge, and an undo for removals (Phase 4 history).
+
+---
+
 ## Phase 2 status ✅
 
 Done:
@@ -282,7 +310,7 @@ Deferred to later phases:
 |---|---|---|
 | **1. Foundation** ✅ | Stability | Git, MVVM, services, bug fixes, settings model, start with Windows |
 | **2. Look** ✅ | Identity | Theme engine, 4–5 built-in themes, redesigned pouch, view modes, animations |
-| **3. Interaction** | UX | Right-click menus, multi-select, keyboard support, Shell thumbnails, smart triggers |
+| **3. Interaction** ✅ | UX | Right-click menus, multi-select, keyboard support, Shell thumbnails, smart triggers |
 | **4. Organisation** | Power | Multiple shelves, pins, tags, search, full persistence, link and colour content types |
 | **5. Actions** | Pro | Drop actions, plugin interface, Explorer integration, clipboard history |
 | **6. Polish** | Release | Theme editor, command palette, installer, auto-update, sound packs |

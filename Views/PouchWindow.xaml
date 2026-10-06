@@ -22,6 +22,7 @@
         DragLeave="Window_DragLeave"
         Drop="Window_Drop"
         PreviewKeyDown="Window_PreviewKeyDown"
+        PreviewMouseRightButtonUp="Window_PreviewMouseRightButtonUp"
         Closing="Window_Closing"
         Focusable="True"
         ResizeMode="NoResize"
@@ -151,7 +152,7 @@
                         Width="{Binding DataContext.TileSize, RelativeSource={RelativeSource AncestorType=ListBox}}"
                         ToolTip="{Binding DisplayName}" ToolTipService.InitialShowDelay="600"
                         helpers:Motion.AnimateOnLoad="True"
-                        MouseLeftButtonDown="PouchItem_MouseLeftButtonDown"
+                        PreviewMouseLeftButtonDown="PouchItem_PreviewMouseLeftButtonDown"
                         MouseLeftButtonUp="PouchItem_MouseLeftButtonUp"
                         MouseMove="PouchItem_MouseMove">
                 <Grid x:Name="Tile" Height="{Binding DataContext.TileSize, RelativeSource={RelativeSource AncestorType=ListBox}}">
@@ -220,10 +221,16 @@
                         <TextBlock Text="{Binding StackCount}" FontSize="9.5" FontWeight="Bold" Foreground="{DynamicResource Pouch.AccentText}"
                                    HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </Border>
-                    <Border x:Name="MissingBadge" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="6" Width="18" Height="18"
-                            CornerRadius="9" Background="{DynamicResource Pouch.Warning}" Visibility="Collapsed" ToolTip="Moved or deleted">
-                        <TextBlock Text="!" FontSize="11" FontWeight="Bold" Foreground="#E6000000" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                    </Border>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="6">
+                        <Border x:Name="MissingBadge" Width="18" Height="18" Margin="0,0,3,0" CornerRadius="9"
+                                Background="{DynamicResource Pouch.Warning}" Visibility="Collapsed" ToolTip="Moved or deleted">
+                            <TextBlock Text="!" FontSize="11" FontWeight="Bold" Foreground="#E6000000" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <Border x:Name="PinBadge" Width="18" Height="18" CornerRadius="9" Background="{DynamicResource Pouch.Accent}"
+                                Visibility="Collapsed" ToolTip="Pinned: kept when you clear the pouch">
+                            <ui:SymbolIcon Symbol="Pin24" FontSize="10" Foreground="{DynamicResource Pouch.AccentText}"/>
+                        </Border>
+                    </StackPanel>
 
                     <!-- Hover actions -->
                     <StackPanel x:Name="Actions" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,5,5,0" Opacity="0"
@@ -289,6 +296,10 @@
                 <DataTrigger Binding="{Binding HasFileExtension}" Value="False">
                     <Setter TargetName="ExtensionBadge" Property="Visibility" Value="Collapsed"/>
                 </DataTrigger>
+                <DataTrigger Binding="{Binding IsPinned}" Value="True">
+                    <Setter TargetName="PinBadge" Property="Visibility" Value="Visible"/>
+                    <Setter TargetName="TextThumb" Property="Padding" Value="8,28,8,7"/>
+                </DataTrigger>
                 <DataTrigger Binding="{Binding IsMissing}" Value="True">
                     <Setter TargetName="MissingBadge" Property="Visibility" Value="Visible"/>
                     <Setter TargetName="FillThumb" Property="Opacity" Value="0.4"/>
@@ -311,7 +322,7 @@
         <DataTemplate x:Key="ListRowTemplate" DataType="{x:Type models:PouchItem}">
             <Grid x:Name="Row" Height="46" Margin="0,0,0,4" Background="Transparent" Cursor="Hand"
                   helpers:Motion.AnimateOnLoad="True"
-                  MouseLeftButtonDown="PouchItem_MouseLeftButtonDown"
+                  PreviewMouseLeftButtonDown="PouchItem_PreviewMouseLeftButtonDown"
                   MouseLeftButtonUp="PouchItem_MouseLeftButtonUp"
                   MouseMove="PouchItem_MouseMove">
                 <Border x:Name="RowBase" CornerRadius="{DynamicResource Pouch.TileCornerRadius}"
@@ -339,8 +350,16 @@
                     </Grid>
 
                     <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="8,0,4,0">
-                        <TextBlock Text="{Binding DisplayName}" FontSize="12" FontWeight="Medium"
-                                   Foreground="{DynamicResource Pouch.Text}" TextTrimming="CharacterEllipsis"/>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <ui:SymbolIcon x:Name="PinIcon" Symbol="Pin24" FontSize="11" Margin="0,0,4,0" Visibility="Collapsed"
+                                           Foreground="{DynamicResource Pouch.Accent}" ToolTip="Pinned"/>
+                            <TextBlock Grid.Column="1" Text="{Binding DisplayName}" FontSize="12" FontWeight="Medium"
+                                       Foreground="{DynamicResource Pouch.Text}" TextTrimming="CharacterEllipsis"/>
+                        </Grid>
                         <TextBlock x:Name="MetaText" Text="{Binding Metadata}" FontSize="10" Margin="0,1,0,0"
                                    Foreground="{DynamicResource Pouch.TextMuted}" TextTrimming="CharacterEllipsis"/>
                     </StackPanel>
@@ -384,6 +403,9 @@
                 </DataTrigger>
                 <DataTrigger Binding="{Binding Kind}" Value="Text">
                     <Setter TargetName="TextIcon" Property="Visibility" Value="Visible"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding IsPinned}" Value="True">
+                    <Setter TargetName="PinIcon" Property="Visibility" Value="Visible"/>
                 </DataTrigger>
                 <DataTrigger Binding="{Binding IsMissing}" Value="True">
                     <Setter TargetName="FillThumb" Property="Opacity" Value="0.4"/>
@@ -465,7 +487,7 @@
                         <Button Style="{StaticResource IconButton}" ToolTip="Settings" Command="{Binding OpenSettingsCommand}">
                             <ui:SymbolIcon Symbol="Settings24" FontSize="14"/>
                         </Button>
-                        <Button Style="{StaticResource DangerIconButton}" ToolTip="Clear all" Command="{Binding ClearCommand}"
+                        <Button Style="{StaticResource DangerIconButton}" ToolTip="Clear (keeps pinned items)" Command="{Binding ClearCommand}"
                                 Visibility="{Binding IsEmpty, Converter={StaticResource InverseBoolToVisibility}}">
                             <ui:SymbolIcon Symbol="Delete24" FontSize="14"/>
                         </Button>
@@ -493,7 +515,7 @@
                 <!-- Items -->
                 <ListBox Grid.Row="1" x:Name="PouchItemsControl" ItemsSource="{Binding Items}"
                          Width="{Binding ItemsAreaWidth}" MaxHeight="440" Margin="-4,-4,-4,0"
-                         Background="Transparent" BorderThickness="0" FocusVisualStyle="{x:Null}"
+                         Background="Transparent" BorderThickness="0" FocusVisualStyle="{x:Null}" SelectionMode="Extended"
                          ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Auto"
                          Visibility="{Binding IsEmpty, Converter={StaticResource InverseBoolToVisibility}}">
                     <ListBox.Template>

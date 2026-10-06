@@ -104,6 +104,51 @@ namespace Pouchy.Tests
                     }
                 }
 
+                // Context menus, hosted in a plain window so they can be rendered.
+                settings.Update(s => { s.ThemeId = "midnight"; s.ViewMode = PouchViewMode.Grid; });
+                vm.ThemeListProvider = () => themes.Themes.Select(t => (t.Id, t.Name)).ToList();
+                var buildItemMenu = typeof(PouchWindow).GetMethod("BuildItemMenu", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!;
+                var buildBackgroundMenu = typeof(PouchWindow).GetMethod("BuildBackgroundMenu", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!;
+                var newMenu = typeof(PouchWindow).GetMethod("NewMenu", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!;
+                var menus = new (string Name, object Groups)[]
+                {
+                    ("menu-image", buildItemMenu.Invoke(pouch, new object[] { new List<PouchItem> { vm.Items[0] } })!),
+                    ("menu-text", buildItemMenu.Invoke(pouch, new object[] { new List<PouchItem> { vm.Items[4] } })!),
+                    ("menu-multi", buildItemMenu.Invoke(pouch, new object[] { vm.Items.Take(3).ToList() })!),
+                    ("menu-background", buildBackgroundMenu.Invoke(pouch, null)!),
+                };
+                foreach (var (name, groups) in menus)
+                {
+                    // A ContextMenu can't live in a window, so move its items into a vertical Menu
+                    // wrapped in the same chrome as the PouchContextMenu template.
+                    var contextMenu = (System.Windows.Controls.ContextMenu)newMenu.Invoke(pouch, new[] { groups })!;
+                    var entries = contextMenu.Items.Cast<object>().ToList();
+                    contextMenu.Items.Clear();
+                    var panel = new System.Windows.Controls.Menu
+                    {
+                        Background = Brushes.Transparent,
+                        Template = (System.Windows.Controls.ControlTemplate)System.Windows.Markup.XamlReader.Parse(
+                            "<ControlTemplate xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation' TargetType='Menu'>" +
+                            "<StackPanel IsItemsHost='True'/></ControlTemplate>"),
+                    };
+                    foreach (var entry in entries) panel.Items.Add(entry);
+                    var chrome = new System.Windows.Controls.Border
+                    {
+                        Margin = new Thickness(10), Padding = new Thickness(0, 4, 0, 4), MinWidth = 220,
+                        CornerRadius = new CornerRadius(10), BorderThickness = new Thickness(1), Child = panel,
+                    };
+                    chrome.SetResourceReference(System.Windows.Controls.Border.BackgroundProperty, "Pouch.MenuBackground");
+                    chrome.SetResourceReference(System.Windows.Controls.Border.BorderBrushProperty, "Pouch.TileBorder");
+                    var host = new Window
+                    {
+                        Content = chrome, SizeToContent = SizeToContent.WidthAndHeight, WindowStyle = WindowStyle.None,
+                        AllowsTransparency = true, Background = Brushes.Transparent, ShowActivated = false, Left = -20000, Top = -20000,
+                    };
+                    host.Show();
+                    Render(host, Path.Combine(outDir, name + ".png"));
+                    host.Close();
+                }
+
                 var settingsWindow = new SettingsWindow(new SettingsViewModel(settings, new StartupService(), new HotkeyService(), themes))
                 {
                     ShowActivated = false, Left = -20000, Top = -20000,
@@ -132,7 +177,9 @@ namespace Pouchy.Tests
             yield return factory.CreateFromPath(notes);
             yield return factory.CreateFromPath(docs);
             yield return factory.CreateStack(new[] { photo2, photo, notes });
-            yield return factory.CreateText("Remember to email the designs to the team before Friday.");
+            var note = factory.CreateText("Remember to email the designs to the team before Friday.");
+            note.IsPinned = true;
+            yield return note;
             yield return factory.CreateFromPath(Path.Combine(folder.Path, "Deleted report.pdf"));
         }
 

@@ -62,7 +62,11 @@ namespace Pouchy
             var persistence = new PersistenceService();
             _thumbnails = new ShellThumbnailProvider();
             var factory = new ItemFactory(_thumbnails);
-            _pouchViewModel = new PouchViewModel(factory, persistence, _settings) { OpenSettingsAction = ShowSettings };
+            _pouchViewModel = new PouchViewModel(factory, persistence, _settings)
+            {
+                OpenSettingsAction = ShowSettings,
+                ThemeListProvider = () => _themes.Themes.Select(t => (t.Id, t.Name)).ToList(),
+            };
             _pouchWindow = new PouchWindow(_pouchViewModel);
             _ = _pouchViewModel.LoadAsync(clearInstead: _settings.Current.ClearOnStartup);
 

@@ -15,6 +15,7 @@ namespace Pouchy.Services.Theming
     public static class ThemeKeys
     {
         public const string Background = "Pouch.Background";
+        public const string MenuBackground = "Pouch.MenuBackground";
         public const string Border = "Pouch.Border";
         public const string Shadow = "Pouch.Shadow";
         public const string CornerRadius = "Pouch.CornerRadius";
@@ -82,6 +83,7 @@ namespace Pouchy.Services.Theming
             return new Dictionary<string, object>
             {
                 [ThemeKeys.Background] = background,
+                [ThemeKeys.MenuBackground] = Solid(MenuColor(colors.Background)),
                 [ThemeKeys.Border] = Brush(colors.Border),
                 [ThemeKeys.Shadow] = shadow,
                 [ThemeKeys.CornerRadius] = new CornerRadius(radius),
@@ -110,6 +112,18 @@ namespace Pouchy.Services.Theming
             };
 
             Color Color(string spec) => BrushParser.ParseColor(spec, context.SystemAccent);
+
+            // Menus and dialogs float over anything, so they use a nearly opaque version of the background.
+            Color MenuColor(string spec)
+            {
+                var color = BrushParser.ParseBrush(spec, context.SystemAccent) switch
+                {
+                    SolidColorBrush solid => solid.Color,
+                    GradientBrush { GradientStops.Count: > 0 } gradient => gradient.GradientStops[0].Color,
+                    _ => System.Windows.Media.Color.FromRgb(30, 30, 34),
+                };
+                return System.Windows.Media.Color.FromArgb(0xF7, color.R, color.G, color.B);
+            }
             Brush Brush(string spec) => BrushParser.ParseBrush(spec, context.SystemAccent);
 
             static SolidColorBrush Solid(Color color)

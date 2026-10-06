@@ -125,10 +125,9 @@ namespace Pouchy.Services
                 _ => null,
             };
 
-            if (item != null && !string.IsNullOrEmpty(saved.DisplayName) && kind != PouchItemKind.Stack)
-            {
-                item.DisplayName = saved.DisplayName;
-            }
+            if (item == null) return null;
+            if (!string.IsNullOrEmpty(saved.DisplayName)) item.DisplayName = saved.DisplayName;
+            item.IsPinned = saved.IsPinned;
             return item;
         }
 

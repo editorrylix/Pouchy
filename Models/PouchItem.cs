@@ -67,11 +67,16 @@ namespace Pouchy.Models
         [ObservableProperty]
         private ThumbnailStyle _thumbnailStyle = ThumbnailStyle.Icon;
 
+        /// <summary>Pinned items survive "Clear".</summary>
+        [ObservableProperty]
+        private bool _isPinned;
+
         /// <summary>True when the file(s) this item points to no longer exist.</summary>
         [ObservableProperty]
         private bool _isMissing;
 
         public bool IsStack => Kind == PouchItemKind.Stack;
+        public bool IsFileSystemItem => Kind is PouchItemKind.File or PouchItemKind.Folder or PouchItemKind.Stack;
         public bool HasFileExtension => FileExtension.Length > 0;
         public int StackCount => StackFiles?.Count ?? 0;
 
