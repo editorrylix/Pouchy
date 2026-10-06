@@ -97,7 +97,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           $v = '${{ steps.version.outputs.version }}'
-          $ghArgs = @('release', 'create', 'v' + $v, '--title', "Pouchy $v", '--notes-file', 'notes.md', '--verify-tag')
+          $ghArgs = @('release', 'create', "v$v", '--title', "Pouchy $v", '--notes-file', 'notes.md', '--verify-tag')
           if ('${{ steps.version.outputs.prerelease }}' -eq 'true') { $ghArgs += '--prerelease' } else { $ghArgs += '--latest' }
           $ghArgs += Get-ChildItem dist | ForEach-Object { $_.FullName }
           gh @ghArgs
