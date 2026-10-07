@@ -78,6 +78,12 @@ namespace Pouchy
 
             _settings = new SettingsService();
             _startup = new StartupService();
+            // Start with Windows by default, decided once on the very first run so turning it off sticks.
+            // Developer profiles never touch it: the startup entry is shared with the normal copy.
+            if (_settings.IsFirstRun && options.Profile == null)
+            {
+                _startup.SetEnabled(true);
+            }
             _startup.RefreshPathIfEnabled();
             _explorer = new ExplorerIntegrationService(options.Profile);
             _explorer.RefreshPathIfEnabled();
@@ -127,8 +133,7 @@ namespace Pouchy
             {
                 if (action == HotkeyAction.Screenshot) TakeScreenshot();
             };
-            _hotkeys.Register(_settings.Current.Hotkey);
-            _hotkeys.Register(_settings.Current.ScreenshotHotkey, HotkeyAction.Screenshot);
+            RegisterHotkeys();
 
             _clipboard = new ClipboardMonitor(Dispatcher);
             _clipboard.Changed += OnClipboardChanged;
@@ -186,6 +191,33 @@ namespace Pouchy
                 });
             }
             if (options.ShowTrayMenu) Dispatcher.BeginInvoke(() => ShowTrayMenu(atScreenCenter: true), System.Windows.Threading.DispatcherPriority.ApplicationIdle);
+        }
+
+        /// <summary>
+        /// Registers both hotkeys. If a default one is already taken by another app (and the user
+        /// never picked their own), a free alternative is used and saved, so the hotkey always works.
+        /// </summary>
+        private void RegisterHotkeys()
+        {
+            var s = _settings!.Current;
+            Register(s.Hotkey, HotkeyAction.TogglePouch, s.HotkeyCustomized, h => s.Hotkey = h);
+            Register(s.ScreenshotHotkey, HotkeyAction.Screenshot, s.ScreenshotHotkeyCustomized, h => s.ScreenshotHotkey = h);
+
+            void Register(Models.HotkeySetting hotkey, HotkeyAction action, bool customized, Action<Models.HotkeySetting> save)
+            {
+                if (!hotkey.Enabled) return;
+                if (customized)
+                {
+                    _hotkeys!.Register(hotkey, action);
+                    return;
+                }
+                var registered = _hotkeys!.RegisterOrFallback(hotkey, action, HotkeyService.Alternatives(action));
+                if (registered != null && registered != hotkey)
+                {
+                    Logger.Log($"{hotkey} is taken by another app; using {registered} for {action}.");
+                    _settings.Update(x => save(registered));
+                }
+            }
         }
 
         // ---------------------------------------------------------------- Add to Pouchy

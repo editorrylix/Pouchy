@@ -407,7 +407,11 @@ namespace Pouchy.ViewModels
 
             ScreenshotHotkeyError = null;
             ScreenshotHotkeyText = candidate.ToString();
-            _settings.Update(s => s.ScreenshotHotkey = candidate);
+            _settings.Update(s =>
+            {
+                s.ScreenshotHotkey = candidate;
+                s.ScreenshotHotkeyCustomized = true;
+            });
         }
 
         /// <summary>Called by the hotkey recorder box.</summary>
@@ -436,7 +440,11 @@ namespace Pouchy.ViewModels
 
             HotkeyError = null;
             HotkeyText = candidate.ToString();
-            _settings.Update(s => s.Hotkey = candidate);
+            _settings.Update(s =>
+            {
+                s.Hotkey = candidate;
+                s.HotkeyCustomized = true;
+            });
         }
 
         [RelayCommand]

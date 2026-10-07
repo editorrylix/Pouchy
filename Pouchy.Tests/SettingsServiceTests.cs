@@ -97,5 +97,30 @@ namespace Pouchy.Tests
             var hotkey = new HotkeySetting { Modifiers = ModifierKeys.Alt | ModifierKeys.Shift, Key = Key.Z };
             Assert.Equal("Alt + Shift + Z", hotkey.ToString());
         }
+    
+        [Fact]
+        public void IsFirstRun_OnlyWithoutASettingsFile()
+        {
+            using var folder = new TestFolder();
+            string file = System.IO.Path.Combine(folder.Path, "settings.json");
+
+            Assert.True(new SettingsService(file).IsFirstRun);
+            Assert.False(new SettingsService(file).IsFirstRun); // The first run wrote the file.
+        }
+
+        [Fact]
+        public void NullListsFromOldFiles_AreRepaired()
+        {
+            using var folder = new TestFolder();
+            string file = System.IO.Path.Combine(folder.Path, "settings.json");
+            System.IO.File.WriteAllText(file, "{ \"ScreenshotHotkey\": null, \"RecentDestinations\": null, \"HiddenActions\": null, \"SoundVolume\": 7 }");
+
+            var s = new SettingsService(file).Current;
+
+            Assert.NotNull(s.ScreenshotHotkey);
+            Assert.Empty(s.RecentDestinations);
+            Assert.Empty(s.HiddenActions);
+            Assert.Equal(1, s.SoundVolume);
+        }
     }
 }

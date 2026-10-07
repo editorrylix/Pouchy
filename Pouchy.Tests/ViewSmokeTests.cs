@@ -105,6 +105,7 @@ namespace Pouchy.Tests
                 Assert.True(hasTiles);
                 typeof(PouchWindow).GetMethod("ShowActionTiles", flags)!.Invoke(pouch, new object[] { true });
                 var overlay = (FrameworkElement)pouch.FindName("DropOverlay");
+                overlay.Visibility = Visibility.Visible;
                 overlay.Opacity = 1;
                 var strip = (System.Windows.Controls.ItemsControl)pouch.FindName("ActionStrip");
                 var labels = strip.ItemsSource.Cast<ActionTile>().Select(t => t.Label).ToList();
@@ -114,6 +115,31 @@ namespace Pouchy.Tests
                 if (outDir != null) Render(pouch, Path.Combine(outDir, "drop-actions.png"));
                 typeof(PouchWindow).GetMethod("ShowActionTiles", flags)!.Invoke(pouch, new object[] { false });
                 overlay.Opacity = 0;
+
+                // A simulated drag: entering shows the tiles, dropping on "Zip" makes and adds the archive.
+                string doc = folder.File("report.txt", "quarterly numbers");
+                var drag = new DataObject(DataFormats.FileDrop, new[] { doc });
+                typeof(PouchWindow).GetMethod("Window_DragEnter", flags)!.Invoke(pouch, new object[] { pouch, NewDragArgs(drag, pouch) });
+                Pump();
+                Assert.Equal(Visibility.Visible, strip.Visibility);
+                Assert.Equal(Visibility.Visible, overlay.Visibility);
+                var zipTile = Enumerable.Range(0, strip.Items.Count)
+                    .Select(i => FindChild<System.Windows.Controls.Border>(strip.ItemContainerGenerator.ContainerFromIndex(i)))
+                    .First(b => b?.DataContext is ActionTile { Label: "Zip" })!;
+                typeof(PouchWindow).GetMethod("ActionTile_Drop", flags)!.Invoke(pouch, new object[] { zipTile, NewDragArgs(drag, zipTile) });
+                Assert.True(PumpUntil(() => vm.Items.Any(i => i.FilePath?.EndsWith("report.zip") == true)), "The zip wasn't added");
+                Assert.True(File.Exists(Path.Combine(folder.Path, "report.zip")));
+                Assert.DoesNotContain(vm.Items, i => i.FilePath == doc); // Dropped on an action, not into the pouch.
+                Assert.True(PumpUntil(() => overlay.Visibility == Visibility.Collapsed), "The overlay stayed up");
+
+                // Dropping on the pouch itself adds the files; a smart shelf takes the image.
+                var pictures = vm.NewShelf("Pictures");
+                vm.SetShelfRule(pictures, ShelfRule.Images);
+                vm.ActivateShelf(vm.Shelves[0]);
+                var photo = new DataObject(DataFormats.FileDrop, new[] { folder.File("holiday.jpg") });
+                typeof(PouchWindow).GetMethod("Window_Drop", flags)!.Invoke(pouch, new object[] { pouch, NewDragArgs(photo, pouch) });
+                Assert.True(PumpUntil(() => pictures.Items.Count == 1), "The image didn't go to the smart shelf");
+                Assert.Equal("Added to “Pictures”", vm.Notice);
 
                 vm.ShowNotice("Added to “Links”");
                 if (outDir != null) Render(pouch, Path.Combine(outDir, "notice.png"));
@@ -333,6 +359,7 @@ namespace Pouchy.Tests
                 var dragged = new DataObject(DataFormats.FileDrop, new[] { vm.Items[0].FilePath! });
                 typeof(PouchWindow).GetMethod("PrepareActionTiles", flags)!.Invoke(pouch, new object[] { dragged });
                 typeof(PouchWindow).GetMethod("ShowActionTiles", flags)!.Invoke(pouch, new object[] { true });
+                ((FrameworkElement)pouch.FindName("DropOverlay")).Visibility = Visibility.Visible;
                 ((FrameworkElement)pouch.FindName("DropOverlay")).Opacity = 1;
                 Render(pouch, Path.Combine(outDir, "readme-actions.png"));
                 typeof(PouchWindow).GetMethod("ShowActionTiles", flags)!.Invoke(pouch, new object[] { false });
@@ -403,6 +430,43 @@ namespace Pouchy.Tests
             encoder.Frames.Add(BitmapFrame.Create(bitmap));
             using var stream = File.Create(path);
             encoder.Save(stream);
+        }
+
+        /// <summary>DragEventArgs has no public constructor; this is the one WPF uses during a real drag.</summary>
+        private static DragEventArgs NewDragArgs(IDataObject data, DependencyObject target)
+        {
+            var args = (DragEventArgs)Activator.CreateInstance(typeof(DragEventArgs),
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance, null,
+                new object[] { data, DragDropKeyStates.LeftMouseButton, DragDropEffects.Copy | DragDropEffects.Move, target, new Point(10, 10) }, null)!;
+            args.RoutedEvent = DragDrop.DropEvent;
+            return args;
+        }
+
+        private static void Pump() => Dispatcher.CurrentDispatcher.Invoke(() => { }, DispatcherPriority.Background);
+
+        /// <summary>Lets the dispatcher run (async work finishing) until the condition holds or 10 seconds pass.</summary>
+        private static bool PumpUntil(Func<bool> condition)
+        {
+            var deadline = DateTime.UtcNow.AddSeconds(10);
+            while (DateTime.UtcNow < deadline)
+            {
+                Pump();
+                if (condition()) return true;
+                Thread.Sleep(20);
+            }
+            return condition();
+        }
+
+        private static T? FindChild<T>(DependencyObject? parent) where T : DependencyObject
+        {
+            if (parent == null) return null;
+            for (int i = 0; i < VisualTreeHelper.GetChildrenCount(parent); i++)
+            {
+                var child = VisualTreeHelper.GetChild(parent, i);
+                if (child is T match) return match;
+                if (FindChild<T>(child) is { } deeper) return deeper;
+            }
+            return null;
         }
 
         private static void RenderElement(FrameworkElement element, string path)

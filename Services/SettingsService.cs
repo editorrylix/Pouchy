@@ -25,6 +25,9 @@ namespace Pouchy.Services
 
         public AppSettings Current { get; }
 
+        /// <summary>True when there was no settings file yet: Pouchy is running for the first time.</summary>
+        public bool IsFirstRun { get; private set; }
+
         /// <summary>Raised on the calling thread after every <see cref="Update"/>.</summary>
         public event EventHandler? Changed;
 
@@ -68,6 +71,7 @@ namespace Pouchy.Services
                 return new AppSettings();
             }
 
+            IsFirstRun = true;
             var settings = new AppSettings();
             MigrateLegacyBlacklist(settings);
             Write(JsonSerializer.Serialize(settings, JsonOptions));
@@ -77,7 +81,12 @@ namespace Pouchy.Services
         private static AppSettings Normalize(AppSettings s)
         {
             s.Hotkey ??= new HotkeySetting();
+            s.ScreenshotHotkey ??= new HotkeySetting { Key = System.Windows.Input.Key.S };
             s.Blacklist ??= new List<string>();
+            s.RecentDestinations ??= new List<string>();
+            s.HiddenActions ??= new List<string>();
+            s.ClipboardHistoryLimit = Math.Clamp(s.ClipboardHistoryLimit, 10, 500);
+            s.SoundVolume = Math.Clamp(s.SoundVolume, 0, 1);
             if (string.IsNullOrWhiteSpace(s.ThemeId)) s.ThemeId = "midnight";
             s.GridColumns = Math.Clamp(s.GridColumns, 2, 6);
             s.BackgroundOpacity = Math.Clamp(s.BackgroundOpacity, 0.4, 1.0);

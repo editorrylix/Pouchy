@@ -802,7 +802,7 @@
 
                 <!-- Shown while something is dragged over the pouch -->
                 <!-- Solid, so whatever is underneath (the empty state's own mascot, tiles) doesn't show through. -->
-                <Grid x:Name="DropOverlay" Grid.Row="3" Margin="-4" Opacity="0" IsHitTestVisible="False">
+                <Grid x:Name="DropOverlay" Grid.Row="3" Margin="-4" Opacity="0" IsHitTestVisible="False" Visibility="Collapsed">
                     <Border CornerRadius="{DynamicResource Pouch.InnerCornerRadius}" Background="{DynamicResource Pouch.MenuBackground}"/>
                     <Border CornerRadius="{DynamicResource Pouch.InnerCornerRadius}" Background="{DynamicResource Pouch.AccentSoft}"
                             BorderBrush="{DynamicResource Pouch.Accent}" BorderThickness="2"/>

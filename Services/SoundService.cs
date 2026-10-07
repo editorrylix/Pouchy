@@ -37,20 +37,22 @@ namespace Pouchy.Services
 
         public void Play(SoundEvent sound) => Play(_settings.Current.SoundPack, sound, _settings.Current.SoundVolume);
 
-        public void Play(SoundPack pack, SoundEvent sound, double volume)
+        /// <returns>True if Windows started playing it (false when sounds are off or there's no sound device).</returns>
+        public bool Play(SoundPack pack, SoundEvent sound, double volume)
         {
-            if (pack == SoundPack.Off) return;
+            if (pack == SoundPack.Off) return false;
             try
             {
                 IntPtr wav = Get(pack, sound, volume);
-                if (wav != IntPtr.Zero)
-                {
-                    NativeMethods.PlaySound(wav, IntPtr.Zero, NativeMethods.SND_ASYNC | NativeMethods.SND_MEMORY | NativeMethods.SND_NODEFAULT);
-                }
+                if (wav == IntPtr.Zero) return false;
+                bool started = NativeMethods.PlaySound(wav, IntPtr.Zero, NativeMethods.SND_ASYNC | NativeMethods.SND_MEMORY | NativeMethods.SND_NODEFAULT);
+                if (!started) Logger.Log($"Windows didn't play the {pack} {sound} sound (is a sound device connected?).");
+                return started;
             }
             catch (Exception ex)
             {
                 Logger.Log("Could not play a sound: " + ex.Message);
+                return false;
             }
         }
 
@@ -183,8 +185,10 @@ namespace Pouchy.Services
                 }
             }
 
+            // Every sound peaks at the same level, and the slider follows how loud it sounds rather than
+            // raw amplitude, so 50% is noticeably quieter without being inaudible.
             double peak = Math.Max(samples.Max(Math.Abs), 1e-6);
-            double scale = 0.8 * Math.Clamp(volume, 0, 1) / Math.Max(peak, 1);
+            double scale = 0.7 * Math.Pow(Math.Clamp(volume, 0, 1), 1.5) / peak;
             for (int i = 0; i < samples.Length; i++) samples[i] = (float)(samples[i] * scale);
             return samples;
         }

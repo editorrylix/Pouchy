@@ -50,6 +50,36 @@ namespace Pouchy.Services
             return ok;
         }
 
+        /// <summary>
+        /// Registers the hotkey, or if another app already uses it, the first free one of
+        /// <paramref name="alternatives"/>.
+        /// </summary>
+        /// <returns>The hotkey that is now registered, or null if none was free.</returns>
+        public HotkeySetting? RegisterOrFallback(HotkeySetting hotkey, HotkeyAction action, IEnumerable<HotkeySetting> alternatives)
+        {
+            if (Register(hotkey, action)) return hotkey;
+            foreach (var candidate in alternatives)
+            {
+                if (Register(candidate, action)) return candidate;
+            }
+            return null;
+        }
+
+        public static IReadOnlyList<HotkeySetting> Alternatives(HotkeyAction action) => action switch
+        {
+            HotkeyAction.Screenshot => new[]
+            {
+                new HotkeySetting { Modifiers = ModifierKeys.Alt | ModifierKeys.Shift, Key = Key.X },
+                new HotkeySetting { Modifiers = ModifierKeys.Control | ModifierKeys.Alt, Key = Key.S },
+                new HotkeySetting { Modifiers = ModifierKeys.Control | ModifierKeys.Alt | ModifierKeys.Shift, Key = Key.S },
+            },
+            _ => new[]
+            {
+                new HotkeySetting { Modifiers = ModifierKeys.Control | ModifierKeys.Alt, Key = Key.Z },
+                new HotkeySetting { Modifiers = ModifierKeys.Control | ModifierKeys.Alt | ModifierKeys.Shift, Key = Key.Z },
+            },
+        };
+
         public void Unregister(HotkeyAction action = HotkeyAction.TogglePouch)
         {
             if (!_registered.Remove(action)) return;

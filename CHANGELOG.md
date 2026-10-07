@@ -24,9 +24,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - **Sound packs.** Soft, Bubbly, Clicky, or your own WAV files. Off by default.
 - **One-click updates.** When a new version is out, Pouchy downloads it, checks it against the release's SHA-256 checksums, replaces itself and restarts.
 - **Installer.** Releases now include a per-user installer (no admin rights). It sets up the Start menu, startup and the Explorer menu, and its uninstaller removes everything Pouchy added. The portable zip is still available.
+- **Pouchy starts with Windows by default** on a new install. You can turn it off in Settings → General.
+- **Hotkeys always work.** If another app already uses the default shortcut, Pouchy picks a free one (for example <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>X</kbd> for screenshots) and shows it in Settings and the tray menu.
 - **Add to Pouchy from Explorer.** Turn on Settings → General → "Add to Pouchy from Explorer" to get "Add to Pouchy" in the right-click menu of files and folders, and Pouchy in "Send to". On Windows 11 both are under "Show more options". Several selected files arrive as one stack.
 - Dropping files on Pouchy.exe adds them to the pouch.
 - Starting Pouchy while it's already running opens the pouch instead of doing nothing.
+
+### Changed
+
+- **An open pouch uses almost no CPU.** The mascot breathes for a moment and then rests, idle animations run at 30 frames a second, and the drag overlay no longer animates while hidden. Open and idle: about 14% of a CPU core before, under 0.5% now. Hidden: 0%.
+- Sound packs play at the same loudness, and the volume slider follows how loud they sound.
 
 ## [1.0.1] - 2026-10-06
 

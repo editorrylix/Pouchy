@@ -58,9 +58,18 @@ namespace Pouchy.Views
             };
             IsVisibleChanged += (_, _) =>
             {
-                // Looping animations keep WPF's render loop running, so stop them while hidden.
-                if (IsVisible) ApplyMood(pop: false);
-                else StopMotion();
+                // Animations keep WPF redrawing the whole window, so nothing runs while hidden.
+                if (IsVisible)
+                {
+                    ApplyMood(pop: false);
+                    ScheduleIdle();
+                }
+                else
+                {
+                    StopMotion();
+                    _idleTimer.Stop();
+                    _chompTimer.Stop();
+                }
             };
         }
 
@@ -92,6 +101,7 @@ namespace Pouchy.Views
 
         private void ApplyMood(bool pop)
         {
+            _idleTicks = 0; // Something happened: be lively again for a while.
             StopMotion();
             _chompTimer.Stop();
 
@@ -113,7 +123,9 @@ namespace Pouchy.Views
             switch (Mood)
             {
                 case MascotMood.Idle:
-                    Hop.BeginAnimation(TranslateTransform.YProperty, Loop(0, -2, 1400));
+                    // A couple of breaths, then rest: a loop that never ends would keep the CPU busy
+                    // redrawing the pouch. Blinks and glances (IdleFidget) keep it alive after that.
+                    Hop.BeginAnimation(TranslateTransform.YProperty, Loop(0, -2, 1400, repeats: 2, framesPerSecond: IdleFrameRate));
                     break;
                 case MascotMood.Excited:
                     BounceForever();
@@ -129,7 +141,7 @@ namespace Pouchy.Views
                         EasingFunction = new BackEase { EasingMode = EasingMode.EaseOut, Amplitude = 0.6 },
                     });
                     Glance.BeginAnimation(TranslateTransform.XProperty, new DoubleAnimation(0, -2, Motion.Duration(450)));
-                    QuestionMark.BeginAnimation(Canvas.TopProperty, Loop(4, 1, 700));
+                    QuestionMark.BeginAnimation(Canvas.TopProperty, Loop(4, 1, 700, repeats: 3, framesPerSecond: IdleFrameRate));
                     break;
             }
         }
@@ -185,6 +197,7 @@ namespace Pouchy.Views
         private void IdleFidget()
         {
             _idleTimer.Stop();
+            if (!IsVisible) return; // Restarted when shown again.
             if (CanAnimate && Mood is MascotMood.Idle or MascotMood.Excited)
             {
                 _idleTicks++;
@@ -198,6 +211,7 @@ namespace Pouchy.Views
         private void Blink()
         {
             var blink = new DoubleAnimation(1, 0.1, TimeSpan.FromMilliseconds(70)) { AutoReverse = true };
+            Timeline.SetDesiredFrameRate(blink, IdleFrameRate);
             LeftBlink.BeginAnimation(ScaleTransform.ScaleYProperty, blink);
             RightBlink.BeginAnimation(ScaleTransform.ScaleYProperty, blink);
         }
@@ -206,18 +220,22 @@ namespace Pouchy.Views
         {
             double direction = Random.Next(2) == 0 ? -2.2 : 2.2;
             var period = Motion.Duration(1400);
-            Glance.BeginAnimation(TranslateTransform.XProperty, KeyFrames(period, false, (0, 0), (0.15, direction), (0.8, direction), (1, 0)));
+            Glance.BeginAnimation(TranslateTransform.XProperty, WithFrameRate(KeyFrames(period, false, (0, 0), (0.15, direction), (0.8, direction), (1, 0)), IdleFrameRate));
         }
 
         private void Wiggle()
         {
             Tilt.BeginAnimation(RotateTransform.AngleProperty,
-                KeyFrames(Motion.Duration(600), false, (0, 0), (0.2, -6), (0.45, 5), (0.7, -3), (1, 0)));
+                WithFrameRate(KeyFrames(Motion.Duration(600), false, (0, 0), (0.2, -6), (0.45, 5), (0.7, -3), (1, 0)), IdleFrameRate));
         }
 
         private void ScheduleIdle()
         {
-            _idleTimer.Interval = TimeSpan.FromMilliseconds(Random.Next(2200, 4800));
+            // Lively at first, then calmer: after about half a minute of nothing happening it fidgets
+            // every 6–12 seconds, which keeps an open pouch close to 0% CPU.
+            _idleTimer.Interval = _idleTicks < 8
+                ? TimeSpan.FromMilliseconds(Random.Next(2200, 4800))
+                : TimeSpan.FromMilliseconds(Random.Next(6000, 12000));
             _idleTimer.Start();
         }
 
@@ -240,12 +258,27 @@ namespace Pouchy.Views
             Heart.Opacity = 0;
         }
 
-        private static DoubleAnimation Loop(double from, double to, double milliseconds) => new(from, to, Motion.Duration(milliseconds))
+        /// <summary>Calm idle motion doesn't need 60 frames a second; half saves half the redraws.</summary>
+        private const int IdleFrameRate = 30;
+
+        /// <param name="repeats">How many back-and-forth cycles; 0 means forever (only for short-lived moods).</param>
+        private static DoubleAnimation Loop(double from, double to, double milliseconds, int repeats = 0, int? framesPerSecond = null)
         {
-            AutoReverse = true,
-            RepeatBehavior = RepeatBehavior.Forever,
-            EasingFunction = new SineEase { EasingMode = EasingMode.EaseInOut },
-        };
+            var animation = new DoubleAnimation(from, to, Motion.Duration(milliseconds))
+            {
+                AutoReverse = true,
+                RepeatBehavior = repeats > 0 ? new RepeatBehavior(repeats) : RepeatBehavior.Forever,
+                EasingFunction = new SineEase { EasingMode = EasingMode.EaseInOut },
+            };
+            if (framesPerSecond is int fps) Timeline.SetDesiredFrameRate(animation, fps);
+            return animation;
+        }
+
+        private static DoubleAnimationUsingKeyFrames WithFrameRate(DoubleAnimationUsingKeyFrames animation, int framesPerSecond)
+        {
+            Timeline.SetDesiredFrameRate(animation, framesPerSecond);
+            return animation;
+        }
 
         /// <summary>Smooth keyframes at (fraction of the duration, value) pairs.</summary>
         private static DoubleAnimationUsingKeyFrames KeyFrames(Duration duration, bool forever, params (double At, double Value)[] frames)

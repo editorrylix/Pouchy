@@ -285,7 +285,16 @@ namespace Pouchy.Views
         {
             if (HeaderMascot.Mood != MascotMood.Happy || show) SetMascotMood(show ? MascotMood.Excited : MascotMood.Idle);
             if (show) OverlayMascot.PopIn();
+            // Collapsed (not just transparent) when unused, so its excited mascot isn't animating unseen.
+            if (show) DropOverlay.Visibility = Visibility.Visible;
             var animation = new DoubleAnimation(show ? 1 : 0, Motion.Enabled ? Motion.Duration(show ? 120 : 180) : TimeSpan.Zero);
+            if (!show)
+            {
+                animation.Completed += (_, _) =>
+                {
+                    if (!_isDraggingIn) DropOverlay.Visibility = Visibility.Collapsed;
+                };
+            }
             DropOverlay.BeginAnimation(OpacityProperty, animation);
             if (!show) ShowActionTiles(false);
         }

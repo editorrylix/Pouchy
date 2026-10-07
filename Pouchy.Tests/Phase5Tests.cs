@@ -391,6 +391,58 @@ namespace Pouchy.Tests
 
     public class SoundTests
     {
+        /// <summary>Developer tool: POUCHY_SOUND_DIR=folder writes every built-in sound as a WAV file to listen to.</summary>
+        [Fact]
+        public void ExportSounds()
+        {
+            string? dir = Environment.GetEnvironmentVariable("POUCHY_SOUND_DIR");
+            if (string.IsNullOrEmpty(dir)) return;
+            Directory.CreateDirectory(dir);
+            foreach (var pack in new[] { SoundPack.Soft, SoundPack.Bubbly, SoundPack.Clicky })
+            {
+                foreach (var sound in Enum.GetValues<SoundEvent>())
+                {
+                    File.WriteAllBytes(Path.Combine(dir, $"{pack}-{sound}.wav".ToLowerInvariant()), SoundSynth.Create(pack, sound, 1.0));
+                }
+            }
+        }
+
+        /// <summary>Plays every sound through the speakers. Only with POUCHY_PLAY_SOUNDS=1 (it makes noise).</summary>
+        [Fact]
+        public void BuiltInPacks_PlayOnThisPc()
+        {
+            if (Environment.GetEnvironmentVariable("POUCHY_PLAY_SOUNDS") != "1") return;
+            using var folder = new TestFolder();
+            using var sounds = new SoundService(new SettingsService(Path.Combine(folder.Path, "settings.json")), folder.Path);
+            foreach (var pack in new[] { SoundPack.Soft, SoundPack.Bubbly, SoundPack.Clicky })
+            {
+                foreach (var sound in Enum.GetValues<SoundEvent>())
+                {
+                    Assert.True(sounds.Play(pack, sound, 0.4), $"{pack} {sound} didn't play");
+                    Thread.Sleep(350);
+                }
+            }
+            Assert.False(sounds.Play(SoundPack.Off, SoundEvent.Add, 1));
+            Assert.False(sounds.Play(SoundPack.Custom, SoundEvent.Add, 1)); // No WAV files in the folder.
+        }
+
+        [Fact]
+        public void Volume_ScalesLoudness()
+        {
+            static int Peak(byte[] wav)
+            {
+                int peak = 0;
+                for (int i = 44; i + 1 < wav.Length; i += 2) peak = Math.Max(peak, Math.Abs((int)BitConverter.ToInt16(wav, i)));
+                return peak;
+            }
+            int full = Peak(SoundSynth.Create(SoundPack.Soft, SoundEvent.Add, 1.0));
+            int half = Peak(SoundSynth.Create(SoundPack.Soft, SoundEvent.Add, 0.5));
+            Assert.InRange(full, 20000, 24000); // About 70% of full scale: loud enough, no clipping.
+            Assert.InRange(half, full * 0.3, full * 0.4);
+            // Every pack peaks at the same level, so switching packs doesn't jump in volume.
+            Assert.InRange(Peak(SoundSynth.Create(SoundPack.Clicky, SoundEvent.Remove, 1.0)), full - 300, full + 300);
+        }
+
         [Theory]
         [InlineData(SoundPack.Soft)]
         [InlineData(SoundPack.Bubbly)]

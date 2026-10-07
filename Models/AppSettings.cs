@@ -172,6 +172,9 @@ namespace Pouchy.Models
         public HotkeySetting Hotkey { get; set; } = new();
         /// <summary>Opens Windows' screen snip; the picture lands in the pouch.</summary>
         public HotkeySetting ScreenshotHotkey { get; set; } = new() { Key = Key.S };
+        /// <summary>The user picked their own hotkeys, so Pouchy must not swap in a free one.</summary>
+        public bool HotkeyCustomized { get; set; }
+        public bool ScreenshotHotkeyCustomized { get; set; }
 
         // Suppression
         public bool SuppressInFullscreen { get; set; } = true;
