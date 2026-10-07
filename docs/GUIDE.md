@@ -1,4 +1,4 @@
-<p align="center"><img src="../Assets/pouchy-256.png" alt="Pouchy" width="80" /></p>
+<p align="center"><img src="../src/Pouchy/Assets/pouchy-256.png" alt="Pouchy" width="80" /></p>
 
 # The Pouchy guide
 

@@ -16,15 +16,15 @@
     self-signed copy you can install on your own PC to try the package before submitting.
 
 .EXAMPLE
-    pwsh packaging/build-msix.ps1
-    pwsh packaging/build-msix.ps1 -Version 1.1.0 -TestSign
+    pwsh packaging/store/build-msix.ps1
+    pwsh packaging/store/build-msix.ps1 -Version 1.1.0 -TestSign
 #>
 [CmdletBinding()]
 param(
-    # Semantic version, e.g. 1.1.0. Defaults to <Version> in Pouchy.csproj.
+    # Semantic version, e.g. 1.1.0. Defaults to <Version> in src\Pouchy\Pouchy.csproj.
     [string]$Version,
     [string[]]$Architectures = @('x64', 'arm64'),
-    # Defaults: packaging\store-identity.json and dist\msix.
+    # Defaults: packaging\store\store-identity.json and dist\msix.
     [string]$IdentityFile,
     [string]$OutDir,
     # Also produce a self-signed bundle for installing on this PC.
@@ -33,7 +33,8 @@ param(
 
 $ErrorActionPreference = 'Stop'
 # (Windows PowerShell 5.1 doesn't know $PSScriptRoot yet while reading parameter defaults.)
-$root = Split-Path $PSScriptRoot
+$root = Split-Path (Split-Path $PSScriptRoot)   # packaging\store -> repository root
+$project = Join-Path $root 'src\Pouchy\Pouchy.csproj'
 if (-not $IdentityFile) { $IdentityFile = Join-Path $PSScriptRoot 'store-identity.json' }
 if (-not $OutDir) { $OutDir = Join-Path $root 'dist\msix' }
 $work = Join-Path $root 'obj\msix'
@@ -48,7 +49,7 @@ function Invoke-Tool([string]$exe, [string[]]$arguments) {
 # ---------------------------------------------------------------------------------------------- Version
 
 if (-not $Version) {
-    $Version = ([xml](Get-Content (Join-Path $root 'Pouchy.csproj'))).Project.PropertyGroup.Version | Where-Object { $_ } | Select-Object -First 1
+    $Version = ([xml](Get-Content $project)).Project.PropertyGroup.Version | Where-Object { $_ } | Select-Object -First 1
 }
 if ($Version -notmatch '^(\d+)\.(\d+)\.(\d+)') { Fail "'$Version' isn't a version like 1.2.3." }
 # The Store needs four numbers and reserves the last one, so it is always 0.
@@ -110,7 +111,7 @@ foreach ($arch in $Architectures) {
 
     # Self-contained, but not single-file: a package is already one file, and loose assemblies
     # load straight from disk.
-    dotnet publish (Join-Path $root 'Pouchy.csproj') -c Release -r "win-$arch" --self-contained true `
+    dotnet publish $project -c Release -r "win-$arch" --self-contained true `
         -p:PublishSingleFile=false -p:DebugType=none -p:Version=$Version -o $layout --nologo
     if ($LASTEXITCODE -ne 0) { Fail "dotnet publish failed for $arch." }
 
@@ -174,7 +175,7 @@ if ($TestSign) {
     Copy-Item $bundle $signed -Force
     Invoke-Tool $tools.SignTool @('sign', '/fd', 'SHA256', '/sha1', $cert.Thumbprint, '/s', 'My', $signed)
     Write-Host "Test-signed bundle: $signed"
-    Write-Host "To install it, run packaging\install-test.ps1 as administrator (it trusts $cerFile, then installs)."
+    Write-Host "To install it, run packaging\store\install-test.ps1 as administrator (it trusts $cerFile, then installs)."
 }
 
 Write-Host "`nDone:" -ForegroundColor Green

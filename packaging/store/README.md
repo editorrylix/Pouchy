@@ -26,7 +26,7 @@ To have GitHub build the Store package for each release, also add them as reposi
 ## 2. Build
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File packaging\build-msix.ps1
+powershell -ExecutionPolicy Bypass -File packaging\store\build-msix.ps1
 ```
 
 This takes a few minutes. The first run downloads Microsoft's packaging tools (the `Microsoft.Windows.SDK.BuildTools` NuGet package) into `.tools\`. The results are in `dist\msix\`:
@@ -36,7 +36,7 @@ This takes a few minutes. The first run downloads Microsoft's packaging tools (t
 - `Pouchy_1.1.0.0_x64.msix` and `Pouchy_1.1.0.0_arm64.msix`: the individual packages
 
 Useful options:
-- **Version:** taken from `Pouchy.csproj`. Use `-Version 1.2.0` to choose a different one; the package version becomes `1.2.0.0`.
+- **Version:** taken from `src\Pouchy\Pouchy.csproj`. Use `-Version 1.2.0` to choose a different one; the package version becomes `1.2.0.0`.
 - **One architecture:** `-Architectures x64`.
 
 The Store signs the package itself, so the upload doesn't need a certificate.
@@ -44,9 +44,9 @@ The Store signs the package itself, so the upload doesn't need a certificate.
 ## 3. Try it on your PC (optional, recommended)
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File packaging\build-msix.ps1 -TestSign
+powershell -ExecutionPolicy Bypass -File packaging\store\build-msix.ps1 -TestSign
 # then, in an administrator PowerShell:
-powershell -ExecutionPolicy Bypass -File packaging\install-test.ps1
+powershell -ExecutionPolicy Bypass -File packaging\store\install-test.ps1
 ```
 
 1. **Start it:** open **Pouchy** from the Start menu.
@@ -60,7 +60,7 @@ In Partner Center, start a submission:
 - **Packages:** upload the `.msixupload`. Device family: **Windows 10/11 Desktop**.
 - **Properties:** category **Productivity**, subcategory none. For the privacy policy, use https://github.com/editorrylix/Pouchy/blob/main/PRIVACY.md.
 - **Age ratings:** the questionnaire. Pouchy has no user-generated content shared with others, no chat and no purchases.
-- **Store listing:** description, screenshots (the images in `docs/media` work well) and the logo (`packaging\pouchy-1024.png`, made by `make_assets.py`).
+- **Store listing:** description, screenshots (the images in `docs/media` work well) and the logo (`packaging\store\pouchy-1024.png`, made by `make_assets.py`).
 
 ### Restricted capabilities
 
@@ -91,5 +91,5 @@ The images are drawn from shapes, so every size is sharp. After changing the ico
 
 ```powershell
 pip install pillow
-python packaging\make_assets.py
+python packaging\store\make_assets.py
 ```

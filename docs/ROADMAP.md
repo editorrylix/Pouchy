@@ -285,7 +285,7 @@ Deferred:
 Done:
 - ✅ **Thumbnail grid** using real Windows Shell thumbnails (photos, videos, PDFs, Office docs). Stacks show a fanned pile of their first three files, and text snippets show a text preview.
 - ✅ **View modes:** Grid (default), List and Compact; toggle from the header or in Settings.
-- ✅ **Theme engine:** design tokens through DynamicResource; JSON themes in `%AppData%\Pouchy\themes\` that reload live; gradients; `system` accent; light/dark variants. See [docs/THEMES.md](docs/THEMES.md).
+- ✅ **Theme engine:** design tokens through DynamicResource; JSON themes in `%AppData%\Pouchy\themes\` that reload live; gradients; `system` accent; light/dark variants. See [THEMES.md](THEMES.md).
 - ✅ **Built-in themes:** Midnight Glass, Follow Windows, Frost, Paper, Sunset, Terminal (with scanlines and glow).
 - ✅ **Appearance settings:**
   - Theme gallery with previews and "Customize this theme"
@@ -322,7 +322,7 @@ Done:
 - ✅ Full persistence: stacks, images (PNG cache), folders; missing files flagged; debounced atomic saves.
 - ✅ Working Settings window: startup, clear on startup, trigger toggles and sensitivity, drag detection, hotkey recorder, fullscreen suppression, ignored apps.
 - ✅ Dead code and the unused Behaviors package removed.
-- ✅ Unit tests (`Pouchy.Tests`): gestures, persistence, item creation, settings, XAML smoke test.
+- ✅ Unit tests (`tests/Pouchy.Tests`): gestures, persistence, item creation, settings, XAML smoke test.
 
 Deferred to later phases:
 - `ThemeService` (Phase 2), `ShelfService` (Phase 4), `ActionRegistry` (Phase 5).
@@ -349,7 +349,7 @@ Deferred to later phases:
    - ✅ **Recent destinations:** folders items were copied, moved or dropped into (desktop and Explorer windows are detected) appear in Copy to / Move to, as drop tiles and in the palette.
    - ✅ **Auto-clear:** unpinned items can leave after 1 hour, 1 day, 1 week or 30 days.
    - ✅ **Screenshot → Pouchy:** a hotkey (Alt+Shift+S), the tray and the palette open Windows' screen snip; the capture lands in the pouch.
-   - ✅ **Drop actions:** tiles while dragging in (Zip, Copy to a recent folder, PNG, JPG, 50%, Text, Paths, Share, Print) plus user scripts from the actions folder ([docs/ACTIONS.md](docs/ACTIONS.md)).
+   - ✅ **Drop actions:** tiles while dragging in (Zip, Copy to a recent folder, PNG, JPG, 50%, Text, Paths, Share, Print) plus user scripts from the actions folder ([ACTIONS.md](ACTIONS.md)).
    - ✅ **Command palette:** Ctrl+K, fuzzy search over commands, items, shelves, views, themes and actions on the selection.
    - ✅ **Smart shelves:** a shelf can auto-collect images, documents, videos, audio, archives, folders, links, notes or colours.
    - ✅ **Clipboard history** (Phase 5): an opt-in Clipboard shelf; skips password-manager copies.

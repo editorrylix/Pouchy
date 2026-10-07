@@ -37,15 +37,7 @@
 
   <!-- The "What's new" window reads the release notes from here, so it works offline. -->
   <ItemGroup>
-    <EmbeddedResource Include="CHANGELOG.md" LogicalName="Pouchy.CHANGELOG.md" />
-  </ItemGroup>
-
-  <!-- The test project lives in a subfolder; keep its files out of the app build. -->
-  <ItemGroup>
-    <Compile Remove="Pouchy.Tests\**" />
-    <Page Remove="Pouchy.Tests\**" />
-    <None Remove="Pouchy.Tests\**" />
-    <EmbeddedResource Remove="Pouchy.Tests\**" />
+    <EmbeddedResource Include="..\..\CHANGELOG.md" LogicalName="Pouchy.CHANGELOG.md" Link="CHANGELOG.md" />
   </ItemGroup>
 
   <ItemGroup>

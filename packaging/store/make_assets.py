@@ -1,7 +1,7 @@
 """Draws the Pouchy app icon at any size and writes the MSIX logo images.
 
 The icon is drawn as shapes (not scaled up from the 256 px PNG), so every size is sharp.
-Run from the repository root:  python packaging/make_assets.py
+Run from the repository root:  python packaging/store/make_assets.py
 Needs Pillow (pip install pillow).
 """
 from pathlib import Path

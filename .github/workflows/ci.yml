@@ -54,13 +54,13 @@ jobs:
       - name: Publish and build the x64 installer
         shell: pwsh
         run: |
-          dotnet publish Pouchy.csproj -c Release -r win-x64 --self-contained true `
+          dotnet publish src/Pouchy/Pouchy.csproj -c Release -r win-x64 --self-contained true `
             -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=none -o publish/win-x64
           if ($LASTEXITCODE -ne 0) { throw "Publish failed" }
           choco install innosetup --no-progress -y
           if ($LASTEXITCODE -ne 0) { throw "Installing Inno Setup failed" }
-          $version = ([xml](Get-Content Pouchy.csproj)).Project.PropertyGroup.Version | Where-Object { $_ } | Select-Object -First 1
-          & (Join-Path ${env:ProgramFiles(x86)} 'Inno Setup 6\ISCC.exe') "/DAppVersion=$version" "/DArch=x64" installer/Pouchy.iss
+          $version = ([xml](Get-Content src/Pouchy/Pouchy.csproj)).Project.PropertyGroup.Version | Where-Object { $_ } | Select-Object -First 1
+          & (Join-Path ${env:ProgramFiles(x86)} 'Inno Setup 6\ISCC.exe') "/DAppVersion=$version" "/DArch=x64" packaging/installer/Pouchy.iss
           if ($LASTEXITCODE -ne 0) { throw "Installer build failed" }
 
       - name: Upload installer
@@ -82,4 +82,4 @@ jobs:
       # Checks the manifest and packaging still work (x64 only, placeholder identity).
       - name: Build MSIX
         shell: pwsh
-        run: ./packaging/build-msix.ps1 -Architectures x64
+        run: ./packaging/store/build-msix.ps1 -Architectures x64

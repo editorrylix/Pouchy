@@ -42,7 +42,7 @@ jobs:
           $v = '${{ steps.version.outputs.version }}'
           New-Item -ItemType Directory -Force dist | Out-Null
           foreach ($rid in 'win-x64', 'win-arm64') {
-            dotnet publish Pouchy.csproj -c Release -r $rid --self-contained true `
+            dotnet publish src/Pouchy/Pouchy.csproj -c Release -r $rid --self-contained true `
               -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true `
               -p:DebugType=none `
               -p:Version=$v -o "publish/$rid"
@@ -61,7 +61,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw "Installing Inno Setup failed" }
           $iscc = Join-Path ${env:ProgramFiles(x86)} 'Inno Setup 6\ISCC.exe'
           foreach ($arch in 'x64', 'arm64') {
-            & $iscc "/DAppVersion=$v" "/DFileVersion=$core" "/DArch=$arch" "/DSourceExe=..\publish\win-$arch\Pouchy.exe" installer/Pouchy.iss
+            & $iscc "/DAppVersion=$v" "/DFileVersion=$core" "/DArch=$arch" "/DSourceExe=..\..\publish\win-$arch\Pouchy.exe" packaging/installer/Pouchy.iss
             if ($LASTEXITCODE -ne 0) { throw "Installer build failed for $arch" }
           }
 
@@ -80,9 +80,9 @@ jobs:
               IdentityName = $env:STORE_IDENTITY_NAME
               Publisher = $env:STORE_PUBLISHER
               PublisherDisplayName = $env:STORE_PUBLISHER_DISPLAY_NAME
-            } | ConvertTo-Json | Set-Content -Encoding utf8 packaging/store-identity.json
+            } | ConvertTo-Json | Set-Content -Encoding utf8 packaging/store/store-identity.json
           }
-          ./packaging/build-msix.ps1 -Version '${{ steps.version.outputs.core }}' -OutDir store
+          ./packaging/store/build-msix.ps1 -Version '${{ steps.version.outputs.core }}' -OutDir store
 
       - name: Upload the Store package
         uses: actions/upload-artifact@v4

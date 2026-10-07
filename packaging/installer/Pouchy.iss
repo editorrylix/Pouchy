@@ -1,6 +1,7 @@
 ; Pouchy installer (Inno Setup 6.3 or later).
 ; Built by the release workflow:
-;   iscc /DAppVersion=1.2.0 /DArch=x64 /DSourceExe=..\publish\win-x64\Pouchy.exe installer\Pouchy.iss
+;   iscc /DAppVersion=1.2.0 /DArch=x64 /DSourceExe=..\..\publish\win-x64\Pouchy.exe packaging\installer\Pouchy.iss
+; (paths are relative to this file)
 ;
 ; Installs for the current user only (no admin prompt) into %LocalAppData%\Programs\Pouchy,
 ; which also lets Pouchy update itself in place.
@@ -16,7 +17,7 @@
   #define FileVersion AppVersion
 #endif
 #ifndef SourceExe
-  #define SourceExe "..\publish\win-" + Arch + "\Pouchy.exe"
+  #define SourceExe "..\..\publish\win-" + Arch + "\Pouchy.exe"
 #endif
 
 #define AppName "Pouchy"
@@ -38,9 +39,9 @@ DefaultDirName={localappdata}\Programs\{#AppName}
 DisableProgramGroupPage=yes
 DisableDirPage=auto
 PrivilegesRequired=lowest
-OutputDir=..\dist
+OutputDir=..\..\dist
 OutputBaseFilename=Pouchy-{#AppVersion}-setup-{#Arch}
-SetupIconFile=..\Assets\pouchy.ico
+SetupIconFile=..\..\src\Pouchy\Assets\pouchy.ico
 UninstallDisplayIcon={app}\Pouchy.exe
 UninstallDisplayName={#AppName}
 Compression=lzma2/ultra64

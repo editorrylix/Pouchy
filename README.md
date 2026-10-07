@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="Assets/pouchy-256.png" alt="Pouchy app icon" width="112" />
+<img src="src/Pouchy/Assets/pouchy-256.png" alt="Pouchy app icon" width="112" />
 
 # Pouchy
 
@@ -261,11 +261,11 @@ You'll need Windows 10 (2004) or later and the [.NET 8 SDK](https://dotnet.micro
 ```powershell
 git clone https://github.com/editorrylix/Pouchy.git
 cd Pouchy
-dotnet run --project Pouchy.csproj
+dotnet run --project src/Pouchy/Pouchy.csproj
 dotnet test
 ```
 
-Pushing a version tag (`vX.Y.Z`) makes [GitHub Actions](.github/workflows/release.yml) build the release, including the [installer](installer/Pouchy.iss). See the [changelog](CHANGELOG.md) for what's new, the [guide](docs/GUIDE.md) for how everything works, and the [roadmap](IDEAS.md) for what's planned.
+Pushing a version tag (`vX.Y.Z`) makes [GitHub Actions](.github/workflows/release.yml) build the release, including the [installer](packaging/installer/Pouchy.iss). See the [changelog](CHANGELOG.md) for what's new, the [guide](docs/GUIDE.md) for how everything works, and the [roadmap](docs/ROADMAP.md) for what's planned.
 
 ## Feedback and support
 
@@ -274,7 +274,7 @@ To report a bug or suggest a feature, [open an issue](https://github.com/editorr
 If Pouchy is useful to you, a star helps other Windows users find it. You can also support development:
 
 <a href="https://buymeacoffee.com/notrishi" target="_blank">
-  <img src="Assets/buymeacoffee.png" alt="Buy me a coffee" height="44" />
+  <img src="docs/media/buymeacoffee.png" alt="Buy me a coffee" height="44" />
 </a>
 
 <a id="license"></a>
