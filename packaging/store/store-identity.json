@@ -1,6 +1,6 @@
 {
-  "_comment": "Copy these three values from Partner Center: your app > Product management > Product identity. They must match exactly, or the Store rejects the upload.",
-  "IdentityName": "PLACEHOLDER.Pouchy",
-  "Publisher": "CN=00000000-0000-0000-0000-000000000000",
-  "PublisherDisplayName": "editorrylix"
+  "_comment": "From Partner Center: Pouchy > Product management > Product identity. These must match exactly, or the Store rejects the upload.",
+  "IdentityName": "SmallThunderWorks.Pouchy",
+  "Publisher": "CN=23BB619E-3E13-45FD-9DC7-8D600B428E46",
+  "PublisherDisplayName": "Small Thunder Works"
 }
