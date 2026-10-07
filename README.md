@@ -63,7 +63,7 @@ It also does more than hold things. It can zip files, shrink photos, read text f
 ## Quick start
 
 1. **Install it.** Download `Pouchy-x.y.z-setup-x64.exe` from the [latest release](https://github.com/editorrylix/Pouchy/releases/latest) and run it. If you have a Windows on ARM laptop, such as one with a Snapdragon chip, download `-arm64` instead.
-2. **Find it.** Pouchy lives in the system tray, the small icons next to the clock. If you can't see it, click the **^** arrow. It also starts by itself whenever you turn on your PC.
+2. **Say hello.** The first time it runs, Pouchy opens a short **welcome guide** with these same steps and a few switches you might like. Afterwards it lives in the system tray, the small icons next to the clock. If you can't see it, click the **^** arrow. It also starts by itself whenever you turn on your PC.
 3. **Drop something in.** Open File Explorer and start dragging any file. While you hold the mouse button, **shake the mouse left and right a few times**. The pouch pops up next to the file; let go over it.
 4. **Take it out.** Open the app you want the file in, such as an email, a chat or a folder. Press <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>Z</kbd> to show the pouch, then drag the file from the pouch to where you want it.
 
@@ -318,6 +318,7 @@ Press <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>S</kbd>, or use **Take a screenshot**
 - **Actions:** Show pouch, New note, Paste into pouch, Take a screenshot and Command palette.
 - **Shelf, Theme and View:** switch without opening Settings.
 - **Pause gestures:** stop shake and edge from opening the pouch for a while, during a game or presentation. The hotkey still works.
+- **Help:** the welcome guide, what's new, this guide online and a link for reporting bugs.
 - **Also:** Settings, Clear shelf, Install update (when one is ready) and Quit Pouchy.
 
 ### Make it yours
@@ -435,7 +436,7 @@ Neither version needs .NET or anything else installed.
 2. check its checksum
 3. replace itself and restart
 
-Your shelves and settings stay as they are.
+Your shelves and settings stay as they are. After restarting, Pouchy shows **what's new**, including any versions you skipped. You can open it again any time from the tray menu → **Help**.
 
 **Uninstalling:**
 - **Installer version:** use **Windows Settings → Apps**, like any other app. That also removes the startup entry and Explorer menu items.

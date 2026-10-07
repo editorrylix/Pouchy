@@ -146,6 +146,8 @@ namespace Pouchy.Models
         /// <summary>Check GitHub for a newer release about once a day.</summary>
         public bool CheckForUpdates { get; set; } = true;
         public DateTime? LastUpdateCheck { get; set; }
+        /// <summary>The version whose "What's new" the user has seen; newer versions show it once.</summary>
+        public string? LastSeenVersion { get; set; }
         /// <summary>A version the user chose to skip notifications for.</summary>
         public string? DismissedUpdateVersion { get; set; }
 

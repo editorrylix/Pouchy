@@ -10,7 +10,8 @@ namespace Pouchy.Helpers
     /// <c>--wait-for PID</c> and <c>--updated</c> are used when Pouchy restarts itself after an update.
     /// Developer options: <c>--profile NAME</c> runs a separate copy with its own data folder,
     /// <c>--show</c> opens the pouch at startup, <c>--tray-menu</c> opens the tray menu at startup,
-    /// <c>--palette</c> opens the command palette, <c>--update-now</c> installs an available update.
+    /// <c>--palette</c> opens the command palette, <c>--update-now</c> installs an available update,
+    /// <c>--welcome</c> and <c>--whats-new</c> open those windows.
     /// </summary>
     public sealed record StartupOptions(string? Profile, bool ShowPouch, bool ShowTrayMenu)
     {
@@ -22,11 +23,14 @@ namespace Pouchy.Helpers
         public bool Updated { get; init; }
         public bool ShowPalette { get; init; }
         public bool UpdateNow { get; init; }
+        public bool ShowWelcome { get; init; }
+        public bool ShowWhatsNew { get; init; }
 
         public static StartupOptions Parse(IReadOnlyList<string> args)
         {
             string? profile = null;
             bool show = false, trayMenu = false, adding = false, cleanup = false, updated = false, palette = false, updateNow = false;
+            bool welcome = false, whatsNew = false;
             int? waitFor = null;
             var paths = new List<string>();
             for (int i = 0; i < args.Count; i++)
@@ -62,6 +66,12 @@ namespace Pouchy.Helpers
                     case "--update-now":
                         updateNow = true;
                         break;
+                    case "--welcome":
+                        welcome = true;
+                        break;
+                    case "--whats-new":
+                        whatsNew = true;
+                        break;
                     case "--wait-for" when i + 1 < args.Count:
                         if (int.TryParse(args[++i], out int pid)) waitFor = pid;
                         break;
@@ -83,6 +93,8 @@ namespace Pouchy.Helpers
                 Updated = updated,
                 ShowPalette = palette,
                 UpdateNow = updateNow,
+                ShowWelcome = welcome,
+                ShowWhatsNew = whatsNew,
             };
         }
     }

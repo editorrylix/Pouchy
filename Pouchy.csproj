@@ -11,7 +11,7 @@
     <RootNamespace>Pouchy</RootNamespace>
 
     <!-- Semantic version. CI overrides it from the release tag (vX.Y.Z). -->
-    <Version>1.0.1</Version>
+    <Version>1.1.0</Version>
     <Product>Pouchy</Product>
     <Company>editorrylix</Company>
     <Description>The cute drop shelf for Windows</Description>
@@ -33,6 +33,11 @@
   <ItemGroup>
     <Resource Include="Assets/pouchy.ico" />
     <Resource Include="Assets/pouchy-256.png" />
+  </ItemGroup>
+
+  <!-- The "What's new" window reads the release notes from here, so it works offline. -->
+  <ItemGroup>
+    <EmbeddedResource Include="CHANGELOG.md" LogicalName="Pouchy.CHANGELOG.md" />
   </ItemGroup>
 
   <!-- The test project lives in a subfolder; keep its files out of the app build. -->

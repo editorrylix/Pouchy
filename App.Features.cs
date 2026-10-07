@@ -173,6 +173,98 @@ namespace Pouchy
             }
         }
 
+        // ---------------------------------------------------------------- Welcome and what's new
+
+        private WelcomeWindow? _welcomeWindow;
+        private WhatsNewWindow? _whatsNewWindow;
+
+        /// <summary>
+        /// First run: the welcome guide. After an update (automatic or not): what's new since the
+        /// version the user last saw. Developer profiles only show them when asked.
+        /// </summary>
+        private void ShowIntroWindows(Helpers.StartupOptions options)
+        {
+            var s = _settings!.Current;
+            string currentText = UpdateService.CurrentVersion.ToString(3);
+            UpdateService.TryParseVersion(s.LastSeenVersion ?? "", out var lastSeen);
+            bool hasLastSeen = s.LastSeenVersion != null;
+            bool normalRun = options.Profile == null || options.Updated;
+
+            if (options.ShowWelcome || (_settings.IsFirstRun && options.Profile == null))
+            {
+                ShowWelcome();
+            }
+            else if (options.ShowWhatsNew || (normalRun && (!hasLastSeen || lastSeen < UpdateService.CurrentVersion)))
+            {
+                ShowWhatsNew(hasLastSeen ? lastSeen : null);
+            }
+
+            if (s.LastSeenVersion != currentText) _settings.Update(x => x.LastSeenVersion = currentText);
+        }
+
+        private void ShowWelcome()
+        {
+            if (_welcomeWindow != null)
+            {
+                _welcomeWindow.Activate();
+                return;
+            }
+
+            var s = _settings!.Current;
+            var model = new WelcomeModel
+            {
+                // Non-breaking spaces keep "Alt + Shift + Z" on one line.
+                HotkeyText = s.Hotkey.Enabled ? s.Hotkey.ToString().Replace(' ', ' ') : "the tray icon",
+                ScreenshotText = s.ScreenshotHotkey.Enabled ? s.ScreenshotHotkey.ToString().Replace(' ', ' ') : "Take a screenshot (tray menu)",
+                StartWithWindows = _startup!.IsEnabled,
+                ExplorerMenu = _explorer!.IsEnabled,
+                ClipboardHistory = _pouchViewModel!.ClipboardShelf != null,
+                StartWithWindowsChanged = enabled => _startup.SetEnabled(enabled),
+                ExplorerMenuChanged = enabled => _explorer.SetEnabled(enabled),
+                ClipboardHistoryChanged = enabled => _pouchViewModel.SetClipboardHistory(enabled),
+            };
+            _welcomeWindow = new WelcomeWindow(model)
+            {
+                TryItNow = ShowPouchAtScreenCenter,
+                OpenLink = OpenLink,
+            };
+            _welcomeWindow.Closed += (_, _) => _welcomeWindow = null;
+            _welcomeWindow.Show();
+        }
+
+        /// <param name="since">The version the user had before; null shows only the current version.</param>
+        private void ShowWhatsNew(Version? since)
+        {
+            if (_whatsNewWindow != null)
+            {
+                _whatsNewWindow.Activate();
+                return;
+            }
+
+            var current = UpdateService.CurrentVersion;
+            var releases = Changelog.Since(Changelog.Parse(Changelog.Embedded()), since, current);
+            if (releases.Count == 0)
+            {
+                Logger.Log($"No release notes for {current} in the built-in changelog.");
+                return;
+            }
+            _whatsNewWindow = new WhatsNewWindow(releases, current, since, OpenLink);
+            _whatsNewWindow.Closed += (_, _) => _whatsNewWindow = null;
+            _whatsNewWindow.Show();
+        }
+
+        private static void OpenLink(string url)
+        {
+            try
+            {
+                FileActions.Open(url);
+            }
+            catch (Exception ex)
+            {
+                Logger.Log($"Could not open {url}: {ex.Message}");
+            }
+        }
+
         // ---------------------------------------------------------------- Command palette
 
         private void OpenPalette()
@@ -203,6 +295,8 @@ namespace Pouchy
                     if (update == null) PouchDialog.Alert(null, "You're up to date", $"Pouchy {UpdateService.CurrentVersionText} is the latest version.");
                 }, null, "update version");
             }
+            yield return Command("Welcome guide", Symbol.Lightbulb24, ShowWelcome, null, "help how to use tutorial getting started");
+            yield return Command("What's new", Symbol.Sparkle24, () => ShowWhatsNew(null), null, "changelog release notes version");
             yield return Command("Open data folder", Symbol.Folder24, () => FileActions.Open(AppPaths.DataFolder), null, "settings files backup");
             yield return Command("Hide pouch", Symbol.EyeOff24, () => _pouchWindow?.Despawn(), "Esc");
             yield return Command("Quit Pouchy", Symbol.Power24, Quit, null, "exit close");

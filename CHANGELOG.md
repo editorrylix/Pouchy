@@ -10,8 +10,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-10-07
+
 ### Added
 
+- **A welcome guide** on the first run: where Pouchy lives, how to use it in four steps with your own shortcuts, and switches for the most useful settings. Open it again any time from the tray menu.
+- **What's new after every update.** When Pouchy updates, it shows what changed, including any versions you skipped. Also in the tray menu.
 - **Drop actions.** Drag files over the pouch and action tiles appear: Zip, Copy to a recent folder, Convert to PNG or JPG, Resize to 50%, Extract text, Copy paths, Share and Print. Drop on a tile to run it. Choose which tiles show in Settings → Drop actions.
 - **Your own actions.** Scripts in the actions folder (PowerShell, batch, Python or an .exe) become actions. They receive the file paths, and any file path they print is added to the pouch. See [docs/ACTIONS.md](docs/ACTIONS.md).
 - **Command palette.** Press <kbd>Ctrl</kbd>+<kbd>K</kbd> in the pouch, or use the tray menu, to search for any command, item, shelf, view or theme, and to run actions on the selected items.
@@ -85,6 +89,7 @@ The first public release. 🎉
 - **Update notifications:** Pouchy checks GitHub for a new release about once a day. You can turn this off in Settings → About.
 - **Start with Windows**, single instance, and items saved between sessions.
 
-[Unreleased]: https://github.com/editorrylix/Pouchy/compare/v1.0.1...HEAD
+[Unreleased]: https://github.com/editorrylix/Pouchy/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/editorrylix/Pouchy/compare/v1.0.1...v1.1.0
 [1.0.1]: https://github.com/editorrylix/Pouchy/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/editorrylix/Pouchy/releases/tag/v1.0.0

@@ -168,6 +168,25 @@ namespace Pouchy.Tests
                 if (outDir != null) Render(editor, Path.Combine(outDir, "theme-editor.png"));
                 editor.Close();
 
+                // Welcome and what's new.
+                var welcome = new WelcomeWindow(new WelcomeModel { HotkeyText = "Alt + Shift + Z", ScreenshotText = "Alt + Shift + S", StartWithWindows = true })
+                {
+                    ShowActivated = false, Left = -20000, Top = -20000, WindowStartupLocation = WindowStartupLocation.Manual,
+                };
+                welcome.Show();
+                if (outDir != null) Render(welcome, Path.Combine(outDir, "welcome.png"));
+                welcome.Close();
+
+                var releases = Changelog.Since(Changelog.Parse(Changelog.Embedded()), new Version(1, 0, 0), UpdateService.CurrentVersion);
+                var whatsNew = new WhatsNewWindow(releases, UpdateService.CurrentVersion, new Version(1, 0, 0), _ => { })
+                {
+                    ShowActivated = false, Left = -20000, Top = -20000, WindowStartupLocation = WindowStartupLocation.Manual,
+                };
+                whatsNew.Show();
+                Assert.True(((System.Windows.Documents.FlowDocument)whatsNew.FindName("NotesDocument")).Blocks.Count > 3);
+                if (outDir != null) Render(whatsNew, Path.Combine(outDir, "whats-new.png"));
+                whatsNew.Close();
+
                 var settingsWindow = new SettingsWindow(new SettingsViewModel(settings, new StartupService(), new HotkeyService(), themes, null, null,
                     new SettingsHooks { GetClipboardHistory = () => vm.ClipboardShelf != null, SetClipboardHistory = vm.SetClipboardHistory }))
                 {

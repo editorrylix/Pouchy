@@ -169,12 +169,8 @@ namespace Pouchy
 
             if (options.ShowPouch) Dispatcher.BeginInvoke(ShowPouchAtScreenCenter, System.Windows.Threading.DispatcherPriority.ApplicationIdle);
             if (options.ShowPalette) Dispatcher.BeginInvoke(OpenPalette, System.Windows.Threading.DispatcherPriority.ApplicationIdle);
-            if (options.Updated)
-            {
-                UpdateInstaller.UpdateInstalledVersion(UpdateService.CurrentVersionText, Environment.ProcessPath);
-                _trayIcon?.ShowNotification($"Pouchy is updated to {UpdateService.CurrentVersionText}",
-                    "See what's new in Settings → About.", H.NotifyIcon.Core.NotificationIcon.Info);
-            }
+            if (options.Updated) UpdateInstaller.UpdateInstalledVersion(UpdateService.CurrentVersionText, Environment.ProcessPath);
+            Dispatcher.BeginInvoke(() => ShowIntroWindows(options), System.Windows.Threading.DispatcherPriority.ApplicationIdle);
             if (options.UpdateNow)
             {
                 Dispatcher.BeginInvoke(async () =>
@@ -507,6 +503,13 @@ namespace Pouchy
                     s.GesturesPaused ? Symbol.Play24 : Symbol.Pause24,
                     () => _settings.Update(x => x.GesturesPaused = !x.GesturesPaused)),
                 MenuFactory.Item("Settings…", Symbol.Settings24, ShowSettings),
+                MenuFactory.Submenu("Help", Symbol.QuestionCircle24, new object[]
+                {
+                    MenuFactory.Item("Welcome guide", Symbol.Lightbulb24, ShowWelcome),
+                    MenuFactory.Item("What's new", Symbol.Sparkle24, () => ShowWhatsNew(null)),
+                    MenuFactory.Item("Full guide online", Symbol.BookOpen24, () => OpenLink("https://github.com/editorrylix/Pouchy#the-complete-guide")),
+                    MenuFactory.Item("Report a bug", Symbol.Bug24, () => OpenLink("https://github.com/editorrylix/Pouchy/issues/new/choose")),
+                }),
             };
             if (vm.Items.Count > 0)
             {

@@ -193,4 +193,43 @@
     <Style x:Key="PouchDangerMenuItem" TargetType="MenuItem" BasedOn="{StaticResource PouchMenuItem}">
         <Setter Property="Foreground" Value="{DynamicResource Pouch.Danger}"/>
     </Style>
+    <!-- Buttons for the pouch-styled windows (welcome, what's new). -->
+    <Style x:Key="PouchButton" TargetType="Button">
+        <Setter Property="MinWidth" Value="84"/>
+        <Setter Property="Height" Value="34"/>
+        <Setter Property="Padding" Value="16,0"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="FontSize" Value="12.5"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="Foreground" Value="{DynamicResource Pouch.Text}"/>
+        <Setter Property="Background" Value="{DynamicResource Pouch.Tile}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource Pouch.TileBorder}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Grid>
+                        <Border CornerRadius="9" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1"/>
+                        <Border x:Name="Hover" CornerRadius="9" Background="White" Opacity="0"/>
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" Margin="{TemplateBinding Padding}"/>
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Hover" Property="Opacity" Value="0.1"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    <Style x:Key="PouchPrimaryButton" TargetType="Button" BasedOn="{StaticResource PouchButton}">
+        <Setter Property="Background" Value="{DynamicResource Pouch.Accent}"/>
+        <Setter Property="Foreground" Value="{DynamicResource Pouch.AccentText}"/>
+    </Style>
+    <Style x:Key="PouchLinkButton" TargetType="Button" BasedOn="{StaticResource PouchButton}">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Foreground" Value="{DynamicResource Pouch.Accent}"/>
+        <Setter Property="BorderBrush" Value="Transparent"/>
+        <Setter Property="Padding" Value="8,0"/>
+        <Setter Property="MinWidth" Value="0"/>
+    </Style>
 </ResourceDictionary>

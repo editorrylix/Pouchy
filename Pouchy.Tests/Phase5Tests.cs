@@ -460,3 +460,76 @@ namespace Pouchy.Tests
         }
     }
 }
+
+namespace Pouchy.Tests
+{
+    public class ChangelogTests
+    {
+        private const string Sample = """
+            # Changelog
+
+            ## [Unreleased]
+
+            - Not out yet.
+
+            ## [1.2.0] - 2026-12-01
+
+            ### Added
+
+            - **Big thing.**
+
+            ## [1.1.0] - 2026-10-07
+
+            - Middle thing.
+
+            ## [1.0.0] - 2026-10-06
+
+            - First.
+
+            [1.2.0]: https://example.com/compare
+            """;
+
+        [Fact]
+        public void Parse_ReadsReleasedVersionsNewestFirst()
+        {
+            var releases = Changelog.Parse(Sample);
+
+            Assert.Equal(new[] { "1.2.0", "1.1.0", "1.0.0" }, releases.Select(r => r.Version.ToString(3)));
+            Assert.Equal("2026-12-01", releases[0].Date);
+            Assert.Contains("**Big thing.**", releases[0].Markdown);
+            Assert.DoesNotContain("example.com", releases[0].Markdown); // Link list skipped.
+        }
+
+        [Fact]
+        public void Since_ShowsEveryVersionTheUserSkipped()
+        {
+            var releases = Changelog.Parse(Sample);
+
+            Assert.Equal(new[] { "1.2.0", "1.1.0" }, Changelog.Since(releases, new Version(1, 0, 0), new Version(1, 2, 0)).Select(r => r.Version.ToString(3)));
+            Assert.Equal(new[] { "1.2.0" }, Changelog.Since(releases, null, new Version(1, 2, 0)).Select(r => r.Version.ToString(3)));
+            Assert.Empty(Changelog.Since(releases, new Version(1, 2, 0), new Version(1, 2, 0)));
+        }
+
+        /// <summary>A release without a changelog entry would show an empty "What's new".</summary>
+        [Fact]
+        public void BuiltInChangelog_HasNotesForThisVersion()
+        {
+            var releases = Changelog.Parse(Changelog.Embedded());
+            Assert.Contains(releases, r => r.Version == UpdateService.CurrentVersion && r.Markdown.Length > 50);
+        }
+
+        [Fact]
+        public void Inline_ParsesBoldCodeKeysAndLinks()
+        {
+            var parts = MarkdownLite.ParseInline("Press <kbd>Ctrl</kbd>+<kbd>K</kbd>, see **the guide** in [docs](docs/ACTIONS.md) or `code`<br/>.");
+
+            Assert.Equal(new[]
+            {
+                (InlineKind.Text, "Press "), (InlineKind.Key, "Ctrl"), (InlineKind.Text, "+"), (InlineKind.Key, "K"),
+                (InlineKind.Text, ", see "), (InlineKind.Bold, "the guide"), (InlineKind.Text, " in "), (InlineKind.Link, "docs"),
+                (InlineKind.Text, " or "), (InlineKind.Code, "code"), (InlineKind.Text, "."),
+            }, parts.Select(p => (p.Kind, p.Text)));
+            Assert.Equal("docs/ACTIONS.md", parts.Single(p => p.Kind == InlineKind.Link).Url);
+        }
+    }
+}
