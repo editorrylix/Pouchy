@@ -32,3 +32,8 @@ packages/
 # OS
 Thumbs.db
 .DS_Store
+
+# Packaging tools and output (packaging/build-msix.ps1)
+.tools/
+dist/
+__pycache__/

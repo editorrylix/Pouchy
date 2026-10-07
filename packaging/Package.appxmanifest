@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Pouchy's MSIX manifest. build-msix.ps1 fills in the $(...) values: the identity comes from
+  store-identity.json (copied from Partner Center), the version from the build, the architecture
+  per package. Don't edit the identity here.
+-->
+<Package
+  xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
+  xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
+  xmlns:uap3="http://schemas.microsoft.com/appx/manifest/uap/windows10/3"
+  xmlns:desktop="http://schemas.microsoft.com/appx/manifest/desktop/windows10"
+  xmlns:desktop6="http://schemas.microsoft.com/appx/manifest/desktop/windows10/6"
+  xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
+  IgnorableNamespaces="uap uap3 desktop desktop6 rescap">
+
+  <Identity
+    Name="$(IdentityName)"
+    Publisher="$(Publisher)"
+    Version="$(Version)"
+    ProcessorArchitecture="$(Architecture)" />
+
+  <Properties>
+    <DisplayName>Pouchy</DisplayName>
+    <PublisherDisplayName>$(PublisherDisplayName)</PublisherDisplayName>
+    <Logo>Assets\StoreLogo.png</Logo>
+    <Description>A drag-and-drop shelf for Windows: park files, images, links and text, then drop them anywhere.</Description>
+    <!-- Pouchy keeps its data in %AppData%\Pouchy and its startup/Explorer entries in HKCU, exactly
+         like the installer and portable versions, so settings and shelves are shared and the
+         Explorer menu works. This needs the unvirtualizedResources capability below. -->
+    <desktop6:FileSystemWriteVirtualization>disabled</desktop6:FileSystemWriteVirtualization>
+    <desktop6:RegistryWriteVirtualization>disabled</desktop6:RegistryWriteVirtualization>
+  </Properties>
+
+  <Dependencies>
+    <!-- Windows 10 version 2004 (build 19041), the same minimum as the other downloads. -->
+    <TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.19041.0" MaxVersionTested="10.0.26100.0" />
+  </Dependencies>
+
+  <Resources>
+    <Resource Language="en-us" />
+  </Resources>
+
+  <Applications>
+    <Application Id="Pouchy" Executable="Pouchy.exe" EntryPoint="Windows.FullTrustApplication">
+      <uap:VisualElements
+        DisplayName="Pouchy"
+        Description="A drag-and-drop shelf for Windows"
+        BackgroundColor="transparent"
+        Square150x150Logo="Assets\Square150x150Logo.png"
+        Square44x44Logo="Assets\Square44x44Logo.png">
+        <uap:DefaultTile Wide310x150Logo="Assets\Wide310x150Logo.png" ShortName="Pouchy">
+          <uap:ShowNameOnTiles>
+            <uap:ShowOn Tile="square150x150Logo" />
+            <uap:ShowOn Tile="wide310x150Logo" />
+          </uap:ShowNameOnTiles>
+        </uap:DefaultTile>
+        <uap:SplashScreen Image="Assets\SplashScreen.png" BackgroundColor="#1C1C24" />
+      </uap:VisualElements>
+
+      <Extensions>
+        <!-- "Start with Windows". Off until Pouchy turns it on (first run, Settings, or the welcome window). -->
+        <desktop:Extension Category="windows.startupTask">
+          <desktop:StartupTask TaskId="PouchyStartup" Enabled="false" DisplayName="Pouchy" />
+        </desktop:Extension>
+
+        <!-- A stable path (%LocalAppData%\Microsoft\WindowsApps\pouchy.exe) for "Add to Pouchy" and Send to,
+             since the package folder changes with every update. Also lets people run "pouchy" from Run or a terminal. -->
+        <uap3:Extension Category="windows.appExecutionAlias" Executable="Pouchy.exe" EntryPoint="Windows.FullTrustApplication">
+          <uap3:AppExecutionAlias>
+            <desktop:ExecutionAlias Alias="pouchy.exe" />
+          </uap3:AppExecutionAlias>
+        </uap3:Extension>
+      </Extensions>
+    </Application>
+  </Applications>
+
+  <Capabilities>
+    <rescap:Capability Name="runFullTrust" />
+    <rescap:Capability Name="unvirtualizedResources" />
+  </Capabilities>
+</Package>

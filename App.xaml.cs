@@ -289,6 +289,8 @@ namespace Pouchy
 
         private void StartUpdateChecks()
         {
+            // The Microsoft Store version is updated by the Store; it must not update itself.
+            if (PackageInfo.IsPackaged) return;
             _updates = new UpdateService();
             _trayIcon!.TrayBalloonTipClicked += (_, _) =>
             {

@@ -169,7 +169,10 @@ namespace Pouchy.ViewModels
 
         private readonly Func<Task<UpdateInfo?>>? _runUpdateCheck;
 
-        public string VersionText => $"Version {UpdateService.CurrentVersionText}";
+        public string VersionText => $"Version {UpdateService.CurrentVersionText}{(PackageInfo.IsPackaged ? " · Microsoft Store" : "")}";
+
+        /// <summary>The plain .exe updates itself from GitHub; the Store version is updated by the Store.</summary>
+        public bool ShowUpdateControls => !PackageInfo.IsPackaged;
 
         [ObservableProperty] private bool _checkForUpdates;
         [ObservableProperty] private string _updateStatus = "";
@@ -200,7 +203,9 @@ namespace Pouchy.ViewModels
             ReduceMotion = s.ReduceMotion;
             ShowMascot = s.ShowMascot;
             CheckForUpdates = s.CheckForUpdates;
-            UpdateStatus = s.LastUpdateCheck is DateTime last ? $"Last checked {last:g}" : "Not checked yet";
+            UpdateStatus = PackageInfo.IsPackaged
+                ? "Updates come from the Microsoft Store."
+                : s.LastUpdateCheck is DateTime last ? $"Last checked {last:g}" : "Not checked yet";
             CompactShelfTabs = s.CompactShelfTabs;
             DragOutAction = s.DragOutAction;
             RemoveAfterDragOut = s.RemoveAfterDragOut;

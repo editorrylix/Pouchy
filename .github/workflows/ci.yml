@@ -68,3 +68,18 @@ jobs:
         with:
           name: installer-x64
           path: dist/*.exe
+
+  store-package:
+    name: Build the Store package
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      # Checks the manifest and packaging still work (x64 only, placeholder identity).
+      - name: Build MSIX
+        shell: pwsh
+        run: ./packaging/build-msix.ps1 -Architectures x64

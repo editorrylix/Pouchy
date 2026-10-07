@@ -10,6 +10,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Added
+
+- **Microsoft Store package** (MSIX for x64 and ARM64). The Store version is updated by the Store, starts with Windows through its startup task, and otherwise works exactly like the other downloads. See [packaging/README.md](packaging/README.md).
+
 ### Changed
 
 - Added a [privacy policy](PRIVACY.md), linked from Settings → About.

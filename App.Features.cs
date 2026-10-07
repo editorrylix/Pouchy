@@ -287,7 +287,7 @@ namespace Pouchy
             {
                 yield return Command($"Install Pouchy {_availableUpdate.Version.ToString(3)}", Symbol.ArrowDownload24, ConfirmAndInstallUpdate, null, "update");
             }
-            else
+            else if (!PackageInfo.IsPackaged)
             {
                 yield return Command("Check for updates", Symbol.ArrowSync24, async () =>
                 {

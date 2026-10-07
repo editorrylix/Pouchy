@@ -65,6 +65,31 @@ jobs:
             if ($LASTEXITCODE -ne 0) { throw "Installer build failed for $arch" }
           }
 
+      # For Partner Center, not the GitHub release. The identity comes from the repository variables
+      # STORE_IDENTITY_NAME, STORE_PUBLISHER and STORE_PUBLISHER_DISPLAY_NAME (Settings → Secrets and
+      # variables → Actions → Variables); without them the package has placeholder values.
+      - name: Build the Microsoft Store package
+        shell: pwsh
+        env:
+          STORE_IDENTITY_NAME: ${{ vars.STORE_IDENTITY_NAME }}
+          STORE_PUBLISHER: ${{ vars.STORE_PUBLISHER }}
+          STORE_PUBLISHER_DISPLAY_NAME: ${{ vars.STORE_PUBLISHER_DISPLAY_NAME }}
+        run: |
+          if ($env:STORE_IDENTITY_NAME) {
+            [ordered]@{
+              IdentityName = $env:STORE_IDENTITY_NAME
+              Publisher = $env:STORE_PUBLISHER
+              PublisherDisplayName = $env:STORE_PUBLISHER_DISPLAY_NAME
+            } | ConvertTo-Json | Set-Content -Encoding utf8 packaging/store-identity.json
+          }
+          ./packaging/build-msix.ps1 -Version '${{ steps.version.outputs.core }}' -OutDir store
+
+      - name: Upload the Store package
+        uses: actions/upload-artifact@v4
+        with:
+          name: microsoft-store-package
+          path: store/*.msixupload
+
       - name: Write checksums
         shell: pwsh
         run: |

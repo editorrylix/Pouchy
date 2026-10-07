@@ -534,7 +534,8 @@
                                            Appearance="Primary" Command="{Binding InstallUpdateCommand}"
                                            Visibility="{Binding HasAvailableUpdate, Converter={StaticResource BoolToVisibility}}"/>
                                 <ui:Button Content="Check for updates" Icon="{ui:SymbolIcon ArrowSync24}" Margin="0,0,8,8"
-                                           Command="{Binding CheckNowCommand}"/>
+                                           Command="{Binding CheckNowCommand}"
+                                           Visibility="{Binding ShowUpdateControls, Converter={StaticResource BoolToVisibility}}"/>
                                 <ui:Button Content="What's new" Icon="{ui:SymbolIcon Sparkle24}" Margin="0,0,8,8"
                                            Command="{Binding OpenLinkCommand}" CommandParameter="https://github.com/editorrylix/Pouchy/releases"/>
                                 <ui:Button Content="Report a bug" Icon="{ui:SymbolIcon Bug24}" Margin="0,0,8,8"
@@ -547,7 +548,7 @@
                         </StackPanel>
                     </Grid>
                 </Border>
-                <ui:CardControl>
+                <ui:CardControl Visibility="{Binding ShowUpdateControls, Converter={StaticResource BoolToVisibility}}">
                     <ui:CardControl.Header>
                         <StackPanel>
                             <TextBlock Text="Check for updates automatically" Style="{StaticResource CardTitle}"/>
