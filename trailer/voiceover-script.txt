@@ -1,0 +1,17 @@
+POUCHY — LAUNCH TRAILER — VOICE-OVER
+Length 35 s, 120 BPM. Times are seconds from the start of the trailer (also in src/timeline.json).
+Read warm and relaxed, a smile in the voice, never salesy. Short lines; the music carries the rest.
+
+Recorded take: Kokoro TTS (local, Apache-2.0 model), voice "af_heart", speed 1.05 (audio/vo.py).
+To replace it with a human read, record each line as its own WAV, trim the silence, and put the
+files in audio/build/vo/ with the same names before running audio/mix.py.
+
+ TIME    ID    LINE                          ON SCREEN
+  4.15   vo1   Just shake your mouse...      the file is grabbed and shaken; "SHAKE"
+  5.70   vo2   and Pouchy pops up.           the pouch appears under the cursor
+  8.95   vo3   Park anything.                the picture lands in the pouch; "PARK."
+ 10.10   vo4   Drop it anywhere.             dragging it out into Paint
+ 24.55   vo5   Make it yours.                the themes fan out; "MAKE IT YOURS."
+ 31.95   vo6   Pouchy. Free for Windows.     end card
+
+Captions are shown for vo1–vo4 only; vo5 and vo6 are already on screen as large type.

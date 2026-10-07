@@ -1,0 +1,39 @@
+<!doctype html>
+<!-- A prop page for the clipboard-history shot: things to copy (text, a link, a colour). -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Launch notes</title>
+<style>
+  html, body { margin: 0; height: 100%; }
+  body {
+    background: #17151f; color: #f2f0f7; font: 22px/1.45 "Segoe UI Variable Text", "Segoe UI", sans-serif;
+    padding: 30px 44px; box-sizing: border-box;
+  }
+  /* Fixed sizes: record.ps1 works out where to click from them. */
+  h1 { font: 600 34px/48px "Segoe UI Variable Display", "Segoe UI", sans-serif; height: 48px; margin: 0 0 20px; }
+  p { margin: 0 0 18px; padding: 0 18px; height: 64px; line-height: 64px; border-radius: 12px; background: #221f2d; white-space: nowrap; overflow: hidden; }
+  .link { color: #9d8cff; }
+  .swatch { display: inline-block; width: 18px; height: 18px; border-radius: 5px; background: #FF8A5B; vertical-align: -2px; margin-right: 10px; }
+  ::selection { background: #6f5ff0; color: white; }
+</style>
+</head>
+<body>
+  <h1>Launch notes</h1>
+  <p id="quote">Shake your mouse. Park anything. Drop it anywhere.</p>
+  <p id="link" class="link">https://github.com/editorrylix/Pouchy</p>
+  <p id="colour"><span class="swatch"></span>#FF8A5B</p>
+  <p id="todo">Send the new icons to the team by Friday</p>
+<script>
+  // Clicking a line selects exactly its text (no trailing line break), ready for Ctrl+C.
+  document.querySelectorAll('p').forEach(p => p.addEventListener('click', () => {
+    const range = document.createRange();
+    const text = [...p.childNodes].reverse().find(n => n.nodeType === Node.TEXT_NODE) || p;
+    range.selectNodeContents(text);
+    const selection = getSelection();
+    selection.removeAllRanges();
+    selection.addRange(range);
+  }));
+</script>
+</body>
+</html>

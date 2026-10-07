@@ -1,0 +1,6 @@
+node_modules/
+out/
+# Recorded footage, app renders and generated audio are produced locally (see EDITING.md),
+# so the repository only holds the code that makes them.
+public/
+audio/build/
