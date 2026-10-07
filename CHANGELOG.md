@@ -12,6 +12,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Changed
 
+- Added a [privacy policy](PRIVACY.md), linked from Settings → About.
 - The full user guide now lives in [docs/GUIDE.md](docs/GUIDE.md). The welcome window and tray menu → Help link there.
 
 ## [1.1.0] - 2026-10-07

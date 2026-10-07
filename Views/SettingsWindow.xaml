@@ -541,6 +541,8 @@
                                            Command="{Binding OpenLinkCommand}" CommandParameter="https://github.com/editorrylix/Pouchy/issues/new/choose"/>
                                 <ui:Button Content="GitHub" Icon="{ui:SymbolIcon Code24}" Margin="0,0,8,8"
                                            Command="{Binding OpenLinkCommand}" CommandParameter="https://github.com/editorrylix/Pouchy"/>
+                                <ui:Button Content="Privacy policy" Icon="{ui:SymbolIcon ShieldCheckmark24}" Margin="0,0,8,8"
+                                           Command="{Binding OpenLinkCommand}" CommandParameter="https://github.com/editorrylix/Pouchy/blob/main/PRIVACY.md"/>
                             </WrapPanel>
                         </StackPanel>
                     </Grid>

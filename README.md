@@ -210,6 +210,8 @@ Dropover and Yoink are drag-and-drop shelves for **macOS**. There's no Windows v
   - **Update check:** asks GitHub about once a day whether a newer version exists.
 - **Clipboard history is off unless you turn it on,** and it skips content that password managers mark as private.
 
+Read the full **[privacy policy](PRIVACY.md)**.
+
 ## FAQ
 
 <details>

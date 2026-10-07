@@ -487,6 +487,8 @@ No.
 - **Clipboard history is off unless you turn it on,** and never saves content marked as private.
 - **Text recognition runs on your PC** using Windows' built-in OCR.
 
+The **[privacy policy](../PRIVACY.md)** has the full details.
+
 ---
 
 Something missing or unclear? [Open an issue](https://github.com/editorrylix/Pouchy/issues/new/choose) and it'll be added here.
