@@ -60,6 +60,7 @@ namespace Pouchy.Views
         {
             _animationVersion++; // Cancels a hide queued by a running Despawn animation.
 
+            bool wasHidden = !IsVisible;
             if (!IsVisible) Show();
             if (_isDocked) Undock();
             _vm.RefreshMissingState();
@@ -91,6 +92,7 @@ namespace Pouchy.Views
                 NativeMethods.SWP_NOSIZE | NativeMethods.SWP_NOZORDER | NativeMethods.SWP_NOACTIVATE);
 
             AnimateIn(opensRightOfCursor);
+            if (wasHidden) PlaySound?.Invoke(SoundEvent.Open);
         }
 
         /// <summary>Shows the pouch if hidden, hides it if shown.</summary>
@@ -254,6 +256,7 @@ namespace Pouchy.Views
             if (!_vm.IsDraggingOut && !_isDraggingIn)
             {
                 _isDraggingIn = true;
+                ShowActionTiles(PrepareActionTiles(e.Data));
                 ShowDropOverlay(true);
             }
             e.Effects = GetDragEffect(e);
@@ -284,6 +287,7 @@ namespace Pouchy.Views
             if (show) OverlayMascot.PopIn();
             var animation = new DoubleAnimation(show ? 1 : 0, Motion.Enabled ? Motion.Duration(show ? 120 : 180) : TimeSpan.Zero);
             DropOverlay.BeginAnimation(OpacityProperty, animation);
+            if (!show) ShowActionTiles(false);
         }
 
         private async void Window_Drop(object sender, DragEventArgs e)
@@ -465,6 +469,8 @@ namespace Pouchy.Views
                     ? OleDrag.Run(comData, allowed)
                     : DragDrop.DoDragDrop(element, data, allowed); // The drag source must be a UIElement.
                 Logger.Log($"Dragged {items.Count} item(s) out: {result}.");
+                if (result != DragDropEffects.None) PlaySound?.Invoke(SoundEvent.DragOut);
+                RememberDropTarget(items);
                 // Explorer moves files itself and reports "None" (an optimised move), so re-check the files.
                 _vm.AfterDragOut(items, dropped: result != DragDropEffects.None);
             }
@@ -505,6 +511,10 @@ namespace Pouchy.Views
             {
                 case Key.F when ctrl:
                     OpenSearch();
+                    break;
+                case Key.K when ctrl:
+                case Key.P when modifiers == (ModifierKeys.Control | ModifierKeys.Shift):
+                    OpenPalette();
                     break;
                 case Key.Z when ctrl:
                     _vm.Undo();

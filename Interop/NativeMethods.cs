@@ -241,6 +241,68 @@ namespace Pouchy.Interop
         [return: MarshalAs(UnmanagedType.Bool)]
         public static extern bool SystemParametersInfo(uint uiAction, uint uiParam, string pvParam, uint fWinIni);
 
+        // Clipboard
+        public const int WM_CLIPBOARDUPDATE = 0x031D;
+
+        [DllImport("user32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        public static extern bool AddClipboardFormatListener(IntPtr hwnd);
+
+        [DllImport("user32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        public static extern bool RemoveClipboardFormatListener(IntPtr hwnd);
+
+        [DllImport("user32.dll")]
+        public static extern IntPtr GetClipboardOwner();
+
+        [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        public static extern uint RegisterClipboardFormat(string lpszFormat);
+
+        [DllImport("user32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        public static extern bool IsClipboardFormatAvailable(uint format);
+
+        // Windows under the cursor
+        public const uint GA_ROOT = 2;
+
+        [DllImport("user32.dll")]
+        public static extern IntPtr WindowFromPoint(POINT point);
+
+        [DllImport("user32.dll")]
+        public static extern IntPtr GetAncestor(IntPtr hwnd, uint flags);
+
+        // Sounds
+        public const uint SND_ASYNC = 0x0001;
+        public const uint SND_NODEFAULT = 0x0002;
+        public const uint SND_MEMORY = 0x0004;
+        public const uint SND_PURGE = 0x0040;
+
+        [DllImport("winmm.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        public static extern bool PlaySound(IntPtr sound, IntPtr hmod, uint flags);
+
+        // Colour picker
+        public const int CC_RGBINIT = 0x1;
+        public const int CC_FULLOPEN = 0x2;
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct CHOOSECOLOR
+        {
+            public int lStructSize;
+            public IntPtr hwndOwner;
+            public IntPtr hInstance;
+            public int rgbResult;
+            public IntPtr lpCustColors;
+            public int Flags;
+            public IntPtr lCustData;
+            public IntPtr lpfnHook;
+            public IntPtr lpTemplateName;
+        }
+
+        [DllImport("comdlg32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        public static extern bool ChooseColor(ref CHOOSECOLOR lpcc);
+
         public const int MDT_EFFECTIVE_DPI = 0;
 
         [DllImport("shcore.dll")]

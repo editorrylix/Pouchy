@@ -51,6 +51,23 @@ jobs:
             # memory on every launch. The zip keeps the download small instead.
             Compress-Archive -Path "publish/$rid/Pouchy.exe" -DestinationPath "dist/Pouchy-$v-$rid.zip" -CompressionLevel Optimal
           }
+
+      - name: Build installers
+        shell: pwsh
+        run: |
+          $v = '${{ steps.version.outputs.version }}'
+          $core = '${{ steps.version.outputs.core }}'
+          choco install innosetup --no-progress -y
+          if ($LASTEXITCODE -ne 0) { throw "Installing Inno Setup failed" }
+          $iscc = Join-Path ${env:ProgramFiles(x86)} 'Inno Setup 6\ISCC.exe'
+          foreach ($arch in 'x64', 'arm64') {
+            & $iscc "/DAppVersion=$v" "/DFileVersion=$core" "/DArch=$arch" "/DSourceExe=..\publish\win-$arch\Pouchy.exe" installer/Pouchy.iss
+            if ($LASTEXITCODE -ne 0) { throw "Installer build failed for $arch" }
+          }
+
+      - name: Write checksums
+        shell: pwsh
+        run: |
           Get-ChildItem dist | Sort-Object Name | ForEach-Object {
             "$((Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLower())  $($_.Name)"
           } | Set-Content -Encoding utf8 dist/SHA256SUMS.txt
@@ -77,12 +94,12 @@ jobs:
 
           ## Download
 
-          | Your PC | Download |
-          | --- | --- |
-          | Most Windows PCs (Intel / AMD) | [**Pouchy-$v-win-x64.zip**](https://github.com/$repo/releases/download/v$v/Pouchy-$v-win-x64.zip) |
-          | Windows on ARM (Snapdragon, Surface Pro X) | [**Pouchy-$v-win-arm64.zip**](https://github.com/$repo/releases/download/v$v/Pouchy-$v-win-arm64.zip) |
+          | Your PC | Installer (recommended) | Portable |
+          | --- | --- | --- |
+          | Most Windows PCs (Intel / AMD) | [**Pouchy-$v-setup-x64.exe**](https://github.com/$repo/releases/download/v$v/Pouchy-$v-setup-x64.exe) | [zip](https://github.com/$repo/releases/download/v$v/Pouchy-$v-win-x64.zip) |
+          | Windows on ARM (Snapdragon, Surface Pro X) | [**Pouchy-$v-setup-arm64.exe**](https://github.com/$repo/releases/download/v$v/Pouchy-$v-setup-arm64.exe) | [zip](https://github.com/$repo/releases/download/v$v/Pouchy-$v-win-arm64.zip) |
 
-          No installer and no .NET needed: unzip it and run **Pouchy.exe** from wherever you like. Pouchy lives in the system tray. Turn on **Settings → Run at Windows startup** to keep it around.
+          The installer needs no admin rights and sets up the Start menu, startup and the Explorer menu for you. The portable zip is one **Pouchy.exe** you can run from anywhere. Both update themselves from **Settings → About**, and neither needs .NET installed.
 
           > **"Windows protected your PC"?** Pouchy isn't code-signed yet, so SmartScreen warns about new downloads. Click **More info → Run anyway**. You can check the download against **SHA256SUMS.txt** below.
 

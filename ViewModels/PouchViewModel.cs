@@ -113,6 +113,53 @@ namespace Pouchy.ViewModels
             Save();
         }
 
+        /// <summary>Makes a shelf collect matching items. Only one shelf keeps the clipboard history.</summary>
+        public void SetShelfRule(Shelf shelf, ShelfRule rule)
+        {
+            if (rule == ShelfRule.Clipboard)
+            {
+                foreach (var other in Shelves.Where(s => s != shelf && s.Rule == ShelfRule.Clipboard)) other.Rule = ShelfRule.None;
+            }
+            shelf.Rule = rule;
+            OnPropertyChanged(nameof(ClipboardShelf));
+            Save();
+        }
+
+        /// <summary>The shelf that keeps clipboard history, if any.</summary>
+        public Shelf? ClipboardShelf => Shelves.FirstOrDefault(s => s.Rule == ShelfRule.Clipboard);
+
+        /// <summary>Turns clipboard history on (creating a "Clipboard" shelf if needed) or off.</summary>
+        public void SetClipboardHistory(bool enabled)
+        {
+            if (enabled == (ClipboardShelf != null)) return;
+            if (!enabled)
+            {
+                SetShelfRule(ClipboardShelf!, ShelfRule.None);
+                return;
+            }
+
+            var shelf = Shelves.FirstOrDefault(s => s.Name.Equals("Clipboard", StringComparison.OrdinalIgnoreCase) && s.Rule == ShelfRule.None)
+                        ?? AddShelf(new Shelf { Name = "Clipboard", Color = "#14B8A6", Icon = "Bookmark" });
+            SetShelfRule(shelf, ShelfRule.Clipboard);
+        }
+
+        /// <summary>Where a new item goes: the shelf it was dropped on, else a smart shelf that collects it, else the open shelf.</summary>
+        public Shelf TargetFor(PouchItem item, Shelf? explicitShelf)
+        {
+            if (explicitShelf != null) return explicitShelf;
+            if (ActiveShelf.Rule != ShelfRule.None && ShelfRules.Matches(ActiveShelf.Rule, item)) return ActiveShelf;
+            return Shelves.FirstOrDefault(s => s.Rule != ShelfRule.None && ShelfRules.Matches(s.Rule, item)) ?? ActiveShelf;
+        }
+
+        /// <summary>Adds an item where <see cref="TargetFor"/> says, and says so if that isn't the open shelf.</summary>
+        private void Place(PouchItem item, Shelf? explicitShelf)
+        {
+            var target = TargetFor(item, explicitShelf);
+            target.Items.Add(item);
+            PlaySound?.Invoke(SoundEvent.Add);
+            if (explicitShelf == null && target != ActiveShelf) ShowNotice($"Added to “{target.Name}”");
+        }
+
         /// <summary>Deletes a shelf and its items. The last shelf can't be deleted.</summary>
         public void DeleteShelf(Shelf shelf)
         {
@@ -121,6 +168,7 @@ namespace Pouchy.ViewModels
             int index = Shelves.IndexOf(shelf);
             shelf.Items.CollectionChanged -= OnShelfItemsChanged;
             Shelves.Remove(shelf);
+            OnPropertyChanged(nameof(ClipboardShelf));
             if (ActiveShelf == shelf) ActiveShelf = Shelves[Math.Min(index, Shelves.Count - 1)];
             OnPropertyChanged(nameof(HasMultipleShelves));
             RefreshSearch();
@@ -284,6 +332,11 @@ namespace Pouchy.ViewModels
         public bool ShowMascot => _settings.Current.ShowMascot;
         public bool CompactShelfTabs => _settings.Current.CompactShelfTabs;
         public DragOutAction DragOutAction => _settings.Current.DragOutAction;
+        public bool ShowDropActions => _settings.Current.ShowDropActions;
+        public ICollection<string> HiddenActions => _settings.Current.HiddenActions;
+
+        /// <summary>Set by the app to play interface sounds.</summary>
+        public Action<SoundEvent>? PlaySound { get; set; }
 
         /// <summary>
         /// After items were dropped somewhere: drop the ones whose files were moved away (they'd only
@@ -356,6 +409,7 @@ namespace Pouchy.ViewModels
                             Name = string.IsNullOrWhiteSpace(r.Shelf.Name) ? "Pouch" : r.Shelf.Name,
                             Color = r.Shelf.Color,
                             Icon = Shelf.Icons.Contains(r.Shelf.Icon) ? r.Shelf.Icon : Shelf.Icons[0],
+                            Rule = Enum.IsDefined(r.Shelf.Rule) ? r.Shelf.Rule : ShelfRule.None,
                         };
                         foreach (var item in r.Items)
                         {
@@ -366,6 +420,7 @@ namespace Pouchy.ViewModels
 
                     Shelves.Clear();
                     foreach (var shelf in shelves) AddShelf(shelf);
+                    OnPropertyChanged(nameof(ClipboardShelf));
                     ActiveShelf = Shelves.FirstOrDefault(s => s.Id == state.ActiveShelfId) ?? Shelves[0];
                     ActiveShelf.IsActive = true;
                 }
@@ -416,45 +471,157 @@ namespace Pouchy.ViewModels
             foreach (var item in AllItems) _factory.Refresh(item);
         }
 
-        public async Task AddPathsAsync(IReadOnlyList<string> paths, Shelf? shelf = null)
+        /// <returns>The new item, or null if the same files are already on the shelf it would go to.</returns>
+        public async Task<PouchItem?> AddPathsAsync(IReadOnlyList<string> paths, Shelf? shelf = null)
         {
-            if (paths.Count == 0) return;
-            var target = (shelf ?? ActiveShelf).Items;
+            if (paths.Count == 0) return null;
+            var item = await Task.Run(() => paths.Count == 1 ? _factory.CreateFromPath(paths[0]) : _factory.CreateStack(paths));
+            if (FindSameFiles(TargetFor(item, shelf), paths) != null) return null;
+            Place(item, shelf);
+            return item;
+        }
 
+        private static PouchItem? FindSameFiles(Shelf shelf, IReadOnlyList<string> paths)
+        {
             if (paths.Count == 1)
             {
-                string path = paths[0];
-                if (target.Any(i => string.Equals(i.FilePath, path, StringComparison.OrdinalIgnoreCase))) return;
-                target.Add(await Task.Run(() => _factory.CreateFromPath(path)));
+                return shelf.Items.FirstOrDefault(i => !i.IsStack && string.Equals(i.FilePath, paths[0], StringComparison.OrdinalIgnoreCase));
             }
-            else
-            {
-                bool alreadyStacked = target.Any(i => i.IsStack &&
-                    i.StackFiles!.OrderBy(p => p, StringComparer.OrdinalIgnoreCase)
-                        .SequenceEqual(paths.OrderBy(p => p, StringComparer.OrdinalIgnoreCase), StringComparer.OrdinalIgnoreCase));
-                if (alreadyStacked) return;
-                target.Add(await Task.Run(() => _factory.CreateStack(paths)));
-            }
+            var sorted = paths.OrderBy(p => p, StringComparer.OrdinalIgnoreCase).ToList();
+            return shelf.Items.FirstOrDefault(i => i.IsStack &&
+                i.StackFiles!.OrderBy(p => p, StringComparer.OrdinalIgnoreCase).SequenceEqual(sorted, StringComparer.OrdinalIgnoreCase));
         }
 
         /// <summary>Adds text; URLs become links and colour values become swatches.</summary>
         public PouchItem? AddText(string text, Shelf? shelf = null)
         {
             if (string.IsNullOrWhiteSpace(text)) return null;
-            var target = (shelf ?? ActiveShelf).Items;
 
             var item = _factory.CreateFromText(text);
-            if (target.FirstOrDefault(i => i.Kind == item.Kind && i.TextContent == item.TextContent) is { } existing) return existing;
+            var target = TargetFor(item, shelf);
+            if (target.Items.FirstOrDefault(i => i.Kind == item.Kind && i.TextContent == item.TextContent) is { } existing) return existing;
 
-            target.Add(item);
+            Place(item, shelf);
             if (item.Kind == PouchItemKind.Link) _ = EnrichLinkAsync(item);
             return item;
         }
 
-        public void AddImage(BitmapSource image, Shelf? shelf = null)
+        public PouchItem AddImage(BitmapSource image, Shelf? shelf = null)
         {
-            (shelf ?? ActiveShelf).Items.Add(_factory.CreateImage(image));
+            var item = _factory.CreateImage(image);
+            Place(item, shelf);
+            return item;
         }
+
+        // ================================================================ Clipboard history
+
+        /// <summary>
+        /// Puts what's on the clipboard at the top of the clipboard shelf. Something copied again moves
+        /// back to the top, and the oldest unpinned items go once there are more than the limit.
+        /// </summary>
+        public async Task CaptureClipboardAsync()
+        {
+            var shelf = ClipboardShelf;
+            if (shelf == null) return;
+
+            PouchItem? item = null;
+            PouchItem? existing = null;
+            try
+            {
+                if (Clipboard.ContainsFileDropList())
+                {
+                    var files = Clipboard.GetFileDropList().Cast<string>().ToList();
+                    if (files.Count == 0) return;
+                    existing = FindSameFiles(shelf, files);
+                    item = existing ?? await Task.Run(() => files.Count == 1 ? _factory.CreateFromPath(files[0]) : _factory.CreateStack(files));
+                }
+                else if (Clipboard.ContainsText() && Clipboard.GetText() is { } text && !string.IsNullOrWhiteSpace(text))
+                {
+                    // Text before images: Office copies both, and the text is what people want back.
+                    existing = shelf.Items.FirstOrDefault(i => i.IsTextLike && i.TextContent == text);
+                    item = existing ?? _factory.CreateFromText(text);
+                }
+                else if (Clipboard.ContainsImage() && Clipboard.GetImage() is BitmapSource image)
+                {
+                    item = _factory.CreateImage(image);
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Log("Could not read the clipboard: " + ex.Message);
+            }
+            if (item == null || !Shelves.Contains(shelf)) return;
+
+            if (existing != null) shelf.Items.Remove(existing);
+            shelf.Items.Insert(0, item);
+            if (existing == null && item.Kind == PouchItemKind.Link) _ = EnrichLinkAsync(item);
+
+            var extra = shelf.Items.Where(i => !i.IsPinned).Skip(Math.Max(1, _settings.Current.ClipboardHistoryLimit)).ToList();
+            if (extra.Count > 0) RemoveItems(extra, undoable: false);
+        }
+
+        // ================================================================ Auto-clear
+
+        public static TimeSpan? MaxAge(ItemExpiry expiry) => expiry switch
+        {
+            ItemExpiry.OneHour => TimeSpan.FromHours(1),
+            ItemExpiry.OneDay => TimeSpan.FromDays(1),
+            ItemExpiry.OneWeek => TimeSpan.FromDays(7),
+            ItemExpiry.OneMonth => TimeSpan.FromDays(30),
+            _ => null,
+        };
+
+        /// <summary>Removes unpinned items older than the auto-clear setting allows.</summary>
+        /// <returns>How many were removed.</returns>
+        public int RemoveExpired(DateTime now)
+        {
+            if (MaxAge(_settings.Current.AutoClear) is not TimeSpan maxAge) return 0;
+            var expired = AllItems.Where(i => !i.IsPinned && now - i.AddedAt > maxAge).ToList();
+            if (expired.Count > 0) RemoveItems(expired, message: $"Cleared {Format.Plural(expired.Count, "old item")}");
+            return expired.Count;
+        }
+
+        // ================================================================ Recent destinations
+
+        private const int MaxRecentDestinations = 6;
+
+        /// <summary>Folders items were recently sent to, newest first (only ones that still exist).</summary>
+        public IReadOnlyList<string> RecentDestinations =>
+            _settings.Current.RecentDestinations.Where(System.IO.Directory.Exists).Take(MaxRecentDestinations).ToList();
+
+        public void RecordDestination(string folder)
+        {
+            folder = folder.Trim();
+            if (folder.Length == 0) return;
+            folder = System.IO.Path.TrimEndingDirectorySeparator(folder);
+            if (folder.EndsWith(':')) folder += System.IO.Path.DirectorySeparatorChar; // "C:" alone means the current folder on C.
+            _settings.Update(s =>
+            {
+                s.RecentDestinations.RemoveAll(f => string.Equals(System.IO.Path.TrimEndingDirectorySeparator(f),
+                    System.IO.Path.TrimEndingDirectorySeparator(folder), StringComparison.OrdinalIgnoreCase));
+                s.RecentDestinations.Insert(0, folder);
+                int keep = MaxRecentDestinations * 2; // Spares for folders that get deleted.
+                if (s.RecentDestinations.Count > keep) s.RecentDestinations.RemoveRange(keep, s.RecentDestinations.Count - keep);
+            });
+        }
+
+        // ================================================================ Notices
+
+        /// <summary>A short message at the bottom of the pouch ("Added to Images", "Copied 3 items to Downloads").</summary>
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(HasNotice))]
+        private string? _notice;
+
+        public bool HasNotice => Notice != null;
+
+        public void ShowNotice(string message)
+        {
+            Notice = null; // Re-raise even when the text is the same, so the timer restarts.
+            Notice = message;
+        }
+
+        [RelayCommand]
+        private void DismissNotice() => Notice = null;
 
         /// <summary>Adds whatever is on the clipboard: files, an image or text.</summary>
         public async Task PasteAsync()
@@ -511,7 +678,9 @@ namespace Pouchy.ViewModels
         [RelayCommand]
         private void Remove(PouchItem? item)
         {
-            if (item != null) RemoveItems(new[] { item });
+            if (item == null) return;
+            RemoveItems(new[] { item });
+            PlaySound?.Invoke(SoundEvent.Remove);
         }
 
         /// <param name="undoable">False when the files themselves are gone (deleted to the Recycle Bin).</param>
@@ -545,6 +714,7 @@ namespace Pouchy.ViewModels
         {
             var unpinned = Items.Where(i => !i.IsPinned).ToList();
             RemoveItems(unpinned, message: $"Cleared {Format.Plural(unpinned.Count, "item")}");
+            if (unpinned.Count > 0) PlaySound?.Invoke(SoundEvent.Remove);
         }
 
         /// <summary>Puts the most recently removed items back where they were.</summary>

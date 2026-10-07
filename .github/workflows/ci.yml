@@ -40,3 +40,31 @@ jobs:
           name: test-results
           path: TestResults
           if-no-files-found: ignore
+
+  installer:
+    name: Build the installer
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Publish and build the x64 installer
+        shell: pwsh
+        run: |
+          dotnet publish Pouchy.csproj -c Release -r win-x64 --self-contained true `
+            -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:DebugType=none -o publish/win-x64
+          if ($LASTEXITCODE -ne 0) { throw "Publish failed" }
+          choco install innosetup --no-progress -y
+          if ($LASTEXITCODE -ne 0) { throw "Installing Inno Setup failed" }
+          $version = ([xml](Get-Content Pouchy.csproj)).Project.PropertyGroup.Version | Where-Object { $_ } | Select-Object -First 1
+          & (Join-Path ${env:ProgramFiles(x86)} 'Inno Setup 6\ISCC.exe') "/DAppVersion=$version" "/DArch=x64" installer/Pouchy.iss
+          if ($LASTEXITCODE -ne 0) { throw "Installer build failed" }
+
+      - name: Upload installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: installer-x64
+          path: dist/*.exe

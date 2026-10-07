@@ -588,12 +588,19 @@
                                 <DataTemplate DataType="{x:Type models:Shelf}">
                                     <Border x:Name="Chip" Tag="ShelfChip" Margin="0,0,6,0" Padding="8,4,9,5" CornerRadius="12" Cursor="Hand"
                                             BorderThickness="1" Background="{DynamicResource Pouch.Tile}" BorderBrush="{DynamicResource Pouch.TileBorder}"
-                                            AllowDrop="True" ToolTip="{Binding Name}"
+                                            AllowDrop="True" ToolTip="{Binding ToolTipText}"
                                             MouseLeftButtonUp="ShelfChip_MouseLeftButtonUp"
                                             DragEnter="ShelfChip_DragEnter" DragOver="ShelfChip_DragOver" DragLeave="ShelfChip_DragLeave" Drop="ShelfChip_Drop">
                                         <StackPanel Orientation="Horizontal">
-                                            <ui:SymbolIcon Symbol="{Binding Icon, Converter={StaticResource SymbolName}}" Filled="True" FontSize="14"
-                                                           Foreground="{Binding ColorBrush}" VerticalAlignment="Center"/>
+                                            <Grid VerticalAlignment="Center">
+                                                <ui:SymbolIcon Symbol="{Binding Icon, Converter={StaticResource SymbolName}}" Filled="True" FontSize="14"
+                                                               Foreground="{Binding ColorBrush}" VerticalAlignment="Center"/>
+                                                <!-- Smart shelves get a small spark in the corner. -->
+                                                <ui:SymbolIcon Symbol="Sparkle16" Filled="True" FontSize="8" Margin="0,-4,-5,0"
+                                                               HorizontalAlignment="Right" VerticalAlignment="Top"
+                                                               Foreground="{DynamicResource Pouch.Text}"
+                                                               Visibility="{Binding IsSmart, Converter={StaticResource BoolToVisibility}}"/>
+                                            </Grid>
                                             <!-- Name and count; in compact mode only the active shelf shows them, sliding open. -->
                                             <StackPanel x:Name="ChipLabel" Orientation="Horizontal" MaxWidth="160" ClipToBounds="True">
                                                 <TextBlock x:Name="ChipName" Text="{Binding Name}" FontSize="11.5" FontWeight="Medium" MaxWidth="110"
@@ -799,7 +806,7 @@
                     <Border CornerRadius="{DynamicResource Pouch.InnerCornerRadius}" Background="{DynamicResource Pouch.MenuBackground}"/>
                     <Border CornerRadius="{DynamicResource Pouch.InnerCornerRadius}" Background="{DynamicResource Pouch.AccentSoft}"
                             BorderBrush="{DynamicResource Pouch.Accent}" BorderThickness="2"/>
-                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                    <StackPanel x:Name="OverlayContent" VerticalAlignment="Center" HorizontalAlignment="Center">
                         <views:Mascot x:Name="OverlayMascot" Mood="Excited" Width="72" Height="72"
                                       Visibility="{Binding ShowMascot, Converter={StaticResource BoolToVisibility}}"/>
                         <ui:SymbolIcon Symbol="ArrowDownload24" FontSize="24" Foreground="{DynamicResource Pouch.Accent}" HorizontalAlignment="Center"
@@ -820,8 +827,50 @@
                     </StackPanel>
                 </Grid>
 
-                <!-- Undo -->
-                <Border Grid.Row="4" Margin="0,10,0,0" Padding="12,0,4,0" Height="34" CornerRadius="{DynamicResource Pouch.TileCornerRadius}"
+                <!-- Drop actions: shown with the overlay while files are dragged in. Dropping on a tile runs it. -->
+                <ItemsControl x:Name="ActionStrip" Grid.Row="3" VerticalAlignment="Bottom" HorizontalAlignment="Center" Width="{Binding ContentWidth}"
+                              Margin="0,0,0,6" Visibility="Collapsed">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel HorizontalAlignment="Center"/>
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="{x:Type views:ActionTile}">
+                            <Border Width="68" Height="56" Margin="3" CornerRadius="{DynamicResource Pouch.TileCornerRadius}" AllowDrop="True"
+                                    Background="{DynamicResource Pouch.MenuBackground}" BorderBrush="{DynamicResource Pouch.TileBorder}" BorderThickness="1.5"
+                                    ToolTip="{Binding ToolTip}"
+                                    DragEnter="ActionTile_DragEnter" DragOver="ActionTile_DragOver" DragLeave="ActionTile_DragLeave" Drop="ActionTile_Drop">
+                                <StackPanel VerticalAlignment="Center">
+                                    <ui:SymbolIcon Symbol="{Binding Symbol}" FontSize="19" Foreground="{DynamicResource Pouch.Accent}" HorizontalAlignment="Center"/>
+                                    <TextBlock Text="{Binding Label}" FontSize="10" FontWeight="Medium" Margin="4,3,4,0" HorizontalAlignment="Center"
+                                               TextTrimming="CharacterEllipsis" Foreground="{DynamicResource Pouch.Text}"/>
+                                </StackPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <!-- Notices and undo -->
+                <StackPanel Grid.Row="4" Width="{Binding ContentWidth}">
+                <Border Margin="0,10,0,0" Padding="10,0,4,0" Height="34" CornerRadius="{DynamicResource Pouch.TileCornerRadius}"
+                        Background="{DynamicResource Pouch.AccentSoft}" BorderBrush="{DynamicResource Pouch.TileBorder}" BorderThickness="1"
+                        Visibility="{Binding HasNotice, Converter={StaticResource BoolToVisibility}}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <ui:SymbolIcon Symbol="Sparkle24" FontSize="13" Margin="0,0,7,0" Foreground="{DynamicResource Pouch.Accent}"/>
+                        <TextBlock Grid.Column="1" Text="{Binding Notice}" FontSize="11.5" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
+                                   Foreground="{DynamicResource Pouch.Text}"/>
+                        <Button Grid.Column="2" Style="{StaticResource IconButton}" Padding="5" Command="{Binding DismissNoticeCommand}" ToolTip="Dismiss">
+                            <ui:SymbolIcon Symbol="Dismiss24" FontSize="10"/>
+                        </Button>
+                    </Grid>
+                </Border>
+                <Border Margin="0,10,0,0" Padding="12,0,4,0" Height="34" CornerRadius="{DynamicResource Pouch.TileCornerRadius}"
                         Background="{DynamicResource Pouch.Tile}" BorderBrush="{DynamicResource Pouch.TileBorder}" BorderThickness="1"
                         Visibility="{Binding HasUndoMessage, Converter={StaticResource BoolToVisibility}}">
                     <Grid>
@@ -840,6 +889,7 @@
                         </Button>
                     </Grid>
                 </Border>
+                </StackPanel>
 
                 <!-- Drag all -->
                 <Grid Grid.Row="5" Margin="0,10,0,0" Height="34" Cursor="Hand"

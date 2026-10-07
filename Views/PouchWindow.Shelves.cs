@@ -14,7 +14,10 @@ namespace Pouchy.Views
     {
         private static readonly TimeSpan UndoMessageDuration = TimeSpan.FromSeconds(6);
 
+        private static readonly TimeSpan NoticeDuration = TimeSpan.FromSeconds(4);
+
         private DispatcherTimer? _undoTimer;
+        private DispatcherTimer? _noticeTimer;
 
         /// <summary>Items currently being dragged out of the pouch, so a shelf tab can take them.</summary>
         private IReadOnlyCollection<PouchItem>? _draggedItems;
@@ -33,6 +36,18 @@ namespace Pouchy.Views
                 {
                     if (ShelfTabs.ItemContainerGenerator.ContainerFromItem(_vm.ActiveShelf) is FrameworkElement tab) tab.BringIntoView();
                 }, DispatcherPriority.Loaded);
+            }
+
+            if (e.PropertyName == nameof(PouchViewModel.Notice) && _vm.Notice != null)
+            {
+                _noticeTimer?.Stop();
+                _noticeTimer = new DispatcherTimer { Interval = NoticeDuration };
+                _noticeTimer.Tick += (_, _) =>
+                {
+                    _noticeTimer?.Stop();
+                    _vm.DismissNoticeCommand.Execute(null);
+                };
+                _noticeTimer.Start();
             }
 
             if (e.PropertyName == nameof(PouchViewModel.UndoMessage) && _vm.UndoMessage != null)
@@ -204,6 +219,14 @@ namespace Pouchy.Views
                 MenuFactory.Grid("Colour", Symbol.Color24, colors, columns: 5),
             };
 
+            var rules = ShelfRules.Choices
+                .Select(rule => (object)Check(ShelfRules.MenuName(rule), shelf.Rule == rule,
+                    () => _vm.SetShelfRule(shelf, shelf.Rule == rule ? ShelfRule.None : rule)))
+                .Prepend(Separator())
+                .Prepend(Check("Nothing (a normal shelf)", shelf.Rule == ShelfRule.None, () => _vm.SetShelfRule(shelf, ShelfRule.None)))
+                .ToList();
+            edit.Add(MenuFactory.Submenu("Auto-collect", Symbol.Sparkle24, rules));
+
             var create = new List<object> { Item("New shelf…", Symbol.Add24, () => PromptNewShelf()) };
 
             var delete = new List<object>();
@@ -250,6 +273,8 @@ namespace Pouchy.Views
         };
 
         private static MenuItem Item(string header, object icon, Action action) => MenuFactory.Item(header, icon, action);
+
+        private static MenuItem Check(string header, bool isChecked, Action action) => MenuFactory.Check(header, isChecked, action);
 
         /// <summary>"AnimalCat" → "Animal cat", "MusicNote2" → "Music note".</summary>
         private static string SplitWords(string name)

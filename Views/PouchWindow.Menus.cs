@@ -212,8 +212,8 @@ namespace Pouchy.Views
             var files = new List<object>();
             if (allFileSystem && existing.Count > 0)
             {
-                files.Add(Item("Move to…", Symbol.ArrowMove24, () => MoveOrCopyTo(items, existing, move: true)));
-                files.Add(Item("Copy to…", Symbol.FolderArrowRight24, () => MoveOrCopyTo(items, existing, move: false)));
+                files.Add(BuildDestinationMenu(items, existing, move: false));
+                files.Add(BuildDestinationMenu(items, existing, move: true));
                 files.Add(Item("Compress to ZIP", Symbol.FolderZip24, () => RunAsync(async () =>
                 {
                     string zip = await Task.Run(() => FileActions.CompressToZip(existing));
@@ -245,6 +245,11 @@ namespace Pouchy.Views
                 // The full picture is loaded only when an action actually needs it.
                 files.Add(Item("Extract text (OCR)", Symbol.ScanText24, () => RunAsync(() => ExtractText(() => OcrService.RecognizeImageAsync(item.ImageContent!)))));
                 files.Add(Item("Save as image file…", Symbol.Save24, () => SaveImageAs(item)));
+            }
+
+            if (allFileSystem && existing.Count > 0 && BuildScriptsMenu(existing, items[^1]) is { } scripts)
+            {
+                files.Add(scripts);
             }
 
             var share = new List<object>();
@@ -299,6 +304,8 @@ namespace Pouchy.Views
                 .Append(Item("New shelf…", Symbol.Add24, () => PromptNewShelf(), "Ctrl+T"))
                 .ToArray();
             add.Add(Item("Search…", Symbol.Search24, OpenSearch, "Ctrl+F"));
+            add.Add(Item("Command palette…", Symbol.Flash24, OpenPalette, "Ctrl+K"));
+            if (TakeScreenshot != null) add.Add(Item("Take a screenshot", Symbol.Screenshot24, TakeScreenshot));
 
             var views = Enum.GetValues<PouchViewMode>()
                 .Select(mode => (object)Check(mode.ToString(), _vm.ViewMode == mode, () => _vm.SetViewMode(mode)))
@@ -410,21 +417,73 @@ namespace Pouchy.Views
             return true;
         }
 
-        private void MoveOrCopyTo(IReadOnlyList<PouchItem> items, IReadOnlyList<string> paths, bool move)
+        /// <summary>"Copy to" / "Move to" with the recent destinations and "Choose folder…".</summary>
+        private object BuildDestinationMenu(IReadOnlyList<PouchItem> items, IReadOnlyList<string> paths, bool move)
         {
-            var dialog = new OpenFolderDialog { Title = move ? "Move to" : "Copy to" };
-            if (dialog.ShowDialog(this) != true) return;
-            string folder = dialog.FolderName;
+            var sourceFolders = paths.Select(p => Path.GetDirectoryName(p.TrimEnd('\\')) ?? "").ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var entries = _vm.RecentDestinations
+                .Where(f => !sourceFolders.Contains(Path.TrimEndingDirectorySeparator(f)))
+                .Select(folder =>
+                {
+                    var entry = Item(Services.Actions.ActionRegistry.FolderName(folder), Symbol.Folder24, () => MoveOrCopyTo(items, paths, move, folder));
+                    entry.ToolTip = folder;
+                    return (object)entry;
+                })
+                .ToList();
+            if (entries.Count > 0) entries.Add(Separator());
+            entries.Add(Item("Choose folder…", Symbol.FolderOpen24, () => MoveOrCopyTo(items, paths, move)));
+            return MenuFactory.Submenu(move ? "Move to" : "Copy to", move ? Symbol.ArrowMove24 : Symbol.FolderArrowRight24, entries);
+        }
+
+        /// <summary>"Run script" with the user's scripts that accept these files, or null if there are none.</summary>
+        private object? BuildScriptsMenu(IReadOnlyList<string> paths, PouchItem anchor)
+        {
+            if (Actions == null) return null;
+            var scripts = Services.Actions.ScriptAction.LoadAll(Actions.ScriptsFolder).Where(s => s.CanRun(paths)).ToList();
+            if (scripts.Count == 0) return null;
+
+            var entries = scripts
+                .Select(s => (object)Item(s.Name, ParseSymbol(s.Icon, Symbol.Code24), () => RunAsync(() => RunActionAsync(s, paths, anchor))))
+                .Append(Separator())
+                .Append(Item("Open actions folder", Symbol.FolderOpen24, OpenActionsFolder))
+                .ToList();
+            return MenuFactory.Submenu("Run script", Symbol.Code24, entries);
+        }
+
+        internal void OpenActionsFolder()
+        {
+            if (Actions == null) return;
+            Directory.CreateDirectory(Actions.ScriptsFolder);
+            FileActions.Open(Actions.ScriptsFolder);
+        }
+
+        /// <summary>Set by the app; opens Windows' screen snip and puts the picture in the pouch.</summary>
+        public Action? TakeScreenshot { get; set; }
+
+        private void MoveOrCopyTo(IReadOnlyList<PouchItem> items, IReadOnlyList<string> paths, bool move, string? folder = null)
+        {
+            if (folder == null)
+            {
+                var dialog = new OpenFolderDialog { Title = move ? "Move to" : "Copy to" };
+                if (dialog.ShowDialog(this) != true) return;
+                folder = dialog.FolderName;
+            }
+            string target = folder;
+            string what = Services.Actions.ActionRegistry.FolderName(target);
 
             RunAsync(async () =>
             {
                 if (!move)
                 {
-                    await Task.Run(() => FileActions.CopyTo(paths, folder));
+                    await Task.Run(() => FileActions.CopyTo(paths, target));
+                    _vm.RecordDestination(target);
+                    _vm.ShowNotice($"Copied {Helpers.Format.Plural(paths.Count, "item")} to {what}");
                     return;
                 }
 
-                var moved = await Task.Run(() => FileActions.MoveTo(paths, folder));
+                var moved = await Task.Run(() => FileActions.MoveTo(paths, target));
+                _vm.RecordDestination(target);
+                _vm.ShowNotice($"Moved {Helpers.Format.Plural(paths.Count, "item")} to {what}");
                 var map = paths.Zip(moved).ToDictionary(p => p.First, p => p.Second, StringComparer.OrdinalIgnoreCase);
                 foreach (var item in items)
                 {

@@ -113,7 +113,7 @@
                     </ListBox.ItemTemplate>
                 </ListBox>
                 <TextBlock Style="{StaticResource CardDescription}" Margin="2,0,0,8"
-                           Text="Custom themes are JSON files in the themes folder. Edits apply instantly while Pouchy is running."/>
+                           Text="Customize a theme to change its colours, fonts and corners while you watch. Custom themes are JSON files in the themes folder, so they're easy to share."/>
                 <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
                     <ui:Button Content="Customize this theme" Icon="{ui:SymbolIcon Edit24}" Margin="0,0,8,0" Command="{Binding CustomizeThemeCommand}"/>
                     <ui:Button Content="Open themes folder" Icon="{ui:SymbolIcon FolderOpen24}" Command="{Binding OpenThemesFolderCommand}"/>
@@ -268,12 +268,105 @@
                 <ui:CardControl>
                     <ui:CardControl.Header>
                         <StackPanel>
+                            <TextBlock Text="Remove old items" Style="{StaticResource CardTitle}"/>
+                            <TextBlock Text="Unpinned items older than this leave the pouch on their own. Pinned items always stay." Style="{StaticResource CardDescription}"/>
+                        </StackPanel>
+                    </ui:CardControl.Header>
+                    <ComboBox Width="140" ItemsSource="{Binding AutoClearOptions}" DisplayMemberPath="Value" SelectedValuePath="Key" SelectedValue="{Binding AutoClear}"/>
+                </ui:CardControl>
+                <ui:CardControl>
+                    <ui:CardControl.Header>
+                        <StackPanel>
                             <TextBlock Text="Fetch link titles and icons" Style="{StaticResource CardTitle}"/>
                             <TextBlock Text="When you drop a web address, Pouchy loads the page once to show its title and icon." Style="{StaticResource CardDescription}"/>
                         </StackPanel>
                     </ui:CardControl.Header>
                     <ui:ToggleSwitch IsChecked="{Binding FetchLinkPreviews}"/>
                 </ui:CardControl>
+
+                <!-- Clipboard history -->
+                <TextBlock Text="Clipboard history" Style="{StaticResource SectionHeader}"/>
+                <ui:CardControl>
+                    <ui:CardControl.Header>
+                        <StackPanel>
+                            <TextBlock Text="Keep everything I copy" Style="{StaticResource CardTitle}"/>
+                            <TextBlock Text="Adds a Clipboard shelf that collects text, links, images and files as you copy them. Copies from password managers are skipped. Off by default." Style="{StaticResource CardDescription}"/>
+                        </StackPanel>
+                    </ui:CardControl.Header>
+                    <ui:ToggleSwitch IsChecked="{Binding ClipboardHistory}"/>
+                </ui:CardControl>
+                <ui:CardControl IsEnabled="{Binding ClipboardHistory}">
+                    <ui:CardControl.Header>
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource CardTitle}">
+                                <Run Text="Keep the last"/>
+                                <Run Text="{Binding ClipboardHistoryLimit, Mode=OneWay}"/>
+                                <Run Text="copies"/>
+                            </TextBlock>
+                            <TextBlock Text="Older ones are removed, unless you pin them." Style="{StaticResource CardDescription}"/>
+                        </StackPanel>
+                    </ui:CardControl.Header>
+                    <Slider Width="180" Minimum="10" Maximum="200" TickFrequency="10" IsSnapToTickEnabled="True" Value="{Binding ClipboardHistoryLimit}"/>
+                </ui:CardControl>
+
+                <!-- Drop actions -->
+                <TextBlock Text="Drop actions" Style="{StaticResource SectionHeader}"/>
+                <ui:CardControl>
+                    <ui:CardControl.Header>
+                        <StackPanel>
+                            <TextBlock Text="Show actions while dragging in" Style="{StaticResource CardTitle}"/>
+                            <TextBlock Text="Drag files over the pouch and tiles like Zip or Convert to PNG appear. Drop on a tile to run it instead of adding the files." Style="{StaticResource CardDescription}"/>
+                        </StackPanel>
+                    </ui:CardControl.Header>
+                    <ui:ToggleSwitch IsChecked="{Binding ShowDropActions}"/>
+                </ui:CardControl>
+                <ItemsControl ItemsSource="{Binding ActionToggles}" IsEnabled="{Binding ShowDropActions}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="{x:Type vm:ActionToggle}">
+                            <ui:CardControl>
+                                <ui:CardControl.Header>
+                                    <StackPanel>
+                                        <TextBlock Text="{Binding Name}" Style="{StaticResource CardTitle}"/>
+                                        <TextBlock Text="{Binding Description}" Style="{StaticResource CardDescription}"/>
+                                    </StackPanel>
+                                </ui:CardControl.Header>
+                                <ui:ToggleSwitch IsChecked="{Binding IsEnabled}"/>
+                            </ui:CardControl>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <TextBlock Style="{StaticResource CardDescription}" Margin="2,4,0,8"
+                           Text="Add your own actions: put a PowerShell, batch or Python script (or an .exe) in the actions folder. It gets the file paths as arguments, and any file path it prints is added to the pouch."/>
+                <WrapPanel Margin="0,0,0,4">
+                    <ui:Button Content="Open actions folder" Icon="{ui:SymbolIcon FolderOpen24}" Margin="0,0,8,8" Command="{Binding OpenActionsFolderCommand}"/>
+                    <ui:Button Content="How scripts work" Icon="{ui:SymbolIcon Document24}" Margin="0,0,8,8"
+                               Command="{Binding OpenLinkCommand}" CommandParameter="https://github.com/editorrylix/Pouchy/blob/main/docs/ACTIONS.md"/>
+                </WrapPanel>
+
+                <!-- Sounds -->
+                <TextBlock Text="Sounds" Style="{StaticResource SectionHeader}"/>
+                <ui:CardControl>
+                    <ui:CardControl.Header>
+                        <StackPanel>
+                            <TextBlock Text="Sound pack" Style="{StaticResource CardTitle}"/>
+                            <TextBlock Text="Little sounds when the pouch opens, takes something, or lets it go. Custom plays open.wav, add.wav, out.wav and remove.wav from the sounds folder." Style="{StaticResource CardDescription}"/>
+                        </StackPanel>
+                    </ui:CardControl.Header>
+                    <StackPanel Orientation="Horizontal">
+                        <ui:Button Icon="{ui:SymbolIcon Play24}" Margin="0,0,8,0" ToolTip="Play" Command="{Binding PreviewSoundCommand}"/>
+                        <ComboBox Width="120" ItemsSource="{Binding SoundPackOptions}" SelectedItem="{Binding SoundPack}"/>
+                    </StackPanel>
+                </ui:CardControl>
+                <ui:CardControl>
+                    <ui:CardControl.Header>
+                        <TextBlock Style="{StaticResource CardTitle}">
+                            <Run Text="Volume:"/>
+                            <Run Text="{Binding SoundVolume, Mode=OneWay, StringFormat={}{0:P0}}"/>
+                        </TextBlock>
+                    </ui:CardControl.Header>
+                    <Slider Width="180" Minimum="0.1" Maximum="1" TickFrequency="0.05" IsSnapToTickEnabled="True" Value="{Binding SoundVolume}"/>
+                </ui:CardControl>
+                <ui:Button Content="Open sounds folder" Icon="{ui:SymbolIcon FolderOpen24}" Margin="0,0,0,4" Command="{Binding OpenSoundsFolderCommand}"/>
 
                 <!-- Triggers -->
                 <TextBlock Text="Triggers" Style="{StaticResource SectionHeader}"/>
@@ -371,6 +464,31 @@
                         <ui:ToggleSwitch IsChecked="{Binding HotkeyEnabled}"/>
                     </StackPanel>
                 </ui:CardControl>
+                <ui:CardControl>
+                    <ui:CardControl.Header>
+                        <StackPanel>
+                            <TextBlock Text="Screenshot to pouch" Style="{StaticResource CardTitle}"/>
+                            <TextBlock Text="Opens Windows' screen snip. What you capture lands in the pouch." Style="{StaticResource CardDescription}"/>
+                            <TextBlock Text="{Binding ScreenshotHotkeyError}" Foreground="#FF6B6B" FontSize="11.5" TextWrapping="Wrap" Margin="0,4,0,0">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding ScreenshotHotkeyError}" Value="{x:Null}">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </StackPanel>
+                    </ui:CardControl.Header>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBox Width="150" Margin="0,0,12,0" IsReadOnly="True" IsReadOnlyCaretVisible="False" Tag="Screenshot"
+                                 Text="{Binding ScreenshotHotkeyText, Mode=OneWay}" IsEnabled="{Binding ScreenshotHotkeyEnabled}"
+                                 PreviewKeyDown="HotkeyBox_PreviewKeyDown" ToolTip="Click, then press a key combination"/>
+                        <ui:ToggleSwitch IsChecked="{Binding ScreenshotHotkeyEnabled}"/>
+                    </StackPanel>
+                </ui:CardControl>
 
                 <!-- Suppression -->
                 <TextBlock Text="When not to open" Style="{StaticResource SectionHeader}"/>
@@ -412,6 +530,9 @@
                             <TextBlock Text="{Binding VersionText}" Style="{StaticResource CardDescription}"/>
                             <TextBlock Text="{Binding UpdateStatus}" Style="{StaticResource CardDescription}" Margin="0,6,0,0"/>
                             <WrapPanel Margin="0,10,0,0">
+                                <ui:Button Content="{Binding InstallUpdateText}" Icon="{ui:SymbolIcon ArrowDownload24}" Margin="0,0,8,8"
+                                           Appearance="Primary" Command="{Binding InstallUpdateCommand}"
+                                           Visibility="{Binding HasAvailableUpdate, Converter={StaticResource BoolToVisibility}}"/>
                                 <ui:Button Content="Check for updates" Icon="{ui:SymbolIcon ArrowSync24}" Margin="0,0,8,8"
                                            Command="{Binding CheckNowCommand}"/>
                                 <ui:Button Content="What's new" Icon="{ui:SymbolIcon Sparkle24}" Margin="0,0,8,8"

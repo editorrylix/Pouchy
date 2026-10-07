@@ -20,6 +20,21 @@ namespace Pouchy.Views
             InitializeComponent();
             _vm = viewModel;
             DataContext = viewModel;
+            _vm.ThemeEditorRequested += (_, path) => OpenThemeEditor(path);
+        }
+
+        private void OpenThemeEditor(string path)
+        {
+            try
+            {
+                var editor = new ThemeEditorWindow(new ThemeEditorViewModel(_vm.ThemeService, path)) { Owner = this };
+                editor.Show();
+            }
+            catch (Exception ex)
+            {
+                Services.Logger.Log("Could not open the theme editor: " + ex);
+                PouchDialog.Alert(this, "Can't edit this theme", ex.Message);
+            }
         }
 
         /// <summary>Records the pressed key combination as the new hotkey.</summary>
@@ -33,7 +48,8 @@ namespace Pouchy.Views
 
             var modifiers = Keyboard.Modifiers;
             if (Keyboard.IsKeyDown(Key.LWin) || Keyboard.IsKeyDown(Key.RWin)) modifiers |= ModifierKeys.Windows;
-            _vm.SetHotkey(modifiers, key);
+            if (sender is System.Windows.FrameworkElement { Tag: "Screenshot" }) _vm.SetScreenshotHotkey(modifiers, key);
+            else _vm.SetHotkey(modifiers, key);
         }
 
         private void Window_Closing(object? sender, CancelEventArgs e)

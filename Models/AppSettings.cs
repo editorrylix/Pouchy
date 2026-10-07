@@ -46,6 +46,26 @@ namespace Pouchy.Models
         Move,
     }
 
+    /// <summary>How long unpinned items stay in the pouch.</summary>
+    public enum ItemExpiry
+    {
+        Never,
+        OneHour,
+        OneDay,
+        OneWeek,
+        OneMonth,
+    }
+
+    public enum SoundPack
+    {
+        Off,
+        Soft,
+        Bubbly,
+        Clicky,
+        /// <summary>WAV files from the sounds folder.</summary>
+        Custom,
+    }
+
     public enum DragModifier
     {
         Control,
@@ -81,6 +101,23 @@ namespace Pouchy.Models
         public bool FetchLinkPreviews { get; set; } = true;
         /// <summary>Temporarily ignore shake/edge/modifier gestures (the hotkey still works).</summary>
         public bool GesturesPaused { get; set; }
+        /// <summary>Unpinned items older than this are removed.</summary>
+        public ItemExpiry AutoClear { get; set; } = ItemExpiry.Never;
+        /// <summary>Folders items were recently copied, moved or dropped into, newest first.</summary>
+        public List<string> RecentDestinations { get; set; } = new();
+        /// <summary>How many unpinned items a clipboard history shelf keeps.</summary>
+        public int ClipboardHistoryLimit { get; set; } = 50;
+
+        // Drop actions
+        /// <summary>Show action tiles (Zip, Convert...) while files are dragged over the pouch.</summary>
+        public bool ShowDropActions { get; set; } = true;
+        /// <summary>Ids of actions the user turned off.</summary>
+        public List<string> HiddenActions { get; set; } = new();
+
+        // Sounds
+        public SoundPack SoundPack { get; set; } = SoundPack.Off;
+        /// <summary>0–1.</summary>
+        public double SoundVolume { get; set; } = 0.6;
 
         // Appearance
         public string ThemeId { get; set; } = "midnight";
@@ -133,6 +170,8 @@ namespace Pouchy.Models
         public DragDetectionMode DragDetection { get; set; } = DragDetectionMode.Balanced;
 
         public HotkeySetting Hotkey { get; set; } = new();
+        /// <summary>Opens Windows' screen snip; the picture lands in the pouch.</summary>
+        public HotkeySetting ScreenshotHotkey { get; set; } = new() { Key = Key.S };
 
         // Suppression
         public bool SuppressInFullscreen { get; set; } = true;

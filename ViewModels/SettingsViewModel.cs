@@ -28,6 +28,43 @@ namespace Pouchy.ViewModels
         public required FontFamily HeaderFont { get; init; }
     }
 
+    /// <summary>Things Settings asks the app to do.</summary>
+    public sealed class SettingsHooks
+    {
+        public Func<Task<UpdateInfo?>>? CheckForUpdates { get; init; }
+        /// <summary>Downloads and installs the update, then restarts. Reports progress 0–1.</summary>
+        public Func<IProgress<double>, Task>? InstallUpdate { get; init; }
+        public Func<bool>? GetClipboardHistory { get; init; }
+        public Action<bool>? SetClipboardHistory { get; init; }
+        public Action<SoundPack, double>? PreviewSound { get; init; }
+        public Action? SoundsChanged { get; init; }
+        public Action? OpenActionsFolder { get; init; }
+    }
+
+    /// <summary>A drop action that can be turned on or off.</summary>
+    public partial class ActionToggle : ObservableObject
+    {
+        private readonly Action<string, bool> _changed;
+
+        public ActionToggle(string id, string name, string description, bool isEnabled, Action<string, bool> changed)
+        {
+            Id = id;
+            Name = name;
+            Description = description;
+            _isEnabled = isEnabled;
+            _changed = changed;
+        }
+
+        public string Id { get; }
+        public string Name { get; }
+        public string Description { get; }
+
+        [ObservableProperty]
+        private bool _isEnabled;
+
+        partial void OnIsEnabledChanged(bool value) => _changed(Id, value);
+    }
+
     /// <summary>Edits <see cref="AppSettings"/>; every change applies and saves immediately.</summary>
     public partial class SettingsViewModel : ObservableObject
     {
@@ -44,6 +81,47 @@ namespace Pouchy.ViewModels
         public IReadOnlyList<TileSize> TileSizeOptions { get; } = Enum.GetValues<TileSize>();
         public IReadOnlyList<SpawnAnimation> SpawnAnimationOptions { get; } = Enum.GetValues<SpawnAnimation>();
         public IReadOnlyList<DragOutAction> DragOutOptions { get; } = Enum.GetValues<DragOutAction>();
+        public IReadOnlyList<SoundPack> SoundPackOptions { get; } = Enum.GetValues<SoundPack>();
+
+        /// <summary>Auto-clear choices with readable names.</summary>
+        public IReadOnlyList<KeyValuePair<ItemExpiry, string>> AutoClearOptions { get; } = new Dictionary<ItemExpiry, string>
+        {
+            [ItemExpiry.Never] = "Never",
+            [ItemExpiry.OneHour] = "After 1 hour",
+            [ItemExpiry.OneDay] = "After 1 day",
+            [ItemExpiry.OneWeek] = "After 1 week",
+            [ItemExpiry.OneMonth] = "After 30 days",
+        }.ToList();
+
+        public ObservableCollection<ActionToggle> ActionToggles { get; } = new();
+
+        [ObservableProperty] private ItemExpiry _autoClear;
+        [ObservableProperty] private bool _clipboardHistory;
+        [ObservableProperty] private int _clipboardHistoryLimit;
+        [ObservableProperty] private bool _showDropActions;
+        [ObservableProperty] private SoundPack _soundPack;
+        [ObservableProperty] private double _soundVolume;
+        [ObservableProperty] private bool _screenshotHotkeyEnabled;
+        [ObservableProperty] private string _screenshotHotkeyText = "";
+        [ObservableProperty] private string? _screenshotHotkeyError;
+        [ObservableProperty] private string? _availableUpdate;
+        [ObservableProperty] private bool _isInstallingUpdate;
+
+        public bool HasAvailableUpdate => AvailableUpdate != null;
+        public string InstallUpdateText => AvailableUpdate == null ? "" : $"Install {AvailableUpdate} and restart";
+
+        partial void OnAvailableUpdateChanged(string? value)
+        {
+            OnPropertyChanged(nameof(HasAvailableUpdate));
+            OnPropertyChanged(nameof(InstallUpdateText));
+        }
+
+        private readonly SettingsHooks _hooks;
+
+        /// <summary>Raised when the user wants to edit a theme file in the theme editor.</summary>
+        public event EventHandler<string>? ThemeEditorRequested;
+
+        internal ThemeService ThemeService => _themes;
 
         public ObservableCollection<ThemeOption> Themes { get; } = new();
 
@@ -98,10 +176,11 @@ namespace Pouchy.ViewModels
         [ObservableProperty] private bool _isCheckingForUpdates;
 
         public SettingsViewModel(SettingsService settings, StartupService startup, HotkeyService hotkeys, ThemeService themes,
-            Func<Task<UpdateInfo?>>? checkForUpdates = null, ExplorerIntegrationService? explorer = null)
+            Func<Task<UpdateInfo?>>? checkForUpdates = null, ExplorerIntegrationService? explorer = null, SettingsHooks? hooks = null)
         {
             _explorer = explorer;
-            _runUpdateCheck = checkForUpdates;
+            _hooks = hooks ?? new SettingsHooks();
+            _runUpdateCheck = checkForUpdates ?? _hooks.CheckForUpdates;
             _settings = settings;
             _startup = startup;
             _hotkeys = hotkeys;
@@ -141,6 +220,19 @@ namespace Pouchy.ViewModels
             HotkeyText = s.Hotkey.ToString();
             SuppressInFullscreen = s.SuppressInFullscreen;
             BlacklistText = string.Join(Environment.NewLine, s.Blacklist);
+
+            AutoClear = s.AutoClear;
+            ClipboardHistory = _hooks.GetClipboardHistory?.Invoke() ?? false;
+            ClipboardHistoryLimit = s.ClipboardHistoryLimit;
+            ShowDropActions = s.ShowDropActions;
+            SoundPack = s.SoundPack;
+            SoundVolume = s.SoundVolume;
+            ScreenshotHotkeyEnabled = s.ScreenshotHotkey.Enabled;
+            ScreenshotHotkeyText = s.ScreenshotHotkey.ToString();
+            foreach (var info in Services.Actions.ActionRegistry.Catalog)
+            {
+                ActionToggles.Add(new ActionToggle(info.Id, info.Name, info.Description, !s.HiddenActions.Contains(info.Id), OnActionToggled));
+            }
 
             _initialized = true;
             _themes.ThemesChanged += OnThemesChanged;
@@ -195,8 +287,66 @@ namespace Pouchy.ViewModels
             UpdateStatus = "Checking…";
             var update = await _runUpdateCheck();
             UpdateStatus = update != null ? $"Pouchy {update.Version} is available" : "You're on the latest version";
+            AvailableUpdate = update?.Version.ToString(3);
             IsCheckingForUpdates = false;
         }
+
+        /// <summary>Shown when the app already knows about an update.</summary>
+        public void SetAvailableUpdate(UpdateInfo? update)
+        {
+            AvailableUpdate = update?.Version.ToString(3);
+            if (update != null) UpdateStatus = $"Pouchy {update.Version.ToString(3)} is available";
+        }
+
+        [RelayCommand]
+        private async Task InstallUpdate()
+        {
+            if (_hooks.InstallUpdate == null || IsInstallingUpdate) return;
+            IsInstallingUpdate = true;
+            try
+            {
+                UpdateStatus = "Downloading…";
+                await _hooks.InstallUpdate(new Progress<double>(p => UpdateStatus = $"Downloading… {p:P0}"));
+                UpdateStatus = "Restarting…";
+            }
+            catch (Exception ex)
+            {
+                Logger.Log("Update failed: " + ex);
+                UpdateStatus = "The update didn't install: " + ex.Message;
+            }
+            finally
+            {
+                IsInstallingUpdate = false;
+            }
+        }
+
+        [RelayCommand]
+        private void PreviewSound() => _hooks.PreviewSound?.Invoke(SoundPack, SoundVolume);
+
+        [RelayCommand]
+        private void OpenSoundsFolder()
+        {
+            Directory.CreateDirectory(AppPaths.SoundsFolder);
+            OpenInShell(AppPaths.SoundsFolder);
+        }
+
+        [RelayCommand]
+        private void OpenActionsFolder()
+        {
+            if (_hooks.OpenActionsFolder != null)
+            {
+                _hooks.OpenActionsFolder();
+                return;
+            }
+            Directory.CreateDirectory(AppPaths.ActionsFolder);
+            OpenInShell(AppPaths.ActionsFolder);
+        }
+
+        private void OnActionToggled(string id, bool enabled) => Apply(s =>
+        {
+            s.HiddenActions.RemoveAll(h => h == id);
+            if (!enabled) s.HiddenActions.Add(id);
+        });
 
         [RelayCommand]
         private void OpenLink(string? url)
@@ -211,21 +361,53 @@ namespace Pouchy.ViewModels
             OpenInShell(AppPaths.ThemesFolder);
         }
 
-        /// <summary>Copies the selected theme to an editable JSON file, selects it and opens it.</summary>
+        /// <summary>Opens the theme editor on the selected theme, copying it first if it's built in.</summary>
         [RelayCommand]
         private void CustomizeTheme()
         {
             var source = _themes.Find(SelectedThemeId) ?? _themes.Current;
             try
             {
-                string path = _themes.CreateCustomCopy(source);
-                SelectedThemeId = Path.GetFileNameWithoutExtension(path);
-                OpenInShell(path);
+                string path;
+                if (!source.IsBuiltIn && source.FilePath != null && File.Exists(source.FilePath))
+                {
+                    path = source.FilePath;
+                }
+                else
+                {
+                    path = _themes.CreateCustomCopy(source);
+                    string id = Path.GetFileNameWithoutExtension(path);
+                    SelectedThemeId = _themes.Themes.FirstOrDefault(t => t.FilePath == path)?.Id ?? id;
+                }
+                ThemeEditorRequested?.Invoke(this, path);
             }
             catch (Exception ex)
             {
                 Logger.Log("Could not create custom theme: " + ex.Message);
             }
+        }
+
+        /// <summary>Called by the screenshot hotkey recorder box.</summary>
+        public void SetScreenshotHotkey(ModifierKeys modifiers, Key key)
+        {
+            if (modifiers == ModifierKeys.None)
+            {
+                ScreenshotHotkeyError = "Use at least one modifier: Ctrl, Alt, Shift or Win.";
+                return;
+            }
+
+            var previous = _settings.Current.ScreenshotHotkey;
+            var candidate = new HotkeySetting { Enabled = ScreenshotHotkeyEnabled, Modifiers = modifiers, Key = key };
+            if (!_hotkeys.Register(candidate, HotkeyAction.Screenshot))
+            {
+                ScreenshotHotkeyError = $"{candidate} is already used by another app.";
+                _hotkeys.Register(previous, HotkeyAction.Screenshot);
+                return;
+            }
+
+            ScreenshotHotkeyError = null;
+            ScreenshotHotkeyText = candidate.ToString();
+            _settings.Update(s => s.ScreenshotHotkey = candidate);
         }
 
         /// <summary>Called by the hotkey recorder box.</summary>
@@ -326,6 +508,31 @@ namespace Pouchy.ViewModels
         partial void OnModifierDragEnabledChanged(bool value) => Apply(s => s.ModifierDragEnabled = value);
         partial void OnModifierDragKeyChanged(DragModifier value) => Apply(s => s.ModifierDragKey = value);
         partial void OnSuppressInFullscreenChanged(bool value) => Apply(s => s.SuppressInFullscreen = value);
+        partial void OnAutoClearChanged(ItemExpiry value) => Apply(s => s.AutoClear = value);
+        partial void OnClipboardHistoryLimitChanged(int value) => Apply(s => s.ClipboardHistoryLimit = value);
+        partial void OnShowDropActionsChanged(bool value) => Apply(s => s.ShowDropActions = value);
+
+        partial void OnClipboardHistoryChanged(bool value)
+        {
+            if (_initialized) _hooks.SetClipboardHistory?.Invoke(value);
+        }
+
+        partial void OnSoundPackChanged(SoundPack value)
+        {
+            Apply(s => s.SoundPack = value);
+            if (_initialized) _hooks.PreviewSound?.Invoke(value, SoundVolume);
+        }
+
+        partial void OnSoundVolumeChanged(double value) => Apply(s => s.SoundVolume = Math.Round(value, 2));
+
+        partial void OnScreenshotHotkeyEnabledChanged(bool value)
+        {
+            if (!_initialized) return;
+            _settings.Update(s => s.ScreenshotHotkey.Enabled = value);
+            ScreenshotHotkeyError = _hotkeys.Register(_settings.Current.ScreenshotHotkey, HotkeyAction.Screenshot)
+                ? null
+                : $"{_settings.Current.ScreenshotHotkey} is already used by another app.";
+        }
 
         partial void OnDragDetectionChanged(DragDetectionMode value)
         {

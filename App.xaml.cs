@@ -51,6 +51,14 @@ namespace Pouchy
             var options = StartupOptions.Parse(e.Args);
             if (options.Profile != null) AppPaths.UseProfile(options.Profile);
 
+            if (options.Cleanup)
+            {
+                RunCleanup(options.Profile);
+                Shutdown();
+                return;
+            }
+            if (options.WaitForProcess is int previous) WaitForProcess(previous);
+
             string mutexName = options.Profile == null ? SingleInstanceMutexName : $"{SingleInstanceMutexName}.{options.Profile}";
             _singleInstanceMutex = new Mutex(true, mutexName, out bool isFirstInstance);
             if (!isFirstInstance)
@@ -65,7 +73,8 @@ namespace Pouchy
             }
 
             RegisterExceptionHandlers();
-            Logger.Log("App starting up...");
+            Logger.Log($"App starting up (version {UpdateService.CurrentVersionText})...");
+            UpdateInstaller.CleanUpOldVersion(Environment.ProcessPath);
 
             _settings = new SettingsService();
             _startup = new StartupService();
@@ -94,7 +103,19 @@ namespace Pouchy
                 OpenSettingsAction = ShowSettings,
                 ThemeListProvider = () => _themes.Themes.Select(t => (t.Id, t.Name)).ToList(),
             };
-            _pouchWindow = new PouchWindow(_pouchViewModel);
+            _sounds = new SoundService(_settings, AppPaths.SoundsFolder);
+            _pouchViewModel.PlaySound = sound =>
+            {
+                if (_pouchWindow?.IsVisible == true) _sounds.Play(sound);
+            };
+            _pouchWindow = new PouchWindow(_pouchViewModel)
+            {
+                PlaySound = _sounds.Play,
+                Actions = new Services.Actions.ActionRegistry(AppPaths.ActionsFolder,
+                    () => _pouchViewModel.RecentDestinations, _pouchViewModel.RecordDestination),
+                TakeScreenshot = TakeScreenshot,
+                AppCommands = AppPaletteCommands,
+            };
             _pouchWindow.IsVisibleChanged += (_, _) => ScheduleMemoryTrim();
             _pouchViewModel.Items.CollectionChanged += (_, _) => ScheduleMemoryTrim();
             _loadTask = _pouchViewModel.LoadAsync(clearUnpinned: _settings.Current.ClearOnStartup);
@@ -102,7 +123,25 @@ namespace Pouchy
 
             _hotkeys = new HotkeyService();
             _hotkeys.Pressed += (_, _) => TogglePouchAtCursor();
+            _hotkeys.Triggered += (_, action) =>
+            {
+                if (action == HotkeyAction.Screenshot) TakeScreenshot();
+            };
             _hotkeys.Register(_settings.Current.Hotkey);
+            _hotkeys.Register(_settings.Current.ScreenshotHotkey, HotkeyAction.Screenshot);
+
+            _clipboard = new ClipboardMonitor(Dispatcher);
+            _clipboard.Changed += OnClipboardChanged;
+            _pouchViewModel.PropertyChanged += (_, args) =>
+            {
+                if (args.PropertyName is nameof(PouchViewModel.ClipboardShelf) or "") UpdateClipboardListening();
+            };
+            _loadTask.ContinueWith(_ => Dispatcher.BeginInvoke(() =>
+            {
+                UpdateClipboardListening();
+                _pouchViewModel.RemoveExpired(DateTime.Now);
+            }), TaskScheduler.Default);
+            StartExpiryTimer();
 
             _triggers = new TriggerService(_settings) { IsSuppressed = () => _pouchViewModel.IsDraggingOut };
             _triggers.Triggered += OnTriggered;
@@ -124,6 +163,28 @@ namespace Pouchy
             if (options.Paths.Count > 0) OnPathsReceived(options.Paths);
 
             if (options.ShowPouch) Dispatcher.BeginInvoke(ShowPouchAtScreenCenter, System.Windows.Threading.DispatcherPriority.ApplicationIdle);
+            if (options.ShowPalette) Dispatcher.BeginInvoke(OpenPalette, System.Windows.Threading.DispatcherPriority.ApplicationIdle);
+            if (options.Updated)
+            {
+                UpdateInstaller.UpdateInstalledVersion(UpdateService.CurrentVersionText, Environment.ProcessPath);
+                _trayIcon?.ShowNotification($"Pouchy is updated to {UpdateService.CurrentVersionText}",
+                    "See what's new in Settings → About.", H.NotifyIcon.Core.NotificationIcon.Info);
+            }
+            if (options.UpdateNow)
+            {
+                Dispatcher.BeginInvoke(async () =>
+                {
+                    try
+                    {
+                        _availableUpdate = await _updates!.CheckAsync();
+                        await InstallUpdateAsync(null);
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.Log("Update failed: " + ex);
+                    }
+                });
+            }
             if (options.ShowTrayMenu) Dispatcher.BeginInvoke(() => ShowTrayMenu(atScreenCenter: true), System.Windows.Threading.DispatcherPriority.ApplicationIdle);
         }
 
@@ -201,7 +262,10 @@ namespace Pouchy
         private void StartUpdateChecks()
         {
             _updates = new UpdateService();
-            _trayIcon!.TrayBalloonTipClicked += (_, _) => OpenUpdatePage();
+            _trayIcon!.TrayBalloonTipClicked += (_, _) =>
+            {
+                if (_availableUpdate != null) ConfirmAndInstallUpdate();
+            };
 
             // First check shortly after startup, then every few hours (each run skips if checked in the last day).
             _updateTimer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(45) };
@@ -230,8 +294,8 @@ namespace Pouchy
             if (update != null && (manual || s.DismissedUpdateVersion != update.Version.ToString()))
             {
                 Logger.Log($"Update available: {update.Tag}");
-                _trayIcon?.ShowNotification($"Pouchy {update.Version} is available",
-                    "Click to see what's new and download it.", H.NotifyIcon.Core.NotificationIcon.Info);
+                _trayIcon?.ShowNotification($"Pouchy {update.Version.ToString(3)} is available",
+                    "Click to install it. Pouchy restarts on its own.", H.NotifyIcon.Core.NotificationIcon.Info);
                 _settings.Update(x => x.DismissedUpdateVersion = update.Version.ToString()); // Notify once per version.
             }
             return update;
@@ -364,7 +428,7 @@ namespace Pouchy
             var header = new List<object> { MenuFactory.Header(status) };
             if (_availableUpdate != null)
             {
-                header.Add(MenuFactory.Item($"Update available: {_availableUpdate.Version}", Symbol.ArrowDownload24, OpenUpdatePage));
+                header.Add(MenuFactory.Item($"Install update {_availableUpdate.Version.ToString(3)}…", Symbol.ArrowDownload24, ConfirmAndInstallUpdate));
             }
 
             var main = new List<object>
@@ -379,6 +443,9 @@ namespace Pouchy
                     await vm.PasteAsync();
                     ShowPouchAtCursor();
                 }),
+                MenuFactory.Item("Take a screenshot", Symbol.Screenshot24, TakeScreenshot,
+                    s.ScreenshotHotkey.Enabled ? s.ScreenshotHotkey.ToString() : null),
+                MenuFactory.Item("Command palette…", Symbol.Flash24, OpenPalette),
             };
 
             var shelves = vm.Shelves
@@ -461,7 +528,16 @@ namespace Pouchy
                 return;
             }
 
-            var viewModel = new SettingsViewModel(_settings!, _startup!, _hotkeys!, _themes!, () => CheckForUpdatesAsync(manual: true), _explorer);
+            var viewModel = new SettingsViewModel(_settings!, _startup!, _hotkeys!, _themes!, () => CheckForUpdatesAsync(manual: true), _explorer,
+                new SettingsHooks
+                {
+                    InstallUpdate = progress => InstallUpdateAsync(progress),
+                    GetClipboardHistory = () => _pouchViewModel!.ClipboardShelf != null,
+                    SetClipboardHistory = enabled => _pouchViewModel!.SetClipboardHistory(enabled),
+                    PreviewSound = (pack, volume) => _sounds!.Play(pack, SoundEvent.Add, volume),
+                    OpenActionsFolder = () => _pouchWindow?.OpenActionsFolder(),
+                });
+            viewModel.SetAvailableUpdate(_availableUpdate);
             _settingsWindow = new SettingsWindow(viewModel);
             _settingsWindow.Closed += (_, _) =>
             {
@@ -493,6 +569,9 @@ namespace Pouchy
             _linkPreviews?.Dispose();
             _updates?.Dispose();
             _instanceChannel?.Dispose();
+            _clipboard?.Dispose();
+            _sounds?.Dispose();
+            _expiryTimer?.Stop();
 
             _singleInstanceMutex?.ReleaseMutex();
             _singleInstanceMutex?.Dispose();

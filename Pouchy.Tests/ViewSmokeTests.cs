@@ -61,6 +61,103 @@ namespace Pouchy.Tests
         }
 
         /// <summary>
+        /// The drop action tiles, a notice, the command palette and the theme editor all load; with
+        /// POUCHY_RENDER_DIR set they are also rendered to PNGs.
+        /// </summary>
+        [Fact]
+        public void NewFeatureViews_LoadAndWork()
+        {
+            string? outDir = Environment.GetEnvironmentVariable("POUCHY_RENDER_DIR");
+            if (!string.IsNullOrEmpty(outDir)) Directory.CreateDirectory(outDir);
+
+            RunOnSta(() =>
+            {
+                using var folder = new TestFolder();
+                var app = CreateApp();
+                Motion.Enabled = false;
+                var settings = new SettingsService(Path.Combine(folder.Path, "settings.json"));
+                using var themes = new ThemeService(settings, app.Resources, Path.Combine(folder.Path, "themes"), contextOverride: () => FixedContext);
+                themes.Start();
+
+                var factory = new ItemFactory(new NoIcons());
+                var vm = new PouchViewModel(factory, new PersistenceService(folder.Path), settings)
+                {
+                    ThemeListProvider = () => themes.Themes.Select(t => (t.Id, t.Name)).ToList(),
+                };
+                string downloads = folder.Folder("Downloads");
+                vm.RecordDestination(downloads);
+                var pouch = new PouchWindow(vm)
+                {
+                    ShowActivated = false, Left = -20000, Top = -20000,
+                    Actions = new Pouchy.Services.Actions.ActionRegistry(Path.Combine(folder.Path, "actions"), () => vm.RecentDestinations, vm.RecordDestination),
+                };
+                foreach (var item in CreateSampleItems(folder, factory)) vm.Items.Add(item);
+                var links = vm.NewShelf("Links");
+                vm.SetShelfRule(links, ShelfRule.Links);
+                vm.ActivateShelf(vm.Shelves[0]);
+                pouch.Show();
+                ((FrameworkElement)pouch.FindName("MainContainer")).Opacity = 1;
+
+                // Drop actions for two images being dragged in.
+                var data = new DataObject(DataFormats.FileDrop, new[] { folder.File("drag1.png"), folder.File("drag2.png") });
+                var flags = System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance;
+                bool hasTiles = (bool)typeof(PouchWindow).GetMethod("PrepareActionTiles", flags)!.Invoke(pouch, new object[] { data })!;
+                Assert.True(hasTiles);
+                typeof(PouchWindow).GetMethod("ShowActionTiles", flags)!.Invoke(pouch, new object[] { true });
+                var overlay = (FrameworkElement)pouch.FindName("DropOverlay");
+                overlay.Opacity = 1;
+                var strip = (System.Windows.Controls.ItemsControl)pouch.FindName("ActionStrip");
+                var labels = strip.ItemsSource.Cast<ActionTile>().Select(t => t.Label).ToList();
+                Assert.Contains("Zip", labels);
+                Assert.Contains("Downloads", labels);
+                Assert.Contains("JPG", labels);
+                if (outDir != null) Render(pouch, Path.Combine(outDir, "drop-actions.png"));
+                typeof(PouchWindow).GetMethod("ShowActionTiles", flags)!.Invoke(pouch, new object[] { false });
+                overlay.Opacity = 0;
+
+                vm.ShowNotice("Added to “Links”");
+                if (outDir != null) Render(pouch, Path.Combine(outDir, "notice.png"));
+
+                // Command palette.
+                var commands = (List<PaletteCommand>)typeof(PouchWindow).GetMethod("BuildPaletteCommands", flags)!.Invoke(pouch, null)!;
+                Assert.Contains(commands, c => c.Group == "Shelf" && c.Title == "Links");
+                Assert.Contains(commands, c => c.Group == "Item");
+                var palette = new CommandPaletteWindow(commands) { ShowActivated = false, Left = -20000, Top = -20000 };
+                palette.Show();
+                ((System.Windows.Controls.TextBox)palette.FindName("QueryBox")).Text = "sh";
+                if (outDir != null) Render(palette, Path.Combine(outDir, "palette.png"));
+                palette.Close();
+
+                // Theme editor: changing a colour rewrites the theme and applies it.
+                string path = themes.CreateCustomCopy(themes.Current);
+                settings.Update(s => s.ThemeId = Path.GetFileNameWithoutExtension(path));
+                var editorVm = new ThemeEditorViewModel(themes, path);
+                var editor = new ThemeEditorWindow(editorVm) { ShowActivated = false, Left = -20000, Top = -20000 };
+                editor.Show();
+                editorVm.Accent.Hex = "#FF2D55";
+                editorVm.CornerRadius = 4;
+                editorVm.Save();
+                Assert.Equal("#FF2D55", themes.Current.Colors.Accent);
+                Assert.Equal(4, themes.Current.CornerRadius);
+                if (outDir != null) Render(editor, Path.Combine(outDir, "theme-editor.png"));
+                editor.Close();
+
+                var settingsWindow = new SettingsWindow(new SettingsViewModel(settings, new StartupService(), new HotkeyService(), themes, null, null,
+                    new SettingsHooks { GetClipboardHistory = () => vm.ClipboardShelf != null, SetClipboardHistory = vm.SetClipboardHistory }))
+                {
+                    ShowActivated = false, Left = -20000, Top = -20000, Height = 4200,
+                };
+                settingsWindow.Show();
+                if (outDir != null) Render(settingsWindow, Path.Combine(outDir, "settings-full.png"));
+                settingsWindow.Close();
+
+                pouch.AllowClose = true;
+                pouch.Close();
+                Motion.Enabled = true;
+            });
+        }
+
+        /// <summary>
         /// Developer tool, not a check: renders the pouch in every theme and view mode to PNGs.
         /// Set POUCHY_RENDER_DIR to a folder to enable it.
         /// </summary>

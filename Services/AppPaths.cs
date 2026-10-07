@@ -25,5 +25,9 @@ namespace Pouchy.Services
         public static string LegacyBlacklistFile => Path.Combine(DataFolder, "blacklist.json");
         public static string ThemesFolder => Path.Combine(DataFolder, "themes");
         public static string LogFile => Path.Combine(DataFolder, "debug.log");
+        /// <summary>Scripts that show up as drop actions.</summary>
+        public static string ActionsFolder => Path.Combine(DataFolder, "actions");
+        /// <summary>WAV files for the Custom sound pack.</summary>
+        public static string SoundsFolder => Path.Combine(DataFolder, "sounds");
     }
 }

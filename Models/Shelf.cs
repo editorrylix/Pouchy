@@ -38,6 +38,18 @@ namespace Pouchy.Models
         [NotifyPropertyChangedFor(nameof(ColorBrush))]
         private string _color = Palette[0];
 
+        /// <summary>What this shelf collects automatically (smart shelf).</summary>
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(ToolTipText))]
+        [NotifyPropertyChangedFor(nameof(IsSmart))]
+        private ShelfRule _rule;
+
+        public bool IsSmart => Rule != ShelfRule.None;
+
+        public string ToolTipText => Rule == ShelfRule.None ? Name : $"{Name}: {ShelfRules.Describe(Rule)}";
+
+        partial void OnNameChanged(string value) => OnPropertyChanged(nameof(ToolTipText));
+
         /// <summary>True for the shelf currently shown in the pouch. Not saved.</summary>
         [ObservableProperty]
         private bool _isActive;

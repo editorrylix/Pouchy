@@ -4,7 +4,13 @@ using System.Text.Json;
 
 namespace Pouchy.Services
 {
-    public sealed record UpdateInfo(Version Version, string Tag, string Url);
+    public sealed record UpdateAsset(string Name, string Url, long Size);
+
+    public sealed record UpdateInfo(Version Version, string Tag, string Url)
+    {
+        /// <summary>Files attached to the release (the zips and SHA256SUMS.txt).</summary>
+        public IReadOnlyList<UpdateAsset> Assets { get; init; } = Array.Empty<UpdateAsset>();
+    }
 
     /// <summary>
     /// Checks GitHub for a newer release. One small request to the GitHub API, nothing else is sent.
@@ -16,6 +22,8 @@ namespace Pouchy.Services
         public const string ReleasesUrl = RepositoryUrl + "/releases";
 
         private readonly HttpClient _http;
+
+        public HttpClient Http => _http;
 
         public UpdateService()
         {
@@ -50,13 +58,27 @@ namespace Pouchy.Services
                 string url = json.RootElement.TryGetProperty("html_url", out var html) ? html.GetString() ?? ReleasesUrl : ReleasesUrl;
 
                 if (!TryParseVersion(tag, out var latest)) return null;
-                return latest > CurrentVersion ? new UpdateInfo(latest, tag, url) : null;
+                return latest > CurrentVersion ? new UpdateInfo(latest, tag, url) { Assets = ParseAssets(json.RootElement) } : null;
             }
             catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or JsonException or KeyNotFoundException or InvalidOperationException)
             {
                 Logger.Log("Update check failed: " + ex.Message);
                 return null;
             }
+        }
+
+        internal static List<UpdateAsset> ParseAssets(JsonElement release)
+        {
+            var assets = new List<UpdateAsset>();
+            if (!release.TryGetProperty("assets", out var list) || list.ValueKind != JsonValueKind.Array) return assets;
+            foreach (var asset in list.EnumerateArray())
+            {
+                string? name = asset.TryGetProperty("name", out var n) ? n.GetString() : null;
+                string? url = asset.TryGetProperty("browser_download_url", out var u) ? u.GetString() : null;
+                long size = asset.TryGetProperty("size", out var s) && s.TryGetInt64(out long value) ? value : 0;
+                if (name != null && url != null) assets.Add(new UpdateAsset(name, url, size));
+            }
+            return assets;
         }
 
         /// <summary>Parses "v1.2.3", "1.2.3" or "1.2.3-beta.1" (pre-release suffixes are ignored).</summary>

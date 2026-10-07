@@ -6,24 +6,33 @@ using Pouchy.Models;
 
 namespace Pouchy.Services
 {
-    /// <summary>Registers the global "show pouch" hotkey on the UI thread's message queue.</summary>
+    public enum HotkeyAction
+    {
+        TogglePouch,
+        Screenshot,
+    }
+
+    /// <summary>Registers Pouchy's global hotkeys on the UI thread's message queue.</summary>
     public sealed class HotkeyService : IDisposable
     {
-        private const int HotkeyId = 9000;
-        private bool _registered;
+        private const int FirstId = 9000;
+        private readonly HashSet<HotkeyAction> _registered = new();
 
-        /// <summary>Raised on the UI thread.</summary>
+        /// <summary>The show/hide hotkey was pressed. Raised on the UI thread.</summary>
         public event EventHandler? Pressed;
+
+        /// <summary>Any hotkey was pressed. Raised on the UI thread.</summary>
+        public event EventHandler<HotkeyAction>? Triggered;
 
         public HotkeyService()
         {
             ComponentDispatcher.ThreadPreprocessMessage += OnThreadMessage;
         }
 
-        /// <summary>Replaces the current registration. Returns false if another app owns the combination.</summary>
-        public bool Register(HotkeySetting hotkey)
+        /// <summary>Replaces the registration for an action. Returns false if another app owns the combination.</summary>
+        public bool Register(HotkeySetting hotkey, HotkeyAction action = HotkeyAction.TogglePouch)
         {
-            Unregister();
+            Unregister(action);
             if (!hotkey.Enabled || hotkey.Key == Key.None) return true;
 
             uint modifiers = NativeMethods.MOD_NOREPEAT;
@@ -33,33 +42,36 @@ namespace Pouchy.Services
             if (hotkey.Modifiers.HasFlag(ModifierKeys.Windows)) modifiers |= NativeMethods.MOD_WIN;
 
             uint vk = (uint)KeyInterop.VirtualKeyFromKey(hotkey.Key);
-            _registered = NativeMethods.RegisterHotKey(IntPtr.Zero, HotkeyId, modifiers, vk);
-            Logger.Log(_registered
-                ? $"Hotkey {hotkey} registered."
-                : $"Hotkey {hotkey} could not be registered (error {Marshal.GetLastWin32Error()}).");
-            return _registered;
+            bool ok = NativeMethods.RegisterHotKey(IntPtr.Zero, FirstId + (int)action, modifiers, vk);
+            if (ok) _registered.Add(action);
+            Logger.Log(ok
+                ? $"Hotkey {hotkey} registered for {action}."
+                : $"Hotkey {hotkey} for {action} could not be registered (error {Marshal.GetLastWin32Error()}).");
+            return ok;
         }
 
-        public void Unregister()
+        public void Unregister(HotkeyAction action = HotkeyAction.TogglePouch)
         {
-            if (!_registered) return;
-            NativeMethods.UnregisterHotKey(IntPtr.Zero, HotkeyId);
-            _registered = false;
+            if (!_registered.Remove(action)) return;
+            NativeMethods.UnregisterHotKey(IntPtr.Zero, FirstId + (int)action);
         }
 
         public void Dispose()
         {
-            Unregister();
+            foreach (var action in _registered.ToList()) Unregister(action);
             ComponentDispatcher.ThreadPreprocessMessage -= OnThreadMessage;
         }
 
         private void OnThreadMessage(ref MSG msg, ref bool handled)
         {
-            if (msg.message == NativeMethods.WM_HOTKEY && msg.wParam.ToInt32() == HotkeyId)
-            {
-                handled = true;
-                Pressed?.Invoke(this, EventArgs.Empty);
-            }
+            if (msg.message != NativeMethods.WM_HOTKEY) return;
+            int id = msg.wParam.ToInt32() - FirstId;
+            if (!Enum.IsDefined(typeof(HotkeyAction), id)) return;
+
+            handled = true;
+            var action = (HotkeyAction)id;
+            if (action == HotkeyAction.TogglePouch) Pressed?.Invoke(this, EventArgs.Empty);
+            Triggered?.Invoke(this, action);
         }
     }
 }
