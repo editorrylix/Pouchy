@@ -325,6 +325,26 @@ namespace Pouchy.Tests
                 lightSettings.Close();
                 Wpf.Ui.Appearance.ApplicationThemeManager.Apply(Wpf.Ui.Appearance.ApplicationTheme.Dark, Wpf.Ui.Controls.WindowBackdropType.Mica, updateAccent: false);
 
+                // Drop actions and the command palette with real thumbnails, for the README.
+                settings.Update(s => { s.ThemeId = "midnight"; s.ViewMode = PouchViewMode.Grid; });
+                vm.RecordDestination(folder.Folder("Downloads"));
+                pouch.Actions = new Pouchy.Services.Actions.ActionRegistry(Path.Combine(folder.Path, "actions"), () => vm.RecentDestinations, vm.RecordDestination);
+                var flags = System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance;
+                var dragged = new DataObject(DataFormats.FileDrop, new[] { vm.Items[0].FilePath! });
+                typeof(PouchWindow).GetMethod("PrepareActionTiles", flags)!.Invoke(pouch, new object[] { dragged });
+                typeof(PouchWindow).GetMethod("ShowActionTiles", flags)!.Invoke(pouch, new object[] { true });
+                ((FrameworkElement)pouch.FindName("DropOverlay")).Opacity = 1;
+                Render(pouch, Path.Combine(outDir, "readme-actions.png"));
+                typeof(PouchWindow).GetMethod("ShowActionTiles", flags)!.Invoke(pouch, new object[] { false });
+                ((FrameworkElement)pouch.FindName("DropOverlay")).Opacity = 0;
+
+                var commands = (List<PaletteCommand>)typeof(PouchWindow).GetMethod("BuildPaletteCommands", flags)!.Invoke(pouch, null)!;
+                var palette = new CommandPaletteWindow(commands) { ShowActivated = false, Left = -20000, Top = -20000 };
+                palette.Show();
+                ((System.Windows.Controls.TextBox)palette.FindName("QueryBox")).Text = "s";
+                Render(palette, Path.Combine(outDir, "readme-palette.png"));
+                palette.Close();
+
                 pouch.AllowClose = true;
                 pouch.Close();
                 Motion.Enabled = true;

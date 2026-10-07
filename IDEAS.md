@@ -339,19 +339,21 @@ Deferred to later phases:
 | **2. Look** ✅ | Identity | Theme engine, 4–5 built-in themes, redesigned pouch, view modes, animations |
 | **3. Interaction** ✅ | UX | Right-click menus, multi-select, keyboard support, Shell thumbnails, smart triggers |
 | **4. Organisation** ✅ | Power | Multiple shelves, pins, tags, search, full persistence, link and colour content types |
-| **5. Actions** | Pro | Drop actions, plugin interface, Explorer integration, clipboard history |
-| **6. Polish** | Release | Theme editor, command palette, installer, auto-update, sound packs |
+| **5. Actions** ✅ | Pro | Drop actions, plugin interface, Explorer integration, clipboard history |
+| **6. Polish** ✅ | Release | Theme editor, command palette, installer, auto-update, sound packs |
 
 ### Build order (agreed 7 Oct 2026)
 
 1. **Finish the planned ideas first:** Phases 5 and 6, plus these:
    - ✅ **Send to Pouchy:** "Add to Pouchy" in the Explorer right-click menu and in "Send to" (Settings → General). Several selected files arrive as one stack. Launching Pouchy again, or dropping files on Pouchy.exe, also works.
-   - Recent destinations
-   - Item expiry / auto-clear
-   - Screenshot → Pouchy
-   - Drop actions
-   - Command palette
-   - Smart shelves
+   - ✅ **Recent destinations:** folders items were copied, moved or dropped into (desktop and Explorer windows are detected) appear in Copy to / Move to, as drop tiles and in the palette.
+   - ✅ **Auto-clear:** unpinned items can leave after 1 hour, 1 day, 1 week or 30 days.
+   - ✅ **Screenshot → Pouchy:** a hotkey (Alt+Shift+S), the tray and the palette open Windows' screen snip; the capture lands in the pouch.
+   - ✅ **Drop actions:** tiles while dragging in (Zip, Copy to a recent folder, PNG, JPG, 50%, Text, Paths, Share, Print) plus user scripts from the actions folder ([docs/ACTIONS.md](docs/ACTIONS.md)).
+   - ✅ **Command palette:** Ctrl+K, fuzzy search over commands, items, shelves, views, themes and actions on the selection.
+   - ✅ **Smart shelves:** a shelf can auto-collect images, documents, videos, audio, archives, folders, links, notes or colours.
+   - ✅ **Clipboard history** (Phase 5): an opt-in Clipboard shelf; skips password-manager copies.
+   - ✅ **Phase 6:** visual theme editor, sound packs (Soft, Bubbly, Clicky, Custom), one-click updates with a SHA-256 check, and a per-user installer.
 2. **Then record the full demo video**, showing everything.
 3. **Then the gaps found by comparing Pouchy with the Windows clipboard:**
    - Pasting Excel cells gives a picture: paste text before images when both are offered.

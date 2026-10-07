@@ -12,6 +12,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added
 
+- **Drop actions.** Drag files over the pouch and action tiles appear: Zip, Copy to a recent folder, Convert to PNG or JPG, Resize to 50%, Extract text, Copy paths, Share and Print. Drop on a tile to run it. Choose which tiles show in Settings → Drop actions.
+- **Your own actions.** Scripts in the actions folder (PowerShell, batch, Python or an .exe) become actions. They receive the file paths, and any file path they print is added to the pouch. See [docs/ACTIONS.md](docs/ACTIONS.md).
+- **Command palette.** Press <kbd>Ctrl</kbd>+<kbd>K</kbd> in the pouch, or use the tray menu, to search for any command, item, shelf, view or theme, and to run actions on the selected items.
+- **Smart shelves.** Right-click a shelf tab → Auto-collect, and new images, documents, videos, audio, archives, folders, links, notes or colours go to that shelf on their own.
+- **Clipboard history** (off by default). A Clipboard shelf keeps the last 50 things you copied: text, links, images and files. Copies from password managers are skipped.
+- **Screenshot to Pouchy.** <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>S</kbd> (or the tray or the palette) opens Windows' screen snip, and the capture lands in the pouch.
+- **Recent destinations.** Folders you copy, move or drop items into are remembered and offered under Copy to and Move to, as drop tiles and in the palette.
+- **Auto-clear.** Unpinned items can leave the pouch on their own after an hour, a day, a week or 30 days.
+- **Theme editor.** Change a theme's colours, gradient, opacity, corners, shadow and fonts and watch the pouch update as you go.
+- **Sound packs.** Soft, Bubbly, Clicky, or your own WAV files. Off by default.
+- **One-click updates.** When a new version is out, Pouchy downloads it, checks it against the release's SHA-256 checksums, replaces itself and restarts.
+- **Installer.** Releases now include a per-user installer (no admin rights). It sets up the Start menu, startup and the Explorer menu, and its uninstaller removes everything Pouchy added. The portable zip is still available.
 - **Add to Pouchy from Explorer.** Turn on Settings → General → "Add to Pouchy from Explorer" to get "Add to Pouchy" in the right-click menu of files and folders, and Pouchy in "Send to". On Windows 11 both are under "Show more options". Several selected files arrive as one stack.
 - Dropping files on Pouchy.exe adds them to the pouch.
 - Starting Pouchy while it's already running opens the pouch instead of doing nothing.
