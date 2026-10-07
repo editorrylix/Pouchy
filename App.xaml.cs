@@ -507,7 +507,7 @@ namespace Pouchy
                 {
                     MenuFactory.Item("Welcome guide", Symbol.Lightbulb24, ShowWelcome),
                     MenuFactory.Item("What's new", Symbol.Sparkle24, () => ShowWhatsNew(null)),
-                    MenuFactory.Item("Full guide online", Symbol.BookOpen24, () => OpenLink("https://github.com/editorrylix/Pouchy#the-complete-guide")),
+                    MenuFactory.Item("Full guide online", Symbol.BookOpen24, () => OpenLink(WelcomeWindow.GuideUrl)),
                     MenuFactory.Item("Report a bug", Symbol.Bug24, () => OpenLink("https://github.com/editorrylix/Pouchy/issues/new/choose")),
                 }),
             };

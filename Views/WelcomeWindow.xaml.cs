@@ -31,7 +31,7 @@ namespace Pouchy.Views
     /// </summary>
     public partial class WelcomeWindow : Window
     {
-        public const string GuideUrl = "https://github.com/editorrylix/Pouchy#quick-start";
+        public const string GuideUrl = "https://github.com/editorrylix/Pouchy/blob/main/docs/GUIDE.md";
 
         /// <summary>Set by the app: opens the pouch so the user can try it.</summary>
         public Action? TryItNow { get; set; }
