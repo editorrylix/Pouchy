@@ -24,6 +24,11 @@ namespace Pouchy
         private Mutex? _singleInstanceMutex;
         private SettingsService? _settings;
         private StartupService? _startup;
+        private ExplorerIntegrationService? _explorer;
+        private InstanceChannel? _instanceChannel;
+        private Task _loadTask = Task.CompletedTask;
+        private readonly List<string> _incomingPaths = new();
+        private System.Windows.Threading.DispatcherTimer? _incomingTimer;
         private HotkeyService? _hotkeys;
         private TriggerService? _triggers;
         private ThemeService? _themes;
@@ -50,9 +55,11 @@ namespace Pouchy
             _singleInstanceMutex = new Mutex(true, mutexName, out bool isFirstInstance);
             if (!isFirstInstance)
             {
-                // A second hook and a second writer to the same state file would fight.
+                // A second hook and a second writer to the same state file would fight, so hand any
+                // files to the running copy (or ask it to show the pouch) and leave.
                 _singleInstanceMutex.Dispose();
                 _singleInstanceMutex = null;
+                InstanceChannel.Send(options.Profile, options.Paths);
                 Shutdown();
                 return;
             }
@@ -63,6 +70,8 @@ namespace Pouchy
             _settings = new SettingsService();
             _startup = new StartupService();
             _startup.RefreshPathIfEnabled();
+            _explorer = new ExplorerIntegrationService(options.Profile);
+            _explorer.RefreshPathIfEnabled();
 
             // WPF-UI applies its Mica backdrop to Application.MainWindow whenever the theme changes.
             // On the transparent pouch window that draws a solid rectangle, so give it a hidden
@@ -88,7 +97,7 @@ namespace Pouchy
             _pouchWindow = new PouchWindow(_pouchViewModel);
             _pouchWindow.IsVisibleChanged += (_, _) => ScheduleMemoryTrim();
             _pouchViewModel.Items.CollectionChanged += (_, _) => ScheduleMemoryTrim();
-            _ = _pouchViewModel.LoadAsync(clearUnpinned: _settings.Current.ClearOnStartup);
+            _loadTask = _pouchViewModel.LoadAsync(clearUnpinned: _settings.Current.ClearOnStartup);
             MenuFactory.ErrorHandler = ex => PouchDialog.Alert(_pouchWindow, "That didn't work", ex.Message);
 
             _hotkeys = new HotkeyService();
@@ -109,8 +118,47 @@ namespace Pouchy
             StartUpdateChecks();
             ScheduleMemoryTrim(); // Startup leaves garbage behind; Pouchy usually starts hidden.
 
+            _instanceChannel = new InstanceChannel(options.Profile);
+            _instanceChannel.Received += (_, paths) => Dispatcher.BeginInvoke(() => OnPathsReceived(paths));
+            _instanceChannel.Start();
+            if (options.Paths.Count > 0) OnPathsReceived(options.Paths);
+
             if (options.ShowPouch) Dispatcher.BeginInvoke(ShowPouchAtScreenCenter, System.Windows.Threading.DispatcherPriority.ApplicationIdle);
             if (options.ShowTrayMenu) Dispatcher.BeginInvoke(() => ShowTrayMenu(atScreenCenter: true), System.Windows.Threading.DispatcherPriority.ApplicationIdle);
+        }
+
+        // ---------------------------------------------------------------- Add to Pouchy
+
+        /// <summary>
+        /// Paths from "Add to Pouchy", "Send to" or a file dropped on Pouchy.exe; none means "show the pouch".
+        /// Explorer launches Pouchy once per selected file, so arrivals are gathered for a moment and
+        /// added together, which turns a multi-file selection into one stack.
+        /// </summary>
+        private void OnPathsReceived(IReadOnlyList<string> paths)
+        {
+            if (paths.Count == 0)
+            {
+                ShowPouchAtCursor();
+                return;
+            }
+
+            _incomingPaths.AddRange(paths);
+            if (_incomingTimer == null)
+            {
+                _incomingTimer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(400) };
+                _incomingTimer.Tick += async (_, _) =>
+                {
+                    _incomingTimer.Stop();
+                    var batch = _incomingPaths.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+                    _incomingPaths.Clear();
+                    await _loadTask; // Loading replaces the shelves.
+                    await _pouchViewModel!.AddPathsAsync(batch);
+                    _lastSpawn = DateTime.UtcNow;
+                    ShowPouchAtCursor();
+                };
+            }
+            _incomingTimer.Stop();
+            _incomingTimer.Start();
         }
 
         // ---------------------------------------------------------------- Memory
@@ -413,7 +461,7 @@ namespace Pouchy
                 return;
             }
 
-            var viewModel = new SettingsViewModel(_settings!, _startup!, _hotkeys!, _themes!, () => CheckForUpdatesAsync(manual: true));
+            var viewModel = new SettingsViewModel(_settings!, _startup!, _hotkeys!, _themes!, () => CheckForUpdatesAsync(manual: true), _explorer);
             _settingsWindow = new SettingsWindow(viewModel);
             _settingsWindow.Closed += (_, _) =>
             {
@@ -444,6 +492,7 @@ namespace Pouchy
             _thumbnails?.Dispose();
             _linkPreviews?.Dispose();
             _updates?.Dispose();
+            _instanceChannel?.Dispose();
 
             _singleInstanceMutex?.ReleaseMutex();
             _singleInstanceMutex?.Dispose();

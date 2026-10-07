@@ -341,3 +341,23 @@ Deferred to later phases:
 | **4. Organisation** ✅ | Power | Multiple shelves, pins, tags, search, full persistence, link and colour content types |
 | **5. Actions** | Pro | Drop actions, plugin interface, Explorer integration, clipboard history |
 | **6. Polish** | Release | Theme editor, command palette, installer, auto-update, sound packs |
+
+### Build order (agreed 7 Oct 2026)
+
+1. **Finish the planned ideas first:** Phases 5 and 6, plus these:
+   - ✅ **Send to Pouchy:** "Add to Pouchy" in the Explorer right-click menu and in "Send to" (Settings → General). Several selected files arrive as one stack. Launching Pouchy again, or dropping files on Pouchy.exe, also works.
+   - Recent destinations
+   - Item expiry / auto-clear
+   - Screenshot → Pouchy
+   - Drop actions
+   - Command palette
+   - Smart shelves
+2. **Then record the full demo video**, showing everything.
+3. **Then the gaps found by comparing Pouchy with the Windows clipboard:**
+   - Pasting Excel cells gives a picture: paste text before images when both are offered.
+   - Image tiles dropped on a folder should become PNG files.
+   - Keep image transparency (PNG clipboard format, in and out).
+   - Accept files that don't exist on disk yet: Outlook attachments, files inside zips, phone files.
+   - Links should come out as real links (URL format, `.url` shortcut on the desktop).
+   - Keep rich text and HTML formatting on text items.
+   - Optional encryption for saved text.

@@ -250,6 +250,15 @@
                 <ui:CardControl>
                     <ui:CardControl.Header>
                         <StackPanel>
+                            <TextBlock Text="Add to Pouchy from Explorer" Style="{StaticResource CardTitle}"/>
+                            <TextBlock Text="Adds &#x201C;Add to Pouchy&#x201D; to the right-click menu of files and folders, and Pouchy to &#x201C;Send to&#x201D;. On Windows 11 they're under &#x201C;Show more options&#x201D;. Turn this off before deleting Pouchy." Style="{StaticResource CardDescription}"/>
+                        </StackPanel>
+                    </ui:CardControl.Header>
+                    <ui:ToggleSwitch IsChecked="{Binding ExplorerMenu}"/>
+                </ui:CardControl>
+                <ui:CardControl>
+                    <ui:CardControl.Header>
+                        <StackPanel>
                             <TextBlock Text="Clear pouch on startup" Style="{StaticResource CardTitle}"/>
                             <TextBlock Text="Start with empty shelves (pinned items stay) instead of restoring the last session." Style="{StaticResource CardDescription}"/>
                         </StackPanel>

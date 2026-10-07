@@ -10,6 +10,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Added
+
+- **Add to Pouchy from Explorer.** Turn on Settings → General → "Add to Pouchy from Explorer" to get "Add to Pouchy" in the right-click menu of files and folders, and Pouchy in "Send to". On Windows 11 both are under "Show more options". Several selected files arrive as one stack.
+- Dropping files on Pouchy.exe adds them to the pouch.
+- Starting Pouchy while it's already running opens the pouch instead of doing nothing.
+
 ## [1.0.1] - 2026-10-06
 
 ### Fixed

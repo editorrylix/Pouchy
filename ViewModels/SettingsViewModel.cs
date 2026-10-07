@@ -33,6 +33,7 @@ namespace Pouchy.ViewModels
     {
         private readonly SettingsService _settings;
         private readonly StartupService _startup;
+        private readonly ExplorerIntegrationService? _explorer;
         private readonly HotkeyService _hotkeys;
         private readonly ThemeService _themes;
         private readonly bool _initialized;
@@ -62,6 +63,7 @@ namespace Pouchy.ViewModels
         [ObservableProperty] private bool _removeAfterDragOut;
 
         [ObservableProperty] private bool _runAtStartup;
+        [ObservableProperty] private bool _explorerMenu;
         [ObservableProperty] private bool _clearOnStartup;
         [ObservableProperty] private bool _fetchLinkPreviews;
 
@@ -96,8 +98,9 @@ namespace Pouchy.ViewModels
         [ObservableProperty] private bool _isCheckingForUpdates;
 
         public SettingsViewModel(SettingsService settings, StartupService startup, HotkeyService hotkeys, ThemeService themes,
-            Func<Task<UpdateInfo?>>? checkForUpdates = null)
+            Func<Task<UpdateInfo?>>? checkForUpdates = null, ExplorerIntegrationService? explorer = null)
         {
+            _explorer = explorer;
             _runUpdateCheck = checkForUpdates;
             _settings = settings;
             _startup = startup;
@@ -124,6 +127,7 @@ namespace Pouchy.ViewModels
             RemoveAfterDragOut = s.RemoveAfterDragOut;
 
             RunAtStartup = startup.IsEnabled;
+            ExplorerMenu = explorer?.IsEnabled ?? false;
             ClearOnStartup = s.ClearOnStartup;
             FetchLinkPreviews = s.FetchLinkPreviews;
             ShakeEnabled = s.ShakeEnabled;
@@ -286,6 +290,11 @@ namespace Pouchy.ViewModels
         partial void OnRunAtStartupChanged(bool value)
         {
             if (_initialized) _startup.SetEnabled(value);
+        }
+
+        partial void OnExplorerMenuChanged(bool value)
+        {
+            if (_initialized) _explorer?.SetEnabled(value);
         }
 
         partial void OnSelectedThemeIdChanged(string value)
