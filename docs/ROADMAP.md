@@ -6,6 +6,26 @@ Legend: 🔴 must-have · 🟡 should-have · 🟢 nice-to-have
 
 ---
 
+## Execution focus (living priorities)
+
+### Now (ship + learn)
+- Keep positioning consistent everywhere: "Windows drag-and-drop shelf for files, links, text and screenshots."
+- Prioritise improvements that reduce workflow friction: fewer window switches, faster attachments, smoother bug reporting.
+- Keep release messaging practical: one feature, one workflow, one short demo asset per release.
+
+### Feedback triage buckets
+- **Quick wins:** small fixes with high day-to-day impact and low risk.
+- **High-value roadmap:** larger changes with clear, repeated user demand.
+- **Won't do for now:** ideas that don't fit current product direction or would add complexity without clear value.
+
+### How roadmap items are prioritised
+- Frequency of user pain (how often it comes up)
+- Workflow impact (time/friction saved)
+- Delivery cost and maintenance burden
+- Fit with Pouchy's core promise (fast drag-and-drop workflow on Windows)
+
+---
+
 ## 1. Theming & customisation (core identity)
 
 ### Theme engine

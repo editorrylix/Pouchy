@@ -13,11 +13,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### Added
 
 - **Microsoft Store package** (MSIX for x64 and ARM64). The Store version is updated by the Store, starts with Windows through its startup task, and otherwise works exactly like the other downloads. See [packaging/store/README.md](packaging/store/README.md).
+- **Launch playbook** for repeatable release pages, social posts, channel targeting and monthly growth reviews. See [docs/LAUNCH_PLAYBOOK.md](docs/LAUNCH_PLAYBOOK.md).
 
 ### Changed
 
 - Added a [privacy policy](PRIVACY.md), linked from Settings → About.
 - The full user guide now lives in [docs/GUIDE.md](docs/GUIDE.md). The welcome window and tray menu → Help link there.
+- Refreshed the README to lead with a clear one-line positioning, first-30-seconds workflows, and a concise "which download should I pick?" section.
+- Added a trust-focused "known limitations and workarounds" section in the README, plus clearer contribution entry points.
 
 ## [1.1.0] - 2026-10-07
 
