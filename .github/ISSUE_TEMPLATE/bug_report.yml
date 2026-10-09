@@ -30,6 +30,16 @@ body:
       placeholder: "1.0.0"
     validations:
       required: true
+  - type: dropdown
+    id: workflow
+    attributes:
+      label: Which workflow was affected most?
+      options:
+        - Attaching files from multiple folders
+        - Collecting screenshots for bug reports/support
+        - Moving or copying files between folders/apps
+        - Organizing links/notes/images across shelves
+        - Other
   - type: input
     id: windows
     attributes:

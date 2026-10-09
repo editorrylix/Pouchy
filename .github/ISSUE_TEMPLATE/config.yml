@@ -1,5 +1,14 @@
-blank_issues_enabled: true
+blank_issues_enabled: false
 contact_links:
+  - name: Start with a good first issue
+    url: https://github.com/editorrylix/Pouchy/labels/good%20first%20issue
+    about: Looking to contribute? Pick a small scoped issue to get started.
+  - name: Launch and feedback playbook
+    url: https://github.com/editorrylix/Pouchy/blob/main/docs/LAUNCH_PLAYBOOK.md
+    about: Reusable release messaging, channels and monthly growth-review checklist.
+  - name: Actions and themes guides
+    url: https://github.com/editorrylix/Pouchy/blob/main/docs/GUIDE.md
+    about: Learn how to extend Pouchy and where to find user-facing docs.
   - name: Download the latest version
     url: https://github.com/editorrylix/Pouchy/releases/latest
     about: Grab the newest Pouchy before reporting — your bug may already be fixed.

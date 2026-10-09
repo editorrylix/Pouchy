@@ -4,11 +4,13 @@
 
 # Pouchy
 
-**A drag-and-drop shelf for Windows 10 and 11.**
+**A Windows drag-and-drop shelf for files, links, text and screenshots.**
 <br />
 Park files, images, links and text in a floating pouch, then drop them wherever they need to go.
 <br />
 A free Windows alternative to Dropover and Yoink.
+<br />
+Get fewer window switches, faster attachments and smoother bug reports.
 
 <a href="https://github.com/editorrylix/Pouchy/releases/latest"><img src="https://img.shields.io/github/v/release/editorrylix/Pouchy?style=flat&label=release&color=8B7CFF" alt="Latest release" /></a>
 <a href="https://github.com/editorrylix/Pouchy/releases"><img src="https://img.shields.io/github/downloads/editorrylix/Pouchy/total?style=flat&color=4F8BFF&label=downloads" alt="Downloads" /></a>
@@ -47,6 +49,13 @@ Pouchy is a small shelf that appears where your mouse is while you drag. Drop th
 - **Put anything in it:** files, folders, groups of files, images, text, links and colour codes.
 - **Drag it out to any app:** Explorer, a browser, chat apps, design tools, email. Files are copied by default, so the originals stay where they were.
 
+### Why Pouchy vs the usual Windows workflow?
+
+- **Fewer window switches:** park files once, then drop them where needed.
+- **Faster attachments:** collect from different folders, attach in one drag.
+- **Smoother bug reports:** keep screenshots together while you reproduce issues.
+- **No account or telemetry:** your pouch stays local on your PC.
+
 <p align="center">
   <img src="docs/media/hero.png" alt="The Pouchy drop shelf in three themes" width="900" />
 </p>
@@ -56,6 +65,12 @@ Pouchy is a small shelf that appears where your mouse is while you drag. Drop th
 1. **[Download the installer](https://github.com/editorrylix/Pouchy/releases/latest)** (`setup-x64.exe`, or `setup-arm64.exe` for Snapdragon laptops) and run it. A short welcome guide opens, then Pouchy waits in the tray next to the clock.
 2. **Drag any file and give the mouse a little shake.** The pouch pops up next to it. Drop the file in.
 3. **Drag it out wherever you need it.** Press <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>Z</kbd> or click the tray icon to show the pouch, then drag the file into an email, a chat or a folder.
+
+### In your first 30 seconds
+
+- **📧 Faster attachments:** drag files from multiple folders into the pouch, then drop them into one email.
+- **🐞 Smoother bug reports:** press <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>S</kbd> a few times, then drag all screenshots into the report.
+- **📁 Cross-folder file moves:** collect files once, switch folders, then drop them where they belong.
 
 ### What people use it for
 
@@ -149,6 +164,12 @@ Press <kbd>Ctrl</kbd>+<kbd>K</kbd> and type. The palette finds:
 
 Download from the **[latest release](https://github.com/editorrylix/Pouchy/releases/latest)**:
 
+### Which file should I download?
+
+- **Most Windows PCs (Intel/AMD):** `setup-x64.exe` (recommended)
+- **Windows on ARM (Snapdragon):** `setup-arm64.exe`
+- **Prefer no install:** use the matching portable `.zip`
+
 | | Intel and AMD PCs | Windows on ARM |
 | --- | --- | --- |
 | **Installer** (recommended) | `Pouchy-x.y.z-setup-x64.exe` | `Pouchy-x.y.z-setup-arm64.exe` |
@@ -164,6 +185,12 @@ Download from the **[latest release](https://github.com/editorrylix/Pouchy/relea
 
 > [!NOTE]
 > Pouchy isn't code-signed yet, so Windows SmartScreen may say *"Windows protected your PC"* for a new download. Click **More info → Run anyway**. Each release lists SHA-256 checksums so you can check your download.
+
+### Known limitations (and workarounds)
+
+- **Windows SmartScreen warning:** Pouchy is not code-signed yet. Use **More info → Run anyway** and verify the release SHA-256 if needed.
+- **Windows 11 right-click menus:** Explorer integration is under **Show more options** due to Windows shell limits.
+- **If your default hotkey is already taken:** Pouchy auto-picks a free fallback and shows it in Settings/tray.
 
 ## Keyboard shortcuts
 
@@ -270,6 +297,14 @@ Pushing a version tag (`vX.Y.Z`) makes [GitHub Actions](.github/workflows/releas
 ## Feedback and support
 
 To report a bug or suggest a feature, [open an issue](https://github.com/editorrylix/Pouchy/issues/new/choose). A screenshot and the last lines of `%AppData%\Pouchy\debug.log` help.
+
+## Contributing
+
+- **Start here:** [good first issues](https://github.com/editorrylix/Pouchy/labels/good%20first%20issue)
+- **Report reproducible bugs:** [Bug report template](https://github.com/editorrylix/Pouchy/issues/new?template=bug_report.yml)
+- **Suggest improvements:** [Feature idea template](https://github.com/editorrylix/Pouchy/issues/new?template=feature_request.yml)
+- **Extend Pouchy:** [Actions guide](docs/ACTIONS.md) and [Themes guide](docs/THEMES.md)
+- **Release, launch and growth process:** [Launch playbook](docs/LAUNCH_PLAYBOOK.md)
 
 If Pouchy is useful to you, a star helps other Windows users find it. You can also support development:
 
