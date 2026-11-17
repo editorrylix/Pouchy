@@ -171,15 +171,7 @@ namespace Pouchy.Views
                     return;
                 }
 
-                var data = e.Data;
-                if (data.GetDataPresent(DataFormats.FileDrop) && data.GetData(DataFormats.FileDrop) is string[] { Length: > 0 } files)
-                {
-                    await _vm.AddPathsAsync(files, shelf);
-                }
-                else if ((data.GetData(DataFormats.UnicodeText) ?? data.GetData(DataFormats.Text)) is string text)
-                {
-                    _vm.AddText(text, shelf);
-                }
+                await _vm.AddIncomingAsync(Services.IncomingData.Read(e.Data, _vm.ReceivedFolder), shelf);
             }
             catch (Exception ex)
             {

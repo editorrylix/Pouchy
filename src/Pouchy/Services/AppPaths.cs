@@ -29,5 +29,14 @@ namespace Pouchy.Services
         public static string ActionsFolder => Path.Combine(DataFolder, "actions");
         /// <summary>WAV files for the Custom sound pack.</summary>
         public static string SoundsFolder => Path.Combine(DataFolder, "sounds");
+
+        /// <summary>
+        /// Files that arrived without a path on disk (Outlook attachments, files inside a zip, from a
+        /// phone), one sub-folder per drop. Folders no item uses any more are removed on exit.
+        /// </summary>
+        public static string ReceivedFolder => Path.Combine(DataFolder, "received");
+
+        /// <summary>Temporary copies made for dragging out (an image tile becomes a real .png file).</summary>
+        public static string ExportFolder => Path.Combine(Path.GetTempPath(), Profile == null ? "Pouchy" : "Pouchy-" + Profile, "out");
     }
 }

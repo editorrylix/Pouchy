@@ -82,18 +82,25 @@ namespace Pouchy.Services
             return item;
         }
 
-        public PouchItem CreateText(string text, Guid? id = null, DateTime? addedAt = null)
+        /// <summary>Formatting beyond this many characters isn't kept (a whole web page, say); the text still is.</summary>
+        internal const int MaxFormattingLength = 500_000;
+
+        public PouchItem CreateText(string text, Guid? id = null, DateTime? addedAt = null, string? html = null, string? rtf = null)
         {
             string singleLine = text.ReplaceLineEndings(" ").Trim();
+            html = string.IsNullOrWhiteSpace(html) || html.Length > MaxFormattingLength ? null : html;
+            rtf = string.IsNullOrWhiteSpace(rtf) || rtf.Length > MaxFormattingLength ? null : rtf;
             return new PouchItem
             {
                 Id = id ?? Guid.NewGuid(),
                 AddedAt = addedAt ?? DateTime.Now,
                 Kind = PouchItemKind.Text,
                 TextContent = text,
+                HtmlContent = html,
+                RtfContent = rtf,
                 FileExtension = "TXT",
                 DisplayName = singleLine.Length > TextNameLength ? singleLine[..TextNameLength] + "..." : singleLine,
-                Metadata = $"Text Snippet · {text.Length} chars",
+                Metadata = $"{(html != null || rtf != null ? "Formatted text" : "Text Snippet")} · {text.Length} chars",
             };
         }
 
@@ -132,11 +139,14 @@ namespace Pouchy.Services
             };
         }
 
-        /// <summary>Text becomes a link, a colour or a plain snippet depending on what it looks like.</summary>
-        public PouchItem CreateFromText(string text) =>
+        /// <summary>
+        /// Text becomes a link, a colour or a plain snippet depending on what it looks like. Formatting
+        /// (HTML, RTF) is kept on snippets only: a link or a colour is the same without it.
+        /// </summary>
+        public PouchItem CreateFromText(string text, string? html = null, string? rtf = null) =>
             TextTools.IsUrl(text) ? CreateLink(text)
             : TextTools.TryParseColor(text, out _) ? CreateColor(text)
-            : CreateText(text);
+            : CreateText(text, html: html, rtf: rtf);
 
         public PouchItem CreateImage(BitmapSource image, Guid? id = null, DateTime? addedAt = null)
         {
@@ -219,7 +229,7 @@ namespace Pouchy.Services
                 PouchItemKind.Stack when saved.StackFiles is { Count: > 0 }
                     => CreateStack(saved.StackFiles, id, saved.AddedAt),
                 PouchItemKind.Text when saved.TextContent != null
-                    => CreateText(saved.TextContent, id, saved.AddedAt),
+                    => CreateText(saved.TextContent, id, saved.AddedAt, saved.Html, saved.Rtf),
                 PouchItemKind.Image when hasImage
                     => CreateImageFromFile(imagePath!, id, saved.AddedAt),
                 PouchItemKind.Link when saved.TextContent != null

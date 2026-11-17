@@ -318,27 +318,11 @@ namespace Pouchy.Views
             e.Effects = GetDragEffect(e);
             try
             {
-                // Read everything from the data object before the first await.
-                var data = e.Data;
-                if (data.GetDataPresent(DataFormats.FileDrop) && data.GetData(DataFormats.FileDrop) is string[] { Length: > 0 } files)
-                {
-                    await _vm.AddPathsAsync(files);
-                }
-                else if ((data.GetData(DataFormats.UnicodeText) ?? data.GetData(DataFormats.Text)) is string text)
-                {
-                    _vm.AddText(text);
-                }
-                else if (data.GetDataPresent(DataFormats.Bitmap))
-                {
-                    if (data.GetData(DataFormats.Bitmap) is BitmapSource bitmap)
-                    {
-                        _vm.AddImage(bitmap);
-                    }
-                    else
-                    {
-                        Logger.Log("Dropped bitmap is in an unsupported format.");
-                    }
-                }
+                // Read everything from the data object (and save any virtual files) before the first await:
+                // it only lives during the drop.
+                var incoming = IncomingData.Read(e.Data, _vm.ReceivedFolder);
+                if (incoming.Kind == IncomingKind.None) Logger.Log("Nothing usable in the drop: " + string.Join(", ", e.Data.GetFormats(false)));
+                await _vm.AddIncomingAsync(incoming);
             }
             catch (Exception ex)
             {

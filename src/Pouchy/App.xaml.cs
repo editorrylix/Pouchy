@@ -108,7 +108,10 @@ namespace Pouchy
             {
                 OpenSettingsAction = ShowSettings,
                 ThemeListProvider = () => _themes.Themes.Select(t => (t.Id, t.Name)).ToList(),
+                ReceivedFolder = AppPaths.ReceivedFolder,
             };
+            DataObjectBuilder.ExportFolder = AppPaths.ExportFolder;
+            _ = Task.Run(DataObjectBuilder.CleanExportFolder);
             _sounds = new SoundService(_settings, AppPaths.SoundsFolder);
             _pouchViewModel.PlaySound = sound =>
             {

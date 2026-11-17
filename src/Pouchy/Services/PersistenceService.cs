@@ -17,6 +17,10 @@ namespace Pouchy.Services
         public List<string>? StackFiles { get; set; }
         public string? TextContent { get; set; }
 
+        /// <summary>Formatted versions of a text item (see <see cref="PouchItem.HtmlContent"/>).</summary>
+        public string? Html { get; set; }
+        public string? Rtf { get; set; }
+
         /// <summary>File name of the PNG in the images folder: the picture for image items, the icon for links.</summary>
         public string? ImageFile { get; set; }
 
@@ -56,6 +60,7 @@ namespace Pouchy.Services
 
         private readonly string _stateFile;
         private readonly string _imageFolder;
+        private readonly string _receivedFolder;
         private readonly object _writeLock = new();
         private CancellationTokenSource? _pendingSave;
 
@@ -65,6 +70,7 @@ namespace Pouchy.Services
         {
             _stateFile = Path.Combine(dataFolder, "shelf_state.json");
             _imageFolder = Path.Combine(dataFolder, "images");
+            _receivedFolder = Path.Combine(dataFolder, "received");
         }
 
         /// <summary>
@@ -164,6 +170,8 @@ namespace Pouchy.Services
                         FilePath = item.FilePath,
                         StackFiles = item.StackFiles?.ToList(),
                         TextContent = item.TextContent,
+                        Html = item.HtmlContent,
+                        Rtf = item.RtfContent,
                         DisplayName = item.DisplayName,
                         AddedAt = item.AddedAt,
                         IsPinned = item.IsPinned,
@@ -211,7 +219,11 @@ namespace Pouchy.Services
                     File.WriteAllText(temp, json);
                     File.Move(temp, _stateFile, overwrite: true);
 
-                    if (prune) PruneImages(snapshot.KeepFiles);
+                    if (prune)
+                    {
+                        PruneImages(snapshot.KeepFiles);
+                        PruneReceived(snapshot.State);
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -232,6 +244,48 @@ namespace Pouchy.Services
                 encoder.Frames.Add(BitmapFrame.Create(image));
                 using var stream = File.Create(path);
                 encoder.Save(stream);
+            }
+        }
+
+        /// <summary>
+        /// Deletes the folders of received files (Outlook attachments and the like) that no item points
+        /// to any more. Only on exit, like images, because Undo can bring a removed item back until then.
+        /// </summary>
+        private void PruneReceived(PersistedState state)
+        {
+            if (!Directory.Exists(_receivedFolder)) return;
+
+            string root = Path.TrimEndingDirectorySeparator(Path.GetFullPath(_receivedFolder)) + Path.DirectorySeparatorChar;
+            var used = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var item in state.Shelves.SelectMany(s => s.Items))
+            {
+                foreach (var path in new[] { item.FilePath }.Concat(item.StackFiles ?? Enumerable.Empty<string>()))
+                {
+                    if (string.IsNullOrEmpty(path)) continue;
+                    string full;
+                    try
+                    {
+                        full = Path.GetFullPath(path);
+                    }
+                    catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException)
+                    {
+                        continue;
+                    }
+                    if (!full.StartsWith(root, StringComparison.OrdinalIgnoreCase)) continue;
+                    used.Add(full[root.Length..].Split(Path.DirectorySeparatorChar)[0]);
+                }
+            }
+            foreach (var folder in Directory.EnumerateDirectories(_receivedFolder))
+            {
+                if (used.Contains(Path.GetFileName(folder))) continue;
+                try
+                {
+                    Directory.Delete(folder, recursive: true);
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                {
+                    Logger.Log($"Could not delete received files {folder}: {ex.Message}");
+                }
             }
         }
 

@@ -51,6 +51,18 @@ namespace Pouchy.Models
         /// <summary>Set for <see cref="PouchItemKind.Text"/>.</summary>
         public string? TextContent { get; init; }
 
+        /// <summary>
+        /// The same text with its formatting, when it came with some (a table copied from Excel, a
+        /// paragraph from a web page): the clipboard's HTML Format, as received. Given back on drag-out
+        /// and copy, so apps that understand formatting get it.
+        /// </summary>
+        public string? HtmlContent { get; init; }
+
+        /// <summary>The same text as Rich Text Format, when it came with it (Word, WordPad, Outlook).</summary>
+        public string? RtfContent { get; init; }
+
+        public bool HasFormatting => HtmlContent != null || RtfContent != null;
+
         /// <summary>Set for <see cref="PouchItemKind.Image"/>. Always frozen.</summary>
         public BitmapSource? ImageContent
         {

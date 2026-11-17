@@ -492,12 +492,41 @@ namespace Pouchy.ViewModels
                 i.StackFiles!.OrderBy(p => p, StringComparer.OrdinalIgnoreCase).SequenceEqual(sorted, StringComparer.OrdinalIgnoreCase));
         }
 
-        /// <summary>Adds text; URLs become links and colour values become swatches.</summary>
-        public PouchItem? AddText(string text, Shelf? shelf = null)
+        /// <summary>
+        /// Where files that arrive without a path (Outlook attachments, files inside a zip) are saved.
+        /// Null: they're ignored.
+        /// </summary>
+        public string? ReceivedFolder { get; set; }
+
+        /// <summary>Adds whatever a drop or the clipboard offered (see <see cref="IncomingData"/>).</summary>
+        public async Task<PouchItem?> AddIncomingAsync(IncomingData incoming, Shelf? shelf = null)
+        {
+            switch (incoming.Kind)
+            {
+                case IncomingKind.Files:
+                    var item = await AddPathsAsync(incoming.Files, shelf);
+                    if (item != null && incoming.FromVirtualFiles)
+                    {
+                        ShowNotice(incoming.Files.Count == 1
+                            ? $"Saved \u201C{System.IO.Path.GetFileName(incoming.Files[0])}\u201D"
+                            : $"Saved {incoming.Files.Count} files");
+                    }
+                    return item;
+                case IncomingKind.Text:
+                    return AddText(incoming.Text!, shelf, incoming.Html, incoming.Rtf);
+                case IncomingKind.Image:
+                    return AddImage(incoming.Image!, shelf);
+                default:
+                    return null;
+            }
+        }
+
+        /// <summary>Adds text; URLs become links and colour values become swatches. Formatting is kept on snippets.</summary>
+        public PouchItem? AddText(string text, Shelf? shelf = null, string? html = null, string? rtf = null)
         {
             if (string.IsNullOrWhiteSpace(text)) return null;
 
-            var item = _factory.CreateFromText(text);
+            var item = _factory.CreateFromText(text, html, rtf);
             var target = TargetFor(item, shelf);
             if (target.Items.FirstOrDefault(i => i.Kind == item.Kind && i.TextContent == item.TextContent) is { } existing) return existing;
 
@@ -528,22 +557,25 @@ namespace Pouchy.ViewModels
             PouchItem? existing = null;
             try
             {
-                if (Clipboard.ContainsFileDropList())
+                // Virtual files are left alone here: copying an attachment shouldn't write it to disk.
+                if (Clipboard.GetDataObject() is not { } data) return;
+                var incoming = IncomingData.Read(data, receivedFolder: null);
+                switch (incoming.Kind)
                 {
-                    var files = Clipboard.GetFileDropList().Cast<string>().ToList();
-                    if (files.Count == 0) return;
-                    existing = FindSameFiles(shelf, files);
-                    item = existing ?? await Task.Run(() => files.Count == 1 ? _factory.CreateFromPath(files[0]) : _factory.CreateStack(files));
-                }
-                else if (Clipboard.ContainsText() && Clipboard.GetText() is { } text && !string.IsNullOrWhiteSpace(text))
-                {
-                    // Text before images: Office copies both, and the text is what people want back.
-                    existing = shelf.Items.FirstOrDefault(i => i.IsTextLike && i.TextContent == text);
-                    item = existing ?? _factory.CreateFromText(text);
-                }
-                else if (Clipboard.ContainsImage() && Clipboard.GetImage() is BitmapSource image)
-                {
-                    item = _factory.CreateImage(image);
+                    case IncomingKind.Files:
+                        var files = incoming.Files;
+                        existing = FindSameFiles(shelf, files);
+                        item = existing ?? await Task.Run(() => files.Count == 1 ? _factory.CreateFromPath(files[0]) : _factory.CreateStack(files));
+                        break;
+                    case IncomingKind.Text:
+                        existing = shelf.Items.FirstOrDefault(i => i.IsTextLike && i.TextContent == incoming.Text);
+                        item = existing ?? _factory.CreateFromText(incoming.Text!, incoming.Html, incoming.Rtf);
+                        break;
+                    case IncomingKind.Image:
+                        item = _factory.CreateImage(incoming.Image!);
+                        break;
+                    default:
+                        return;
                 }
             }
             catch (Exception ex)
@@ -623,24 +655,15 @@ namespace Pouchy.ViewModels
         [RelayCommand]
         private void DismissNotice() => Notice = null;
 
-        /// <summary>Adds whatever is on the clipboard: files, an image or text.</summary>
+        /// <summary>
+        /// Adds whatever is on the clipboard: files (also copied attachments), text with its formatting,
+        /// or a picture. Text wins over a picture, so cells copied from Excel come in as text.
+        /// </summary>
         public async Task PasteAsync()
         {
             try
             {
-                if (Clipboard.ContainsFileDropList())
-                {
-                    var files = Clipboard.GetFileDropList().Cast<string>().ToList();
-                    await AddPathsAsync(files);
-                }
-                else if (Clipboard.ContainsImage() && Clipboard.GetImage() is BitmapSource image)
-                {
-                    AddImage(image);
-                }
-                else if (Clipboard.ContainsText())
-                {
-                    AddText(Clipboard.GetText());
-                }
+                if (Clipboard.GetDataObject() is { } data) await AddIncomingAsync(IncomingData.Read(data, ReceivedFolder));
             }
             catch (Exception ex)
             {
