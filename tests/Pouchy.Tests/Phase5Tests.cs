@@ -531,5 +531,16 @@ namespace Pouchy.Tests
             }, parts.Select(p => (p.Kind, p.Text)));
             Assert.Equal("docs/ACTIONS.md", parts.Single(p => p.Kind == InlineKind.Link).Url);
         }
+
+        [Theory]
+        [InlineData("New themes: *Aurora* and *Acid*.", "Aurora|Acid")]
+        [InlineData("**Bold** stays bold, *this* is italic", "this")]
+        [InlineData("2 * 3 * 4 and a lone * star", "")]       // spaces around: not emphasis
+        [InlineData("a*b*c inside a word", "")]                // like CommonMark's underscores: no
+        public void Inline_ParsesItalic_OnlyAroundWords(string text, string expected)
+        {
+            var italics = MarkdownLite.ParseInline(text).Where(p => p.Kind == InlineKind.Italic).Select(p => p.Text);
+            Assert.Equal(expected, string.Join("|", italics));
+        }
     }
 }

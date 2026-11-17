@@ -87,8 +87,9 @@ The shake and edge gestures only count while you're really dragging something. M
 | What | How |
 | --- | --- |
 | **Files and folders** | Drag them onto the pouch. Several files dropped together become one **stack**. |
-| **Text, links and colour codes** | Drag selected text from any app, or copy it and press <kbd>Ctrl</kbd>+<kbd>V</kbd> in the pouch. |
-| **Images** | Drag them from a folder, or copy an image and press <kbd>Ctrl</kbd>+<kbd>V</kbd>. |
+| **Text, links and colour codes** | Drag selected text from any app, or copy it and press <kbd>Ctrl</kbd>+<kbd>V</kbd> in the pouch. Formatting (bold, links, a table from Excel) comes along. |
+| **Images** | Drag them from a folder or a web page, or copy an image and press <kbd>Ctrl</kbd>+<kbd>V</kbd>. See-through parts stay see-through. |
+| **Email attachments and files inside a zip** | Drag them straight from Outlook, or out of a zip folder in Explorer. Pouchy saves a copy for you (see [Where is my data?](#faq)). |
 | **A note of your own** | <kbd>Ctrl</kbd>+<kbd>N</kbd>, or right-click an empty spot → **New note…** (<kbd>Ctrl</kbd>+<kbd>Enter</kbd> saves it). |
 | **A screenshot** | <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>S</kbd>. See [Screenshots](#screenshots). |
 | **Whatever is on the clipboard** | Tray menu → **Paste into pouch** |
@@ -102,6 +103,9 @@ While you drag something over the pouch, the mascot gets excited and a row of ac
   - Hold <kbd>Shift</kbd> while dropping to **move** them instead.
   - If you'd rather files move by default, as they do in Explorer, change **Settings → Dragging out**.
 - **Drag several at once:** select them first, then drag one of the selected items. The **Drag all** button at the bottom drags everything on the shelf.
+- **Pictures** (pasted images and screenshots) come out as real **.png files**: drop one in a folder, on the desktop or into a chat. Apps that take pictures directly get the picture, with its transparency.
+- **Links** open when you drop them in a browser, and become a **shortcut** when you drop them on the desktop or in a folder.
+- **Formatted text** keeps its formatting in apps that understand it, such as Word, Outlook and email in a browser.
 - **Copy and paste:** select an item, press <kbd>Ctrl</kbd>+<kbd>C</kbd>, then paste in the other app.
 - **Open it:** double-click, or press <kbd>Enter</kbd>.
 
@@ -119,7 +123,8 @@ Items stay in the pouch after you drag them out, so you can drop the same file i
 | A block of colour | A **colour code** |
 | Orange **!** badge | The file was moved or deleted since you added it |
 | Purple pin badge | **Pinned:** Clear and auto-clear won't remove it |
-| Coloured border | A colour **label** |
+| Coloured dot and thin outline | A colour **label** |
+| Glowing ring and a check mark | **Selected** |
 
 Press <kbd>Space</kbd> on an item for **Quick Look**, a larger preview of pictures, text, videos, folders and stacks.
 
@@ -284,15 +289,15 @@ Press <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>S</kbd>, or use **Take a screenshot**
 
 ### Make it yours
 
-**Themes:** six built-in themes: *Midnight Glass*, *Frost*, *Sunset*, *Paper*, *Terminal* (with retro scanlines) and *Follow Windows*, which matches your Windows light or dark mode and accent colour. Pick one in **Settings → Theme**, or from the tray menu.
+**Themes:** nine built-in themes: *Midnight Glass*, *Aurora*, *Bubblegum*, *Acid*, *Frost*, *Paper*, *Sunset*, *Terminal* (with retro scanlines) and *Follow Windows*, which matches your Windows light or dark mode and accent colour. Pick one in **Settings → Theme**, or from the tray menu.
 
 <p align="center">
-  <img src="media/themes.png" alt="The six built-in Pouchy themes" width="860" />
+  <img src="media/themes.png" alt="The nine built-in Pouchy themes" width="860" />
 </p>
 
 **Theme editor:** choose a theme in Settings and click **Customize this theme**. You can change:
-- the accent, text, background (solid or gradient), tile and outline colours
-- background see-through amount, corner roundness and shadow
+- the accent, the gradient it fades into, text, background (solid or gradient), tile and outline colours
+- background see-through amount, corner roundness, shadow and glow
 - fonts, and the scanline effect
 
 The pouch updates as you change things. Your theme is saved as a small file in the themes folder, which you can share with friends. **Edit JSON** opens every option, including light-mode colours ([theme guide](THEMES.md)).
@@ -415,7 +420,7 @@ Yes, for personal and other noncommercial use. See the [license](../README.md#li
 <details>
 <summary><b>Does Pouchy make copies of my files?</b></summary>
 
-No. Like the Windows clipboard, the pouch only remembers where each file is. If you move or delete a file, its tile shows an orange **!**. Only pasted images, screenshots and link icons are stored, in `%AppData%\Pouchy`.
+No. Like the Windows clipboard, the pouch only remembers where each file is. If you move or delete a file, its tile shows an orange **!**. Only pasted images, screenshots and link icons are stored, in `%AppData%\Pouchy`, plus files that had no place on disk when they arrived, such as an email attachment or a file from inside a zip. Those are deleted again once no item uses them.
 </details>
 
 <details>
@@ -475,6 +480,7 @@ No.
 - your shelves (`shelf_state.json`)
 - your settings
 - your themes, sounds and scripts
+- `images` (pasted pictures) and `received` (attachments and other files saved for you)
 - a log file (`debug.log`) that helps with bug reports
 </details>
 

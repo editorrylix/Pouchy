@@ -9,6 +9,7 @@ namespace Pouchy.Helpers
     {
         Text,
         Bold,
+        Italic,
         Code,
         Key,
         Link,
@@ -18,11 +19,11 @@ namespace Pouchy.Helpers
 
     /// <summary>
     /// Just enough Markdown for the changelog: ### headings, nested "- " lists, paragraphs,
-    /// **bold**, `code`, &lt;kbd&gt; keys and [links](url). Other HTML is dropped.
+    /// **bold**, *italic*, `code`, &lt;kbd&gt; keys and [links](url). Other HTML is dropped.
     /// </summary>
     public static partial class MarkdownLite
     {
-        [GeneratedRegex(@"\*\*(?<bold>.+?)\*\*|`(?<code>[^`]+)`|<kbd>(?<key>.*?)</kbd>|\[(?<label>[^\]]+)\]\((?<url>[^)\s]+)\)|<[^>]+>")]
+        [GeneratedRegex(@"\*\*(?<bold>.+?)\*\*|(?<![*\w])\*(?<italic>[^*\s](?:[^*]*[^*\s])?)\*(?![*\w])|`(?<code>[^`]+)`|<kbd>(?<key>.*?)</kbd>|\[(?<label>[^\]]+)\]\((?<url>[^)\s]+)\)|<[^>]+>")]
         private static partial Regex InlinePattern();
 
         /// <summary>Splits a line into styled pieces.</summary>
@@ -34,6 +35,7 @@ namespace Pouchy.Helpers
             {
                 if (match.Index > position) parts.Add(new InlinePart(InlineKind.Text, text[position..match.Index]));
                 if (match.Groups["bold"].Success) parts.Add(new InlinePart(InlineKind.Bold, match.Groups["bold"].Value));
+                else if (match.Groups["italic"].Success) parts.Add(new InlinePart(InlineKind.Italic, match.Groups["italic"].Value));
                 else if (match.Groups["code"].Success) parts.Add(new InlinePart(InlineKind.Code, match.Groups["code"].Value));
                 else if (match.Groups["key"].Success) parts.Add(new InlinePart(InlineKind.Key, match.Groups["key"].Value));
                 else if (match.Groups["url"].Success) parts.Add(new InlinePart(InlineKind.Link, match.Groups["label"].Value.Replace("**", ""), match.Groups["url"].Value));
@@ -146,6 +148,9 @@ namespace Pouchy.Helpers
                         bold.SetResourceReference(TextElement.ForegroundProperty, "Pouch.Text");
                         bold.Inlines.Add(new Run(part.Text));
                         inlines.Add(bold);
+                        break;
+                    case InlineKind.Italic:
+                        inlines.Add(new Italic(new Run(part.Text)));
                         break;
                     case InlineKind.Code:
                         var code = new Run(part.Text);

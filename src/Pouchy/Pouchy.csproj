@@ -11,7 +11,7 @@
     <RootNamespace>Pouchy</RootNamespace>
 
     <!-- Semantic version. CI overrides it from the release tag (vX.Y.Z). -->
-    <Version>1.1.0</Version>
+    <Version>1.2.0</Version>
     <Product>Pouchy</Product>
     <Company>editorrylix</Company>
     <Description>The cute drop shelf for Windows</Description>

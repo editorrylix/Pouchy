@@ -10,12 +10,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-11-17
+
 ### Added
 
+- **A fresh look.** The pouch has a soft glow in its accent colour and a glassy edge, the Drag all button is a gradient with a glow, tiles lift a little when you point at them, and a dashed outline marches around the pouch while you drag something over it.
+- **Three new themes:** *Aurora* (night sky, teal to periwinkle), *Bubblegum* (pastel pink and lilac) and *Acid* (graphite with acid lime). Nine in all.
+- **Theme editor:** a *Gradient end* colour for the Drag all button and a *Glow* slider. Custom themes can also set `Accent2`, `Effects.Glow`, `Effects.GlowColor`, `Effects.Sheen` and `Effects.AccentGlow` ([theme guide](docs/THEMES.md)).
+- **Outlook attachments, files inside a zip and pictures from a browser** can be dropped or pasted into the pouch. They have no place on disk yet, so Pouchy saves them in its data folder (`received`), and removes them again once no item uses them.
+- **Pictures come out as real .png files.** Drag a screenshot or pasted image into a folder, onto the desktop or into a chat app and it arrives as a file, named after the item.
+- **Transparency is kept.** Pictures with see-through parts keep them, both coming in (PNG data from browsers, Office and design tools) and going out.
+- **Links come out as links.** Drop a link in a browser to open it, or on the desktop or in a folder to make a shortcut, as dragging a link out of a browser does.
+- **Formatting is kept on text.** Bold, links and tables copied from Word, Outlook, Excel or a web page keep their formatting when you drag or copy them into an app that understands it. The tile says *Formatted text*. Editing the text turns it back into plain text.
 - **Microsoft Store package** (MSIX for x64 and ARM64). The Store version is updated by the Store, starts with Windows through its startup task, and otherwise works exactly like the other downloads. See [packaging/store/README.md](packaging/store/README.md).
 
 ### Changed
 
+- **Selected items** now have a glowing ring and a check mark, and **colour labels** are a dot, a thin outline and a tinted name. Before, a label looked just like the selection.
+- **Cells copied from Excel** come in as text (with their table), not as a picture of the cells. Pasting now prefers text over a picture whenever an app offers both, except a browser's *Copy image*.
 - Added a [privacy policy](PRIVACY.md), linked from Settings → About.
 - The full user guide now lives in [docs/GUIDE.md](docs/GUIDE.md). The welcome window and tray menu → Help link there.
 
@@ -98,7 +110,8 @@ The first public release. 🎉
 - **Update notifications:** Pouchy checks GitHub for a new release about once a day. You can turn this off in Settings → About.
 - **Start with Windows**, single instance, and items saved between sessions.
 
-[Unreleased]: https://github.com/editorrylix/Pouchy/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/editorrylix/Pouchy/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/editorrylix/Pouchy/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/editorrylix/Pouchy/compare/v1.0.1...v1.1.0
 [1.0.1]: https://github.com/editorrylix/Pouchy/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/editorrylix/Pouchy/releases/tag/v1.0.0

@@ -354,12 +354,16 @@ Deferred to later phases:
    - ✅ **Smart shelves:** a shelf can auto-collect images, documents, videos, audio, archives, folders, links, notes or colours.
    - ✅ **Clipboard history** (Phase 5): an opt-in Clipboard shelf; skips password-manager copies.
    - ✅ **Phase 6:** visual theme editor, sound packs (Soft, Bubbly, Clicky, Custom), one-click updates with a SHA-256 check, and a per-user installer.
-2. **Then record the full demo video**, showing everything.
-3. **Then the gaps found by comparing Pouchy with the Windows clipboard:**
-   - Pasting Excel cells gives a picture: paste text before images when both are offered.
-   - Image tiles dropped on a folder should become PNG files.
-   - Keep image transparency (PNG clipboard format, in and out).
-   - Accept files that don't exist on disk yet: Outlook attachments, files inside zips, phone files.
-   - Links should come out as real links (URL format, `.url` shortcut on the desktop).
-   - Keep rich text and HTML formatting on text items.
+2. ✅ **Record the full demo video:** the launch trailer in [`trailer/`](../trailer/EDITING.md), real footage edited in code, with its own phonk-style soundtrack (1.2.0), in 16:9 and 9:16.
+3. **The gaps found by comparing Pouchy with the Windows clipboard** (1.2.0):
+   - ✅ Pasting Excel cells gave a picture: text now wins over a picture when both are offered.
+   - ✅ Image tiles dropped on a folder become PNG files.
+   - ✅ Image transparency is kept (PNG clipboard format, in and out).
+   - ✅ Files that don't exist on disk yet are accepted: Outlook attachments and messages, files inside zips, pictures from a browser (FileGroupDescriptor/FileContents).
+   - ✅ Links come out as real links (URL formats, plus a `.url` shortcut for Explorer).
+   - ✅ Rich text and HTML formatting are kept on text items.
    - Optional encryption for saved text.
+4. **Next:**
+   - Encryption for saved text (DPAPI, per Windows account).
+   - Re-record the trailer footage with the 1.2 look (the theme cards already show it).
+   - A real acrylic or Mica backdrop as an option, now that the glow and sheen layers exist.

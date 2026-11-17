@@ -29,9 +29,10 @@ A complete theme:
   "CornerRadius": 18,
   "TileCornerRadius": 12,
   "Colors": {
-    "Background": "linear(160deg, #F01C1C24 0%, #F00B0B0F 100%)",
+    "Background": "linear(160deg, #F21D1B29 0%, #F20C0B11 100%)",
     "Border": "linear(180deg, #40FFFFFF 0%, #0FFFFFFF 100%)",
     "Accent": "#8B7CFF",
+    "Accent2": "#BB4FFF",
     "AccentText": "#FFFFFF",
     "Text": "#F5F5F7",
     "TextSecondary": "#B3FFFFFF",
@@ -47,7 +48,14 @@ A complete theme:
     "Scrollbar": "#44FFFFFF"
   },
   "Shadow": { "Color": "#000000", "Blur": 36, "Depth": 8, "Opacity": 0.6 },
-  "Effects": { "Scanlines": false, "ScanlineOpacity": 0.08 }
+  "Effects": {
+    "Scanlines": false,
+    "ScanlineOpacity": 0.08,
+    "Glow": 0.22,
+    "GlowColor": "#8B7CFF",
+    "Sheen": 0.06,
+    "AccentGlow": 0.45
+  }
 }
 ```
 
@@ -59,9 +67,13 @@ Field names are not case-sensitive.
 | `Base` | `dark` or `light` (sets the style of the Settings and Quick Look windows), or `system` to follow Windows. With `system`, the theme uses `LightColors` while Windows is in light mode. |
 | `CornerRadius` / `TileCornerRadius` | Roundness of the pouch and of the tiles, in pixels. |
 | `Colors.Background` / `Colors.Border` | Can be a solid colour or a gradient. |
+| `Colors.Accent2` | Where the accent gradient ends: the Drag all button fades from `Accent` into it. Leave it out and Pouchy picks one by turning the accent's hue a little. |
 | `Colors.Card` | Background of the cards in a stack's fanned preview. |
 | `Colors.Badge` / `Colors.BadgeText` | The file-type labels on tiles. |
 | `Effects.Scanlines` | Draws CRT-style lines over the pouch (used by the Terminal theme). |
+| `Effects.Glow` / `Effects.GlowColor` | Soft light falling from the top-left of the pouch, 0 (off) to 1. The colour defaults to the accent. |
+| `Effects.Sheen` | A glassy highlight along the top of the pouch and its tiles, 0 to 1. |
+| `Effects.AccentGlow` | The coloured glow under the Drag all button and around selected items, 0 to 1. |
 
 ## Colours
 
