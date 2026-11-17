@@ -3,12 +3,21 @@
 Everything here is synthesised from scratch (original, free to ship), except Pouchy's own interface
 sounds, rendered by tools/AppSounds from the app's SoundSynth. Voice lines come from audio/vo.py.
 
+The music is chosen with --music:
+  phonk (default)  the phonk / Brazilian-funk track in audio/phonk.py
+  classic          the original synth-pop track below
+  path/to/song.wav any track you have the rights to; it's trimmed or padded to the trailer and
+                   faded out at the end (start it where you want with --music-offset SECONDS)
+
 Writes audio/build/{music,sfx,vo}.wav and the mixes:
   public/audio/mix-full.wav      music + sfx + voice
   audio/build/mix-novoice.wav    music + sfx
   audio/build/mix-musicless.wav  sfx + voice
+  audio/build/mix-sfx.wav        sfx only (to post with a sound from Instagram's or TikTok's own library)
 """
+import argparse
 import json
+import sys
 from pathlib import Path
 
 import numpy as np
@@ -16,6 +25,12 @@ import soundfile as sf
 from scipy.signal import butter, lfilter, resample_poly, fftconvolve
 
 HERE = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+ap = argparse.ArgumentParser()
+ap.add_argument('--music', default='phonk')
+ap.add_argument('--music-offset', type=float, default=0.0)
+ap.add_argument('--duck', type=float, default=-5.0, help='music level under the voice, in dB')
+ARGS = ap.parse_args()
 BUILD = HERE / 'audio' / 'build'
 SR = 48000
 tl = json.loads((HERE / 'src' / 'timeline.json').read_text(encoding='utf-8'))
@@ -145,7 +160,7 @@ def bass(f, sec):
     return lp(x, 380) * env(len(x), 0.004, sec * 0.8)
 
 
-def music():
+def music_classic():
     m = np.zeros(N)
     S = tl['scenes']
     groove = (S['drop'][0], S['burst'][0])        # full groove
@@ -331,6 +346,28 @@ def vo_track():
     return out
 
 
+def music():
+    if ARGS.music == 'phonk':
+        import phonk
+        x = phonk.music(tl, SR)
+    elif ARGS.music == 'classic':
+        x = music_classic()
+    else:
+        data, sr = sf.read(ARGS.music)
+        if data.ndim > 1:
+            data = data.mean(axis=1)
+        data = resample_poly(data, SR, sr) if sr != SR else data
+        data = data[int(ARGS.music_offset * SR):]
+        x = np.zeros(N)
+        x[:min(N, len(data))] = data[:N]
+        fe = int((DUR - 1.5) * SR)
+        x[fe:] *= np.linspace(1, 0, N - fe) ** 2
+        x = x / (np.max(np.abs(x)) + 1e-9) * 0.95
+    out = np.zeros(N)
+    out[:min(N, len(x))] = x[:N]
+    return out
+
+
 def duck(music, vo, amount_db=-7):
     """Lower the music while the voice speaks (smoothed)."""
     level = lp(np.abs(vo), 8) > 0.004
@@ -349,11 +386,12 @@ def main():
     mus, fx, vo = music(), sfx_track(), vo_track()
     for name, x in (('music', mus), ('sfx', fx), ('vo', vo)):
         sf.write(BUILD / f'{name}.wav', x[:int(DUR * SR)].astype(np.float32), SR)
-    mus_d = duck(mus, vo)
+    mus_d = duck(mus, vo, ARGS.duck)
     mixes = {
-        HERE / 'public' / 'audio' / 'mix-full.wav': mus_d * 0.55 + fx * 0.75 + vo * 1.15,
-        BUILD / 'mix-novoice.wav': mus * 0.55 + fx * 0.75,
+        HERE / 'public' / 'audio' / 'mix-full.wav': mus_d * 0.6 + fx * 0.6 + vo * 1.15,
+        BUILD / 'mix-novoice.wav': mus * 0.62 + fx * 0.55,
         BUILD / 'mix-musicless.wav': fx * 0.8 + vo * 1.15,
+        BUILD / 'mix-sfx.wav': fx * 0.8,
     }
     for path, x in mixes.items():
         y = master(x[:int(DUR * SR)])

@@ -30,7 +30,7 @@ for clip in clips:
     shutil.copy2(clip, PUBLIC / 'footage' / clip.name)
 print(f'{len(clips)} clips')
 
-for theme in ('midnight', 'sunset', 'terminal', 'paper', 'frost'):
+for theme in ('midnight', 'aurora', 'bubblegum', 'acid', 'sunset', 'terminal', 'paper', 'frost'):
     shutil.copy2(Path(args.renders) / f'{theme}-grid.png', PUBLIC / 'renders' / f'{theme}-grid.png')
 
 # The mascot render is the four moods side by side on a transparent background: split it into

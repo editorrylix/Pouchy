@@ -146,7 +146,7 @@ export const FeatureLabel: React.FC<{
   at: number;
   until: number;
   keys?: string;
-  /** Corner in landscape (portrait cuts always use the top). */
+  /** Corner in landscape (tall cuts always use the bottom, where the reframed footage leaves room). */
   pos?: 'bl' | 'br' | 'tl' | 'tr';
 }> = ({ n, title, detail, at, until, keys, pos = 'bl' }) => {
   const t = useTime();
@@ -167,8 +167,9 @@ export const FeatureLabel: React.FC<{
         position: 'absolute',
         left: !landscape ? 0 : pos[1] === 'l' ? R * 0.08 : undefined,
         right: !landscape ? 0 : pos[1] === 'r' ? R * 0.08 : undefined,
-        bottom: landscape && pos[0] === 'b' ? R * 0.08 : undefined,
-        top: !landscape ? R * 0.1 : pos[0] === 't' ? R * 0.08 : undefined,
+        bottom: !landscape ? height * 0.07 : pos[0] === 'b' ? R * 0.08 : undefined,
+        top: landscape && pos[0] === 't' ? R * 0.08 : undefined,
+        padding: landscape ? undefined : `0 ${R * 0.06}px`,
         textAlign: !landscape ? 'center' : pos[1] === 'r' ? 'right' : 'left',
         color: C.white,
         textShadow: '0 4px 30px rgba(5,2,20,0.85), 0 2px 6px rgba(5,2,20,0.6)',

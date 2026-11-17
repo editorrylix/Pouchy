@@ -12,22 +12,28 @@ import { CamKey, rect } from '../lib/camera';
 import { clamp, easeInCubic, springAt, useTime } from '../lib/time';
 import { C, text } from '../theme';
 
-const THEMES = ['midnight', 'sunset', 'terminal', 'paper', 'frost'];
+// Fanned out from the middle card; seven of the nine built-in themes.
+const THEMES = ['terminal', 'bubblegum', 'aurora', 'midnight', 'sunset', 'frost', 'acid'];
 
 /** The built-in themes, rendered by Pouchy's own views, fanned out like cards. */
 export const Themes: React.FC = () => {
   const t = useTime();
   const { width, height } = useVideoConfig();
-  const cardH = Math.min(height * 0.6, width * 0.42 * (1240 / 884));
+  const landscape = width >= height;
+  // Tall formats: bigger cards, fanned more by rotation than by spacing.
+  const cardH = Math.min(height * 0.58, width * (landscape ? 0.4 : 0.56) * (1240 / 884));
   const cardW = cardH * (884 / 1240);
-  const spread = Math.min(0.62, (width * 0.92 - cardW) / (4 * cardW));
+  const mid = (THEMES.length - 1) / 2;
+  const spread = Math.min(0.5, (width * 0.94 - cardW) / ((THEMES.length - 1) * cardW));
   return (
     <AbsoluteFill>
       <Backdrop />
       <ParallaxLayer depth={0.6} drift={[-40, -10]}>
         {THEMES.map((id, i) => {
-          const k = i - 2;
-          const s = springAt(t - 0.25 - i * 0.25, { stiffness: 170, damping: 13 });
+          const k = i - mid;
+          // Middle card first, then outwards in pairs, on the 8th notes.
+          const order = Math.abs(k);
+          const s = springAt(t - 0.2 - order * 0.25, { stiffness: 170, damping: 13 });
           return (
             <Img
               key={id}
@@ -39,7 +45,7 @@ export const Themes: React.FC = () => {
                 width: cardW,
                 height: cardH,
                 zIndex: 10 - Math.abs(k),
-                transform: `translateY(${(1 - s) * height * 0.6}px) rotate(${k * 6 * s}deg) scale(${0.9 + 0.1 * s})`,
+                transform: `translateY(${(1 - s) * height * 0.6}px) rotate(${k * (landscape ? 5 : 9) * s}deg) scale(${0.9 + 0.1 * s})`,
                 filter: 'drop-shadow(0 30px 50px rgba(5,2,20,0.6))',
               }}
             />

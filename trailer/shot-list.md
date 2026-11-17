@@ -1,6 +1,9 @@
 # Shot list
 
-35 seconds at 120 BPM (a beat every 0.5 s); scene times are in `src/timeline.json`. Every piece of
+35 seconds at 120 BPM (a beat every 0.5 s); scene times are in `src/timeline.json`. The sound column
+lists the effects; the music (`audio/phonk.py`) follows the same sections: muffled cowbell riff under the
+hook, a build that stops dead at 9.75 s, the full beat from the drop at 10.0 s, a "Pou-pou-Pouchy" break at
+23.5 s, a half-time slowed switch for the themes, three hits with silence between, and an 808 slide out. Every piece of
 product UI is the real app: screen recordings made by `capture/record.ps1`, or Pouchy's own views
 rendered by its test suite (the theme cards and nothing else). Graphics around them are motion design.
 
@@ -15,7 +18,7 @@ rendered by its test suite (the theme cards and nothing else). Graphics around t
 | 19.5–21.5 | 03 Explorer | `08-explorer-menu` 3.6–8.7: right-click → Add to Pouchy, the pouch opens with the file | spotlight on the menu item | click, *open* |
 | 21.5–23.5 | 04 Smart shelves | `09-smart-shelves` 5.9–12.6: Forest sorts itself into Pictures, Ctrl+2, Ctrl+F | | *add*, typing |
 | 23.5–24.5 | + more | — | burst: Quick Look, Command palette, Labels & pins, Sound packs, Stacks, Notes, Link previews, Undo, Multiple shelves, Your own scripts, Auto-clear, Hotkeys | riser, pops |
-| 24.5–26.5 | Themes | Pouchy's five built-in themes, rendered by the app's views | MAKE IT YOURS. | impact, pops · VO 5 |
+| 24.5–26.5 | Themes | Seven of Pouchy's nine built-in themes, rendered by the app's views | MAKE IT YOURS. | impact, pops · VO 5 |
 | 26.5–28.5 | Theme editor | `13-theme-editor` 2.9–10.6 (two cuts skip the redraw blips): accent and background change live | "Your colours" | typing |
 | 28.5–31.5 | SHAKE. PARK. DROP. | `02-summon` (shake, park) and `03-drop-anywhere` (drop), darkened | one word per second | three big hits with chord stabs |
 | 31.5–35.0 | End card | the app icon | Pouchy / Shake your mouse. Park anything. Drop it anywhere. / Free for Windows 10 & 11 / github.com/editorrylix/Pouchy · Small Thunder Works | boom, shimmer, final chord · VO 6 |

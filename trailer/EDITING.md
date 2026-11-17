@@ -17,7 +17,7 @@ src/components/   Footage (retimed recordings + virtual camera), ImpactText, Spr
                   (DoodleArrow, ScribbleCircle, CursorTrail, ShakeMarks), Spotlight, Caption,
                   LogoReveal, Chips (FileChip, FeatureBurst, FeatureLabel), Layout (WindowFrame,
                   SplitScene, ParallaxLayer, Tag), Transitions (Scene, ZoomTransition, MaskTransition)
-audio/            vo.py (Kokoro voice), mix.py (music, effects, mixes)
+audio/            vo.py (Kokoro voice), phonk.py (the soundtrack), mix.py (effects, mixes, music choice)
 tools/AppSounds   writes Pouchy's built-in interface sounds to WAV (used in the mix)
 scripts/          prepare.py (gathers footage and renders into public/), render.ps1 (final files)
 ```
@@ -35,9 +35,26 @@ scripts/          prepare.py (gathers footage and renders into public/), render.
 4. **Python** (3.12; numpy, scipy, soundfile, pillow, kokoro-onnx) and the Kokoro model files
    (`kokoro-v1.0.onnx`, `voices-v1.0.bin` from the kokoro-onnx releases) in `C:\PouchyTrailer\tts`.
 5. `npm install`, then `powershell -File scripts\render.ps1` → `out/trailer-master-1080p60.mp4` and
-   `out/trailer-master-1080p30.mp4` (`-Variants` adds `trailer-no-voice.mp4` and `trailer-musicless.mp4`).
+   `out/trailer-master-1080p30.mp4`. `-Vertical` adds the 9:16 cut, `-Variants` the no-voice, musicless
+   and effects-only mixes, and `-Readme` writes `trailer.mp4`, `trailer-vertical.mp4` and `preview.gif`
+   into `docs/media`. On a PC short of memory (a game running), add `-Concurrency 2`.
 
 Preview while editing: `npm run studio` (set the `audio` prop to `full` to hear the mix).
+
+## Music
+
+The soundtrack is `audio/phonk.py`: an original phonk / Brazilian-funk style track (pitched 808
+cowbell riff, distorted sliding 808, funk kick pattern, a "Pou-pou-Pouchy" vocal chop and a slowed
+beat switch), synthesised from scratch and timed to `timeline.json`, so the cuts land on the beat.
+`python audio/phonk.py` writes it alone to `audio/build/music-phonk.wav` for listening.
+
+- **Use another track:** `render.ps1 -Music path\to\song.wav` (or `audio\mix.py --music ... --music-offset 12.5`
+  to start the song at its drop). Only use music you have the rights to: a popular song in a video on
+  GitHub, YouTube or the web is a copyright claim waiting to happen.
+- **Trending sounds on Instagram, TikTok or Shorts:** post `trailer-vertical-sfx-only.mp4` (from
+  `-Vertical -Variants`) and pick the sound in the app. Sounds from the app's own library are licensed
+  for use there; the same song baked into the file is not, and gets the video muted or blocked.
+- The original synth-pop track is still there: `-Music classic`.
 
 ## Common edits
 
@@ -56,8 +73,8 @@ Preview while editing: `npm run studio` (set the `audio` prop to `full` to hear 
 ## Licences
 
 - Footage and app renders: Pouchy itself (this repository).
-- Music and sound effects: synthesised by `audio/mix.py` — original, no samples. The interface
-  sounds are Pouchy's own (its `SoundSynth`).
+- Music and sound effects: synthesised by `audio/phonk.py` and `audio/mix.py` — original, no samples.
+  The interface sounds are Pouchy's own (its `SoundSynth`); the vocal chop is the Kokoro voice below.
 - Voice: Kokoro-82M (Apache-2.0) run locally with kokoro-onnx (MIT).
 - Fonts: Bricolage Grotesque and Inter (SIL Open Font License), loaded with @remotion/google-fonts.
 - Remotion is free for individuals and companies of up to three people; larger teams need a
