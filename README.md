@@ -31,11 +31,16 @@ A free Windows alternative to Dropover and Yoink.
 <br />
 <br />
 
-<img src="docs/media/demo.gif" alt="Pouchy demo: shaking a dragged file opens the shelf, files are dropped in and dragged out to another app" width="860" />
+<img src="docs/media/preview.webp" alt="Pouchy in action: a picture is dragged and shaken, the pouch pops up under the cursor, the picture is dropped in and dragged out into Paint" width="860" />
 
-<sub><a href="docs/media/demo.mp4">Watch the one-minute demo</a></sub>
+<!-- To play the trailer right here with sound: edit this file on github.com, drag docs/media/trailer.mp4
+     into the editor, and replace the line below with the link GitHub inserts. -->
+<a href="docs/media/trailer.mp4"><b>▶ Watch the 35-second trailer (sound on)</b></a>
 
 </div>
+
+> [!TIP]
+> **New in 1.2:** a glow-up for the pouch, three new themes (*Aurora*, *Bubblegum*, *Acid*), Outlook attachments and files inside zips, pictures that come out as real .png files, links that become shortcuts, and formatting that survives the trip. [See everything that's new](CHANGELOG.md).
 
 ## What is Pouchy?
 
@@ -44,11 +49,11 @@ Moving a file between two apps on Windows usually means Alt+Tab, a window that e
 Pouchy is a small shelf that appears where your mouse is while you drag. Drop things into it, switch to the app you need, and drag them back out. Items stay in the pouch until you remove them, including after a restart.
 
 - **Open it while dragging:** shake the mouse, bump the screen edge twice, or press <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>Z</kbd>.
-- **Put anything in it:** files, folders, groups of files, images, text, links and colour codes.
-- **Drag it out to any app:** Explorer, a browser, chat apps, design tools, email. Files are copied by default, so the originals stay where they were.
+- **Put anything in it:** files, folders, groups of files, images, text, links, colour codes, email attachments and files from inside a zip.
+- **Drag it out to any app:** Explorer, a browser, chat apps, design tools, email. Files are copied by default, so the originals stay where they were. Pictures arrive as real .png files, links as links, and formatted text keeps its formatting.
 
 <p align="center">
-  <img src="docs/media/hero.png" alt="The Pouchy drop shelf in three themes" width="900" />
+  <img src="docs/media/hero.png" alt="The Pouchy drop shelf in the Bubblegum, Midnight Glass and Aurora themes" width="900" />
 </p>
 
 ## Quick start
@@ -111,6 +116,13 @@ Press <kbd>Ctrl</kbd>+<kbd>K</kbd> and type. The palette finds:
 - **Clipboard history** is off by default. Turn it on and a Clipboard shelf keeps the last 50 things you copied: text, links, images and files. Copies from password managers that mark their content as private are never saved.
 - **Screenshot to Pouchy.** <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>S</kbd> opens the Windows screen snip, and the capture goes straight into the pouch. If another app already uses that shortcut, Pouchy picks a free one and shows it in the tray menu.
 
+### Comes in, goes out, the way you'd expect
+
+- **Email attachments and files inside a zip** can be dragged straight in. They don't have a place on disk yet, so Pouchy keeps a copy for as long as an item uses it.
+- **Cells from Excel** come in as text with their table, not as a picture of the cells.
+- **Pictures** keep their transparency, and dragging one into a folder or a chat gives a real .png file.
+- **Links** open when dropped in a browser and become shortcuts when dropped on the desktop.
+
 ### Works with Explorer
 
 - **Add to Pouchy** appears in the right-click menu of files and folders, and Pouchy appears in **Send to**. On Windows 11, both are under *Show more options*.
@@ -128,19 +140,19 @@ Press <kbd>Ctrl</kbd>+<kbd>K</kbd> and type. The palette finds:
 | **Text** | Edit, change case, tidy whitespace, save as a .txt file |
 
 <p align="center">
-  <img src="docs/media/menus.png" alt="Pouchy item menu and tray menu" width="860" />
+  <img src="docs/media/menus.png" alt="Selected items, the item menu and the tray menu" width="860" />
 </p>
 
 ### Themes, sounds and a mascot
 
-- **Six built-in themes:** Midnight Glass, Frost, Sunset, Paper, Terminal and Follow Windows.
-- **Your own themes:** the **theme editor** lets you pick colours, a gradient, opacity, corner roundness, shadow and fonts, and the pouch updates as you change them. Themes are saved as JSON files, so they're easy to share ([theme guide](docs/THEMES.md)).
+- **Nine built-in themes:** Midnight Glass, Aurora, Bubblegum, Acid, Frost, Paper, Sunset, Terminal and Follow Windows.
+- **Your own themes:** the **theme editor** lets you pick colours, gradients, glow, opacity, corner roundness, shadow and fonts, and the pouch updates as you change them. Themes are saved as JSON files, so they're easy to share ([theme guide](docs/THEMES.md)).
 - **Views:** Grid, List or Compact, with adjustable tile size, columns and open animation.
 - **Sound packs:** Soft, Bubbly, Clicky or your own WAV files. Off by default.
 - **A mascot** that reacts as you drag, drop and search. You can hide it.
 
 <p align="center">
-  <img src="docs/media/themes.png" alt="The six built-in Pouchy themes" width="860" />
+  <img src="docs/media/themes.png" alt="The nine built-in Pouchy themes" width="860" />
 </p>
 
 <p align="center"><b>Every feature, setting and shortcut is explained in the <a href="docs/GUIDE.md">Pouchy guide</a>.</b></p>
@@ -229,7 +241,7 @@ The shake and edge gestures only count while you're actually dragging something.
 <details>
 <summary><b>Does Pouchy copy my files?</b></summary>
 
-No. The pouch holds a reference to each file, the same way the Windows clipboard does. Only pasted images and link icons are saved, in `%AppData%\Pouchy`. If a file is moved or deleted, its tile shows a warning badge.
+No. The pouch holds a reference to each file, the same way the Windows clipboard does. If a file is moved or deleted, its tile shows a warning badge. Only pasted images, link icons and files that had no place on disk yet (an email attachment, a file from inside a zip) are saved, in `%AppData%\Pouchy`, and those are deleted once no item uses them.
 </details>
 
 <details>
