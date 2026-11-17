@@ -85,12 +85,17 @@ namespace Pouchy.ViewModels
         private readonly DispatcherTimer _saveTimer;
         private readonly bool _initialized;
 
+        /// <summary>False while the gradient end is still derived from the accent (so it follows accent changes).</summary>
+        private bool _accent2Explicit;
+        private bool _syncingAccent2;
+
         public static IReadOnlyList<string> BaseOptions { get; } = new[] { "Dark", "Light", "Follow Windows" };
 
         public IReadOnlyList<string> FontOptions { get; } =
             Fonts.SystemFontFamilies.Select(f => f.Source).Order(StringComparer.CurrentCultureIgnoreCase).ToList();
 
         public ThemeColorField Accent { get; }
+        public ThemeColorField Accent2 { get; }
         public ThemeColorField AccentText { get; }
         public ThemeColorField Text { get; }
         public ThemeColorField BackgroundTop { get; }
@@ -109,6 +114,7 @@ namespace Pouchy.ViewModels
         [ObservableProperty] private string _fontFamily;
         [ObservableProperty] private string _headerFontFamily;
         [ObservableProperty] private bool _scanlines;
+        [ObservableProperty] private double _glow;
 
         public string FilePath => _path;
 
@@ -150,15 +156,32 @@ namespace Pouchy.ViewModels
             _fontFamily = FirstFont(_theme.FontFamily);
             _headerFontFamily = FirstFont(_theme.HeaderFontFamily);
             _scanlines = _theme.Effects.Scanlines;
+            _glow = Math.Round(Math.Clamp(_theme.Effects.Glow, 0, 0.6), 2);
 
-            Accent = new ThemeColorField("Accent", "Buttons, the selection and highlights.", Parse(c.Accent, Colors.MediumPurple), QueueSave);
+            _accent2Explicit = !string.IsNullOrWhiteSpace(c.Accent2);
+            Accent = new ThemeColorField("Accent", "Buttons, the selection and highlights.", Parse(c.Accent, Colors.MediumPurple), () =>
+            {
+                if (!_accent2Explicit)
+                {
+                    _syncingAccent2 = true;
+                    Accent2!.Color = ThemeResourceBuilder.ShiftHue(Accent!.Color, 30, 0.88);
+                    _syncingAccent2 = false;
+                }
+                QueueSave();
+            });
+            Accent2 = new ThemeColorField("Gradient end", "The Drag all button fades from the accent into this colour.",
+                _accent2Explicit ? Parse(c.Accent2!, Accent.Color) : ThemeResourceBuilder.ShiftHue(Accent.Color, 30, 0.88), () =>
+                {
+                    if (!_syncingAccent2) _accent2Explicit = true;
+                    QueueSave();
+                });
             AccentText = new ThemeColorField("Text on accent", "Labels drawn on top of the accent colour.", Parse(c.AccentText, Colors.White), QueueSave);
             Text = new ThemeColorField("Text", "Names and titles. Secondary text is a faded version.", Parse(c.Text, Colors.White), QueueSave);
             BackgroundTop = new ThemeColorField("Background", "The pouch itself (top colour of the gradient).", Opaque(top), QueueSave);
             BackgroundBottom = new ThemeColorField("Background, bottom", "Bottom colour of the gradient.", Opaque(bottom), QueueSave);
             Tile = new ThemeColorField("Tiles", "Behind each item. Usually a faint version of the text colour.", Parse(c.Tile, Color.FromArgb(0x12, 255, 255, 255)), QueueSave);
             Outline = new ThemeColorField("Outline", "The thin border around the pouch.", Opaque(OutlineColor(c.Border, accent)), QueueSave);
-            ColorFields = new[] { Accent, AccentText, Text, BackgroundTop, BackgroundBottom, Tile, Outline };
+            ColorFields = new[] { Accent, Accent2, AccentText, Text, BackgroundTop, BackgroundBottom, Tile, Outline };
 
             _initialized = true;
         }
@@ -204,6 +227,7 @@ namespace Pouchy.ViewModels
         partial void OnFontFamilyChanged(string value) => QueueSave();
         partial void OnHeaderFontFamilyChanged(string value) => QueueSave();
         partial void OnScanlinesChanged(bool value) => QueueSave();
+        partial void OnGlowChanged(double value) => QueueSave();
 
         private void QueueSave()
         {
@@ -240,6 +264,7 @@ namespace Pouchy.ViewModels
             theme.FontFamily = $"{FontFamily}, Segoe UI";
             theme.HeaderFontFamily = $"{HeaderFontFamily}, Segoe UI";
             theme.Effects.Scanlines = Scanlines;
+            theme.Effects.Glow = Math.Round(Math.Clamp(Glow, 0, 0.6), 2);
 
             var c = theme.Colors;
             byte alpha = (byte)Math.Round(Math.Clamp(BackgroundOpacity, 0.3, 1) * 255);
@@ -247,6 +272,7 @@ namespace Pouchy.ViewModels
                 ? $"linear(160deg, {WithAlpha(BackgroundTop.Color, alpha)} 0%, {WithAlpha(BackgroundBottom.Color, alpha)} 100%)"
                 : WithAlpha(BackgroundTop.Color, alpha);
             c.Accent = ToHex(Accent.Color);
+            c.Accent2 = _accent2Explicit ? ToHex(Accent2.Color) : null;
             c.AccentText = ToHex(AccentText.Color);
             c.Text = ToHex(Text.Color);
             c.TextSecondary = WithAlpha(Text.Color, 0xB3);

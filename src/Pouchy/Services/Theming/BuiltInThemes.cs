@@ -10,6 +10,9 @@ namespace Pouchy.Services.Theming
         {
             Midnight(),
             FollowWindows(),
+            Aurora(),
+            Bubblegum(),
+            Acid(),
             Frost(),
             Paper(),
             Sunset(),
@@ -35,6 +38,105 @@ namespace Pouchy.Services.Theming
             LightColors = FrostColors("system"),
         };
 
+        /// <summary>Night sky: deep navy glass, a teal-to-periwinkle accent and northern-lights glow.</summary>
+        private static ThemeDefinition Aurora() => new()
+        {
+            Id = "aurora",
+            Name = "Aurora",
+            Base = "dark",
+            IsBuiltIn = true,
+            CornerRadius = 20,
+            TileCornerRadius = 13,
+            Colors = new ThemeColors
+            {
+                Background = "linear(165deg, #F40E1A2A 0%, #F40A0F1C 55%, #F4140E26 100%)",
+                Border = "linear(180deg, #5584F5E1 0%, #148B7CFF 100%)",
+                Accent = "#4FE3C1",
+                Accent2 = "#7C8CFF",
+                AccentText = "#04201A",
+                Text = "#EAFBFF",
+                TextSecondary = "#B8EAFBFF",
+                TextMuted = "#70EAFBFF",
+                Tile = "#10FFFFFF",
+                TileHover = "#20FFFFFF",
+                TileBorder = "#1A84F5E1",
+                Card = "#FF14223A",
+                Badge = "#B3020A12",
+                BadgeText = "#EAFBFF",
+                Danger = "#FF6B81",
+                Warning = "#FFC46B",
+                Scrollbar = "#4484F5E1",
+            },
+            Shadow = new ThemeShadow { Color = "#020812", Blur = 44, Depth = 10, Opacity = 0.7 },
+            Effects = new ThemeEffects { Glow = 0.34, GlowColor = "#2DD4BF", AccentGlow = 0.5 },
+        };
+
+        /// <summary>Y2K pastel: pink to lilac to baby blue, hot-pink accent, extra round.</summary>
+        private static ThemeDefinition Bubblegum() => new()
+        {
+            Id = "bubblegum",
+            Name = "Bubblegum",
+            Base = "light",
+            IsBuiltIn = true,
+            CornerRadius = 26,
+            TileCornerRadius = 17,
+            Colors = new ThemeColors
+            {
+                Background = "linear(150deg, #F8FFEEF7 0%, #F8F5EAFF 55%, #F8E8F1FF 100%)",
+                Border = "linear(180deg, #FFFFFFFF 0%, #66E9A8D6 100%)",
+                Accent = "#FF3D9A",
+                Accent2 = "#9B5CFF",
+                AccentText = "#FFFFFF",
+                Text = "#3A0F2E",
+                TextSecondary = "#B33A0F2E",
+                TextMuted = "#803A0F2E",
+                Tile = "#B3FFFFFF",
+                TileHover = "#FFFFFFFF",
+                TileBorder = "#26C0398A",
+                Card = "#FFFFFFFF",
+                Badge = "#D93A0F2E",
+                BadgeText = "#FFFFFF",
+                Danger = "#E11D48",
+                Warning = "#D97706",
+                Scrollbar = "#40C0398A",
+            },
+            Shadow = new ThemeShadow { Color = "#C0398A", Blur = 40, Depth = 12, Opacity = 0.3 },
+            Effects = new ThemeEffects { Glow = 0.2, GlowColor = "#FF8AD0", Sheen = 0.12, AccentGlow = 0.45 },
+        };
+
+        /// <summary>Graphite black with an acid-lime accent. Loud on purpose.</summary>
+        private static ThemeDefinition Acid() => new()
+        {
+            Id = "acid",
+            Name = "Acid",
+            Base = "dark",
+            IsBuiltIn = true,
+            CornerRadius = 16,
+            TileCornerRadius = 10,
+            Colors = new ThemeColors
+            {
+                Background = "linear(170deg, #F7171717 0%, #F70A0A0A 100%)",
+                Border = "linear(180deg, #40FFFFFF 0%, #0FFFFFFF 100%)",
+                Accent = "#D4FF3A",
+                Accent2 = "#6BFF8E",
+                AccentText = "#0B0B0B",
+                Text = "#F4F4F0",
+                TextSecondary = "#B3F4F4F0",
+                TextMuted = "#66F4F4F0",
+                Tile = "#0FFFFFFF",
+                TileHover = "#1FFFFFFF",
+                TileBorder = "#14FFFFFF",
+                Card = "#FF262626",
+                Badge = "#E6000000",
+                BadgeText = "#D4FF3A",
+                Danger = "#FF5A52",
+                Warning = "#FFB27A",
+                Scrollbar = "#44FFFFFF",
+            },
+            Shadow = new ThemeShadow { Color = "#000000", Blur = 36, Depth = 8, Opacity = 0.65 },
+            Effects = new ThemeEffects { Glow = 0.13, Sheen = 0.05, AccentGlow = 0.38 },
+        };
+
         private static ThemeDefinition Frost() => new()
         {
             Id = "frost",
@@ -45,6 +147,7 @@ namespace Pouchy.Services.Theming
             TileCornerRadius = 14,
             Colors = FrostColors("#2563EB"),
             Shadow = new ThemeShadow { Color = "#1E293B", Blur = 40, Depth = 12, Opacity = 0.28 },
+            Effects = new ThemeEffects { Glow = 0.14, Sheen = 0.1, AccentGlow = 0.35 },
         };
 
         private static ThemeColors FrostColors(string accent) => new()
@@ -81,6 +184,7 @@ namespace Pouchy.Services.Theming
                 Background = "linear(170deg, #FFFBF6EC 0%, #FFF1E8D8 100%)",
                 Border = "#337A6248",
                 Accent = "#C2410C",
+                Accent2 = "#9A3412",
                 AccentText = "#FFF8EC",
                 Text = "#2B2118",
                 TextSecondary = "#B32B2118",
@@ -96,6 +200,7 @@ namespace Pouchy.Services.Theming
                 Scrollbar = "#4D7A6248",
             },
             Shadow = new ThemeShadow { Color = "#5C4632", Blur = 30, Depth = 10, Opacity = 0.35 },
+            Effects = new ThemeEffects { Glow = 0, Sheen = 0, AccentGlow = 0.22 },
         };
 
         private static ThemeDefinition Sunset() => new()
@@ -110,6 +215,7 @@ namespace Pouchy.Services.Theming
                 Background = "linear(135deg, #F52A1B3D 0%, #F5482A55 50%, #F57A3042 100%)",
                 Border = "linear(180deg, #55FFC9A8 0%, #14FFC9A8 100%)",
                 Accent = "#FF8A5B",
+                Accent2 = "#FF5C8A",
                 AccentText = "#1F0F1A",
                 Text = "#FFF4EC",
                 TextSecondary = "#BFFFE9DC",
@@ -125,6 +231,7 @@ namespace Pouchy.Services.Theming
                 Scrollbar = "#55FFC9A8",
             },
             Shadow = new ThemeShadow { Color = "#12060E", Blur = 40, Depth = 10, Opacity = 0.7 },
+            Effects = new ThemeEffects { Glow = 0.2, GlowColor = "#FF8A5B" },
         };
 
         private static ThemeDefinition Terminal() => new()
@@ -143,6 +250,7 @@ namespace Pouchy.Services.Theming
                 Background = "#F5040805",
                 Border = "#7339FF88",
                 Accent = "#39FF88",
+                Accent2 = "#39FF88",
                 AccentText = "#03140A",
                 Text = "#C8FFDD",
                 TextSecondary = "#B339FF88",
@@ -158,7 +266,7 @@ namespace Pouchy.Services.Theming
                 Scrollbar = "#6639FF88",
             },
             Shadow = new ThemeShadow { Color = "#39FF88", Blur = 28, Depth = 0, Opacity = 0.3 },
-            Effects = new ThemeEffects { Scanlines = true, ScanlineOpacity = 0.07 },
+            Effects = new ThemeEffects { Scanlines = true, ScanlineOpacity = 0.07, Glow = 0.1, Sheen = 0, AccentGlow = 0.5 },
         };
     }
 }

@@ -141,6 +141,18 @@
                 </ui:CardControl>
                 <ui:CardControl>
                     <ui:CardControl.Header>
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource CardTitle}">
+                                <Run Text="Glow:"/>
+                                <Run Text="{Binding Glow, Mode=OneWay, StringFormat={}{0:P0}}"/>
+                            </TextBlock>
+                            <TextBlock Text="Soft light in the accent colour at the top of the pouch." Style="{StaticResource CardDescription}"/>
+                        </StackPanel>
+                    </ui:CardControl.Header>
+                    <Slider Width="180" Minimum="0" Maximum="0.6" TickFrequency="0.02" IsSnapToTickEnabled="True" Value="{Binding Glow}"/>
+                </ui:CardControl>
+                <ui:CardControl>
+                    <ui:CardControl.Header>
                         <TextBlock Text="Font" Style="{StaticResource CardTitle}"/>
                     </ui:CardControl.Header>
                     <ComboBox Width="200" ItemsSource="{Binding FontOptions}" SelectedItem="{Binding FontFamily}" IsTextSearchEnabled="True"/>

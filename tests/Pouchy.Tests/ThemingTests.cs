@@ -230,5 +230,81 @@ namespace Pouchy.Tests
             string second = service.CreateCustomCopy(service.Find("terminal")!);
             Assert.NotEqual(path, second);
         }
+
+        [Fact]
+        public void BuiltInThemes_HaveUniqueIds_AndBuildEveryResource()
+        {
+            var themes = BuiltInThemes.All();
+            Assert.Equal(themes.Count, themes.Select(t => t.Id).Distinct().Count());
+            Assert.Contains(themes, t => t.Id == "aurora");
+            Assert.Contains(themes, t => t.Id == "bubblegum");
+            Assert.Contains(themes, t => t.Id == "acid");
+            foreach (var theme in themes)
+            {
+                var r = ThemeResourceBuilder.Build(theme, Context);
+                Assert.IsType<RadialGradientBrush>(r[ThemeKeys.Glow]);
+                Assert.IsType<LinearGradientBrush>(r[ThemeKeys.AccentGradient]);
+                Assert.IsType<LinearGradientBrush>(r[ThemeKeys.Sheen]);
+                Assert.IsType<System.Windows.Media.Effects.DropShadowEffect>(r[ThemeKeys.AccentGlow]);
+            }
+        }
+
+        [Fact]
+        public void AccentGradient_UsesAccent2_OrDerivesOne()
+        {
+            var sunset = BuiltInThemes.All().Single(t => t.Id == "sunset");
+            var gradient = (LinearGradientBrush)ThemeResourceBuilder.Build(sunset, Context)[ThemeKeys.AccentGradient];
+            Assert.Equal(Color.FromRgb(0xFF, 0x8A, 0x5B), gradient.GradientStops[0].Color);
+            Assert.Equal(Color.FromRgb(0xFF, 0x5C, 0x8A), gradient.GradientStops[1].Color);
+
+            // Midnight has no Accent2: the end is the accent turned towards magenta, and a little darker
+            // (so white text stays readable across the whole button).
+            var midnight = BuiltInThemes.All().Single(t => t.Id == "midnight");
+            var derived = ((LinearGradientBrush)ThemeResourceBuilder.Build(midnight, Context)[ThemeKeys.AccentGradient]).GradientStops[1].Color;
+            Assert.Equal(Color.FromRgb(0xBB, 0x4F, 0xFF), derived);
+        }
+
+        [Fact]
+        public void GlowOfZero_IsInvisible()
+        {
+            var paper = BuiltInThemes.All().Single(t => t.Id == "paper");
+            var glow = (RadialGradientBrush)ThemeResourceBuilder.Build(paper, Context)[ThemeKeys.Glow];
+            Assert.All(glow.GradientStops, stop => Assert.Equal(0, stop.Color.A));
+        }
+
+        [Theory]
+        [InlineData("#FF0000", 120, 1.0, "#00FF00")]
+        [InlineData("#0000FF", -120, 1.0, "#00FF00")]
+        [InlineData("#808080", 90, 1.0, "#808080")] // grey has no hue to turn
+        [InlineData("#FF0000", 0, 0.5, "#800000")]
+        public void ShiftHue_TurnsTheColourWheel(string from, double degrees, double lightness, string expected)
+        {
+            var result = ThemeResourceBuilder.ShiftHue(BrushParser.ParseColor(from, Colors.Black), degrees, lightness);
+            Assert.Equal(BrushParser.ParseColor(expected, Colors.Black), result);
+        }
+
+        [Fact]
+        public void Editor_GradientEndFollowsAccent_UntilEdited()
+        {
+            ViewSmokeTests.RunOnSta(() =>
+            {
+                using var service = CreateService();
+                service.Start();
+                string path = service.CreateCustomCopy(service.Find("midnight")!);
+                var editor = new Pouchy.ViewModels.ThemeEditorViewModel(service, path);
+
+                editor.Accent.Hex = "#FF0000";
+                Assert.Equal(ThemeResourceBuilder.ShiftHue(Colors.Red, 30, 0.88), editor.Accent2.Color);
+                var saved = new ThemeDefinition();
+                editor.Apply(saved);
+                Assert.Null(saved.Colors.Accent2); // Still derived, so it keeps following.
+
+                editor.Accent2.Hex = "#00FF00";
+                editor.Accent.Hex = "#0000FF";
+                Assert.Equal(Colors.Lime, editor.Accent2.Color);
+                editor.Apply(saved);
+                Assert.Equal("#00FF00", saved.Colors.Accent2);
+            });
+        }
     }
 }

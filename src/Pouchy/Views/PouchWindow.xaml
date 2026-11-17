@@ -157,11 +157,18 @@
                         PreviewMouseLeftButtonDown="PouchItem_PreviewMouseLeftButtonDown"
                         MouseLeftButtonUp="PouchItem_MouseLeftButtonUp"
                         MouseMove="PouchItem_MouseMove">
-                <Grid x:Name="Tile" Height="{Binding DataContext.TileSize, RelativeSource={RelativeSource AncestorType=ListBox}}">
+                <Grid x:Name="Tile" Height="{Binding DataContext.TileSize, RelativeSource={RelativeSource AncestorType=ListBox}}"
+                      helpers:Motion.HoverLift="1.04">
+                    <!-- Selected: a glowing ring in the accent colour (only exists while selected, so it costs nothing otherwise). -->
+                    <Border x:Name="SelectGlow" CornerRadius="{DynamicResource Pouch.TileCornerRadius}" Margin="-1"
+                            BorderBrush="{DynamicResource Pouch.Accent}" BorderThickness="2" Visibility="Collapsed"
+                            Effect="{DynamicResource Pouch.SelectionGlow}"/>
                     <Border x:Name="TileBase" CornerRadius="{DynamicResource Pouch.TileCornerRadius}"
                             Background="{DynamicResource Pouch.Tile}" BorderBrush="{DynamicResource Pouch.TileBorder}" BorderThickness="1"/>
                     <Border x:Name="HoverLayer" CornerRadius="{DynamicResource Pouch.TileCornerRadius}"
                             Background="{DynamicResource Pouch.TileHover}" Opacity="0"/>
+                    <Border CornerRadius="{DynamicResource Pouch.TileCornerRadius}" Margin="1" IsHitTestVisible="False"
+                            Background="{DynamicResource Pouch.TileSheen}"/>
 
                     <!-- Photo / video: edge to edge, clipped by the rounded corners -->
                     <Border x:Name="FillThumb" CornerRadius="{DynamicResource Pouch.TileCornerRadius}" Margin="1" Visibility="Collapsed">
@@ -231,6 +238,10 @@
                                    HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </Border>
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="6">
+                        <Border x:Name="CheckBadge" Width="18" Height="18" Margin="0,0,3,0" CornerRadius="9"
+                                Background="{DynamicResource Pouch.Accent}" Visibility="Collapsed">
+                            <ui:SymbolIcon Symbol="Checkmark24" FontSize="11" Filled="True" Foreground="{DynamicResource Pouch.AccentText}"/>
+                        </Border>
                         <Border x:Name="MissingBadge" Width="18" Height="18" Margin="0,0,3,0" CornerRadius="9"
                                 Background="{DynamicResource Pouch.Warning}" Visibility="Collapsed" ToolTip="Moved or deleted">
                             <TextBlock Text="!" FontSize="11" FontWeight="Bold" Foreground="#E6000000" HorizontalAlignment="Center" VerticalAlignment="Center"/>
@@ -241,11 +252,10 @@
                         </Border>
                     </StackPanel>
 
-                    <!-- Colour label: a ring over the thumbnail (the background tint is on TileBase) -->
-                    <Border x:Name="LabelRing" CornerRadius="{DynamicResource Pouch.TileCornerRadius}" BorderThickness="2.5"
-                            BorderBrush="{Binding LabelBrush}" IsHitTestVisible="False" Visibility="Collapsed"/>
+                    <!-- Colour label: a dot in the corner, a thin tinted outline and a tinted name (set by the triggers).
+                         Not a thick ring, which looked like the selection. -->
                     <Ellipse x:Name="LabelDot" Width="11" Height="11" Margin="0,8,8,0" HorizontalAlignment="Right" VerticalAlignment="Top"
-                             Fill="{Binding LabelBrush}" Stroke="{DynamicResource Pouch.Tile}" StrokeThickness="1.5"/>
+                             Fill="{Binding LabelBrush}" Stroke="#59000000" StrokeThickness="1"/>
 
                     <!-- Hover actions -->
                     <StackPanel x:Name="Actions" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,5,5,0" Opacity="0"
@@ -321,7 +331,6 @@
                 <DataTrigger Binding="{Binding HasLabel}" Value="True">
                     <Setter TargetName="TileBase" Property="Background" Value="{Binding LabelTint}"/>
                     <Setter TargetName="TileBase" Property="BorderBrush" Value="{Binding LabelBrush}"/>
-                    <Setter TargetName="LabelRing" Property="Visibility" Value="Visible"/>
                     <Setter TargetName="NamePill" Property="Background" Value="{Binding LabelTint}"/>
                 </DataTrigger>
                 <DataTrigger Binding="{Binding Kind}" Value="Stack">
@@ -349,8 +358,9 @@
                     <Setter TargetName="StackThumb" Property="Margin" Value="11,10,11,12"/>
                 </DataTrigger>
                 <DataTrigger Binding="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=ListBoxItem}}" Value="True">
-                    <Setter TargetName="TileBase" Property="BorderBrush" Value="{DynamicResource Pouch.Accent}"/>
-                    <Setter TargetName="TileBase" Property="BorderThickness" Value="2"/>
+                    <Setter TargetName="SelectGlow" Property="Visibility" Value="Visible"/>
+                    <Setter TargetName="CheckBadge" Property="Visibility" Value="Visible"/>
+                    <Setter TargetName="NamePill" Property="Background" Value="{DynamicResource Pouch.AccentSoft}"/>
                 </DataTrigger>
             </DataTemplate.Triggers>
         </DataTemplate>
@@ -498,6 +508,12 @@
             <Border CornerRadius="{DynamicResource Pouch.CornerRadius}" BorderThickness="1"
                     Background="{DynamicResource Pouch.Background}" BorderBrush="{DynamicResource Pouch.Border}"
                     Effect="{DynamicResource Pouch.Shadow}"/>
+            <!-- Light from the top-left in the accent colour, and a glassy highlight along the top edge.
+                 Both are just brushes (no effects), so they cost nothing while the pouch is idle. -->
+            <Border CornerRadius="{DynamicResource Pouch.CornerRadius}" Margin="1" IsHitTestVisible="False"
+                    Background="{DynamicResource Pouch.Glow}"/>
+            <Border CornerRadius="{DynamicResource Pouch.CornerRadius}" Margin="1" IsHitTestVisible="False"
+                    Background="{DynamicResource Pouch.Sheen}"/>
 
             <Border Padding="14,12,14,14" BorderThickness="1" BorderBrush="Transparent">
             <Grid>
@@ -804,8 +820,11 @@
                 <!-- Solid, so whatever is underneath (the empty state's own mascot, tiles) doesn't show through. -->
                 <Grid x:Name="DropOverlay" Grid.Row="3" Margin="-4" Opacity="0" IsHitTestVisible="False" Visibility="Collapsed">
                     <Border CornerRadius="{DynamicResource Pouch.InnerCornerRadius}" Background="{DynamicResource Pouch.MenuBackground}"/>
-                    <Border CornerRadius="{DynamicResource Pouch.InnerCornerRadius}" Background="{DynamicResource Pouch.AccentSoft}"
-                            BorderBrush="{DynamicResource Pouch.Accent}" BorderThickness="2"/>
+                    <Border CornerRadius="{DynamicResource Pouch.InnerCornerRadius}" Background="{DynamicResource Pouch.AccentSoft}"/>
+                    <Border CornerRadius="{DynamicResource Pouch.InnerCornerRadius}" Background="{DynamicResource Pouch.Glow}"/>
+                    <!-- "Marching ants": the dashes move while something is over the pouch (started in ShowDropOverlay). -->
+                    <Rectangle x:Name="DropAnts" Stroke="{DynamicResource Pouch.Accent}" StrokeThickness="2" StrokeDashArray="5 3"
+                               StrokeDashCap="Round" RadiusX="12" RadiusY="12" Margin="1"/>
                     <StackPanel x:Name="OverlayContent" VerticalAlignment="Center" HorizontalAlignment="Center">
                         <views:Mascot x:Name="OverlayMascot" Mood="Excited" Width="72" Height="72"
                                       Visibility="{Binding ShowMascot, Converter={StaticResource BoolToVisibility}}"/>
@@ -895,7 +914,19 @@
                 <Grid Grid.Row="5" Margin="0,10,0,0" Height="34" Cursor="Hand"
                       Visibility="{Binding HasMultipleItems, Converter={StaticResource BoolToVisibility}}"
                       MouseLeftButtonDown="DragAll_MouseLeftButtonDown" MouseMove="DragAll_MouseMove">
-                    <Border CornerRadius="{DynamicResource Pouch.TileCornerRadius}" Background="{DynamicResource Pouch.Accent}"/>
+                    <!-- Glow on its own layer (an Effect would blur the text), then the gradient and a glassy top edge. -->
+                    <Border CornerRadius="{DynamicResource Pouch.TileCornerRadius}" Margin="3,2" Background="{DynamicResource Pouch.Accent}"
+                            Effect="{DynamicResource Pouch.AccentGlow}"/>
+                    <Border CornerRadius="{DynamicResource Pouch.TileCornerRadius}" Background="{DynamicResource Pouch.AccentGradient}"
+                            BorderThickness="1" BorderBrush="#2EFFFFFF"/>
+                    <Border CornerRadius="{DynamicResource Pouch.TileCornerRadius}" Margin="1" IsHitTestVisible="False">
+                        <Border.Background>
+                            <LinearGradientBrush StartPoint="0.5,0" EndPoint="0.5,1">
+                                <GradientStop Color="#30FFFFFF" Offset="0"/>
+                                <GradientStop Color="#00FFFFFF" Offset="0.6"/>
+                            </LinearGradientBrush>
+                        </Border.Background>
+                    </Border>
                     <Border x:Name="DragAllHover" CornerRadius="{DynamicResource Pouch.TileCornerRadius}" Background="White" Opacity="0"/>
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
                         <ui:SymbolIcon Symbol="ArrowMove24" FontSize="14" Foreground="{DynamicResource Pouch.AccentText}" Margin="0,0,8,0"/>

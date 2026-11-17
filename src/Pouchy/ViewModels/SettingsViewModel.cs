@@ -21,6 +21,8 @@ namespace Pouchy.ViewModels
         public required Brush Background { get; init; }
         public required Brush Border { get; init; }
         public required Brush Accent { get; init; }
+        public Brush? AccentGradient { get; init; }
+        public Brush? Glow { get; init; }
         public required Brush Text { get; init; }
         public required Brush TextSecondary { get; init; }
         public required Brush Tile { get; init; }
@@ -270,6 +272,8 @@ namespace Pouchy.ViewModels
                         Background = (Brush)r[ThemeKeys.Background],
                         Border = (Brush)r[ThemeKeys.Border],
                         Accent = (Brush)r[ThemeKeys.Accent],
+                        AccentGradient = (Brush)r[ThemeKeys.AccentGradient],
+                        Glow = (Brush)r[ThemeKeys.Glow],
                         Text = (Brush)r[ThemeKeys.Text],
                         TextSecondary = (Brush)r[ThemeKeys.TextSecondary],
                         Tile = (Brush)r[ThemeKeys.Tile],

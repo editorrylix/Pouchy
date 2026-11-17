@@ -287,6 +287,15 @@ namespace Pouchy.Views
             if (show) OverlayMascot.PopIn();
             // Collapsed (not just transparent) when unused, so its excited mascot isn't animating unseen.
             if (show) DropOverlay.Visibility = Visibility.Visible;
+            // The dashed outline follows the theme's corners and marches while something hovers;
+            // stopped otherwise, so it costs nothing.
+            if (show && TryFindResource("Pouch.InnerCornerRadius") is CornerRadius corners)
+            {
+                DropAnts.RadiusX = DropAnts.RadiusY = Math.Max(0, corners.TopLeft - 1);
+            }
+            DropAnts.BeginAnimation(System.Windows.Shapes.Shape.StrokeDashOffsetProperty, show && Motion.Enabled
+                ? new DoubleAnimation(0, -8, TimeSpan.FromMilliseconds(420)) { RepeatBehavior = RepeatBehavior.Forever }
+                : null);
             var animation = new DoubleAnimation(show ? 1 : 0, Motion.Enabled ? Motion.Duration(show ? 120 : 180) : TimeSpan.Zero);
             if (!show)
             {

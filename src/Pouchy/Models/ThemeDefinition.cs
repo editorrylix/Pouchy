@@ -41,12 +41,19 @@ namespace Pouchy.Models
     public class ThemeColors
     {
         /// <summary>Pouch background. Solid colour or gradient.</summary>
-        public string Background { get; set; } = "linear(160deg, #F01C1C24 0%, #F00B0B0F 100%)";
+        public string Background { get; set; } = "linear(160deg, #F21D1B29 0%, #F20C0B11 100%)";
 
         /// <summary>Pouch outline. Solid colour or gradient.</summary>
         public string Border { get; set; } = "linear(180deg, #40FFFFFF 0%, #0FFFFFFF 100%)";
 
         public string Accent { get; set; } = "#8B7CFF";
+
+        /// <summary>
+        /// Second colour of the accent gradient (the Drag all button, the selection glow).
+        /// Empty: derived from <see cref="Accent"/> by shifting its hue a little.
+        /// </summary>
+        public string? Accent2 { get; set; }
+
         /// <summary>Text drawn on top of the accent colour.</summary>
         public string AccentText { get; set; } = "#FFFFFF";
 
@@ -82,5 +89,17 @@ namespace Pouchy.Models
         /// <summary>CRT-style horizontal lines over the pouch.</summary>
         public bool Scanlines { get; set; }
         public double ScanlineOpacity { get; set; } = 0.08;
+
+        /// <summary>Strength (0–1) of the soft coloured light at the top of the pouch. 0 turns it off.</summary>
+        public double Glow { get; set; } = 0.22;
+
+        /// <summary>Colour of that light. Empty: the accent colour.</summary>
+        public string? GlowColor { get; set; }
+
+        /// <summary>Strength (0–1) of the glassy highlight along the top edge of the pouch and its tiles.</summary>
+        public double Sheen { get; set; } = 0.06;
+
+        /// <summary>Strength (0–1) of the coloured glow under the Drag all button and selected tiles.</summary>
+        public double AccentGlow { get; set; } = 0.45;
     }
 }

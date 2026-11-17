@@ -34,6 +34,51 @@ namespace Pouchy.Helpers
             }
         }
 
+        /// <summary>
+        /// Grows the element by this factor while the mouse is over it (a tile "lifting" towards
+        /// you), with a slight spring. Off when motion is reduced.
+        /// </summary>
+        public static readonly DependencyProperty HoverLiftProperty = DependencyProperty.RegisterAttached(
+            "HoverLift", typeof(double), typeof(Motion), new PropertyMetadata(1.0, OnHoverLiftChanged));
+
+        public static double GetHoverLift(DependencyObject element) => (double)element.GetValue(HoverLiftProperty);
+
+        public static void SetHoverLift(DependencyObject element, double value) => element.SetValue(HoverLiftProperty, value);
+
+        private static void OnHoverLiftChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            if (d is not FrameworkElement element) return;
+            element.MouseEnter -= OnLiftEnter;
+            element.MouseLeave -= OnLiftLeave;
+            if (e.NewValue is double lift && Math.Abs(lift - 1) > 0.001)
+            {
+                element.MouseEnter += OnLiftEnter;
+                element.MouseLeave += OnLiftLeave;
+            }
+        }
+
+        private static void OnLiftEnter(object sender, System.Windows.Input.MouseEventArgs e)
+        {
+            if (Enabled) Lift((FrameworkElement)sender, GetHoverLift((FrameworkElement)sender), 240, new BackEase { EasingMode = EasingMode.EaseOut, Amplitude = 0.6 });
+        }
+
+        private static void OnLiftLeave(object sender, System.Windows.Input.MouseEventArgs e) =>
+            Lift((FrameworkElement)sender, 1, 180, new CubicEase { EasingMode = EasingMode.EaseOut });
+
+        private static void Lift(FrameworkElement element, double to, double ms, IEasingFunction ease)
+        {
+            if (element.RenderTransform is not ScaleTransform scale || scale.IsFrozen)
+            {
+                if (to == 1) return; // Never lifted.
+                scale = new ScaleTransform(1, 1);
+                element.RenderTransformOrigin = new Point(0.5, 0.5);
+                element.RenderTransform = scale;
+            }
+            var duration = Enabled ? Duration(ms) : new Duration(TimeSpan.Zero);
+            scale.BeginAnimation(ScaleTransform.ScaleXProperty, new DoubleAnimation(to, duration) { EasingFunction = ease });
+            scale.BeginAnimation(ScaleTransform.ScaleYProperty, new DoubleAnimation(to, duration) { EasingFunction = ease });
+        }
+
         private static void OnLoaded(object sender, RoutedEventArgs e)
         {
             var element = (FrameworkElement)sender;

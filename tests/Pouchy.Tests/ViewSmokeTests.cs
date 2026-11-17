@@ -252,6 +252,12 @@ namespace Pouchy.Tests
                 }
 
                 settings.Update(s => { s.ThemeId = "midnight"; s.ViewMode = PouchViewMode.Grid; });
+                var list = (System.Windows.Controls.ListBox)pouch.FindName("PouchItemsControl");
+                list.SelectedItems.Add(vm.Items[1]);
+                list.SelectedItems.Add(vm.Items[3]);
+                Render(pouch, Path.Combine(outDir, "selected.png"));
+                list.SelectedItems.Clear();
+
                 vm.IsSearchOpen = true;
                 vm.SearchText = "notes";
                 Render(pouch, Path.Combine(outDir, "search.png"));
@@ -561,7 +567,7 @@ namespace Pouchy.Tests
             return _app;
         }
 
-        private static void RunOnSta(Action action)
+        internal static void RunOnSta(Action action)
         {
             var failure = UiThread.Invoke<Exception?>(() =>
             {
